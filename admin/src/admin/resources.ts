@@ -183,9 +183,14 @@ const imageProperty = () => ({
 });
 
 const specs: ResourceSpec[] = [
-  { model: 'User', section: 'Players', options: { actions: accessActions(undefined), properties: { passwordHash: { isVisible: false }, ...immutableProperties(['email', 'username']) }, listProperties: ['id', 'email', 'username', 'createdAt'] } },
+  { model: 'User', section: 'Players', options: { actions: accessActions(undefined), properties: { passwordHash: { isVisible: false }, ...immutableProperties(['firebaseUid', 'email', 'username']) }, listProperties: ['id', 'firebaseUid', 'email', 'username', 'createdAt'] } },
   { model: 'PlayerProfile', section: 'Players', writeRoles: MODERATORS, options: { actions: { ...accessActions(MODERATORS), adjustBalance }, editProperties: ['tagline', 'region', 'allegiance', 'avatarPath', 'favoriteMysticId'], properties: { ...immutableProperties(['level', 'xp', 'coins', 'premiumCurrency', 'rankedRating', 'wins', 'losses', 'starterGranted']), avatarPath: imageProperty() } } },
   { model: 'HandlerName', section: 'Players', writeRoles: MODERATORS, options: { actions: { ...accessActions(MODERATORS), edit: { isAccessible: allowed(MODERATORS), before: stampHandlerModeration, after: auditAfter('edit') } }, editProperties: ['forcedRename'], listProperties: ['displayName', 'normalizedName', 'forcedRename', 'prohibitedAt', 'updatedAt'] } },
+  { model: 'AuthAccount', section: 'Players', options: { actions: accessActions(undefined), listProperties: ['userId', 'provider', 'providerAccountId', 'emailVerified', 'createdAt'] } },
+  { model: 'Session', section: 'Players', options: { actions: accessActions(undefined), properties: { tokenHash: { isVisible: false } }, listProperties: ['userId', 'expiresAt', 'createdAt'] } },
+  { model: 'PlayerGameState', section: 'Players', options: { actions: accessActions(undefined, false, OPERATIONS_READERS), properties: { state: { isVisible: { list: false, filter: false, show: true, edit: false } } }, listProperties: ['profileId', 'version', 'updatedAt'] } },
+  { model: 'GameActivity', section: 'Players', options: { actions: accessActions(undefined, false, OPERATIONS_READERS), listProperties: ['profileId', 'type', 'createdAt'] } },
+  { model: 'ComicProgress', section: 'Players', options: { actions: accessActions(undefined, false, OPERATIONS_READERS), listProperties: ['profileId', 'volumeId', 'pageIndex', 'completed', 'updatedAt'] } },
   { model: 'Friendship', section: 'Social', writeRoles: MODERATORS, options: { actions: accessActions(MODERATORS, true, SOCIAL_READERS), editProperties: ['status'], listProperties: ['requesterId', 'addresseeId', 'status', 'createdAt', 'updatedAt'] } },
   { model: 'AvatarUpload', section: 'Moderation', writeRoles: MODERATORS, options: { actions: { ...accessActions(MODERATORS, true, MODERATORS), edit: { isAccessible: allowed(MODERATORS), before: stampModeration('rejectionReason'), after: auditAfter('edit') } }, editProperties: ['moderationStatus', 'rejectionReason'], listProperties: ['profileId', 'moderationStatus', 'automatedResult', 'automatedScore', 'uploadedAt'], properties: { privateObjectKey: { isVisible: { list: false, filter: false, show: true, edit: false } }, publicObjectKey: { ...imageProperty(), isDisabled: true } } } },
   { model: 'ModerationRecord', section: 'Moderation', writeRoles: MODERATORS, options: { actions: { ...accessActions(MODERATORS, true, MODERATORS), edit: { isAccessible: allowed(MODERATORS), before: stampModeration('reason'), after: auditAfter('edit') } }, editProperties: ['status', 'reason', 'notes'], listProperties: ['type', 'targetId', 'status', 'reason', 'reviewedAt', 'createdAt'] } },
@@ -214,6 +219,11 @@ const specs: ResourceSpec[] = [
   { model: 'MatchHandlerState', section: 'Battles', options: { actions: accessActions(undefined) } },
   { model: 'BattleEvent', section: 'Battles', options: { actions: accessActions(undefined), listProperties: ['matchId', 'sequence', 'turn', 'type', 'createdAt'] } },
   { model: 'CampaignProgress', section: 'Battles', options: { actions: accessActions(undefined) } },
+
+  { model: 'TradeOffer', section: 'Trading & Market', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, OPERATIONS_READERS), listProperties: ['senderProfileId', 'recipientProfileId', 'status', 'createdAt', 'completedAt'] } },
+  { model: 'TradeOfferItem', section: 'Trading & Market', options: { actions: accessActions(undefined, false, OPERATIONS_READERS), listProperties: ['tradeId', 'side', 'ownedCardId'] } },
+  { model: 'MarketplaceListing', section: 'Trading & Market', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, OPERATIONS_READERS), listProperties: ['sellerId', 'ownedCardId', 'coinPrice', 'status', 'createdAt', 'completedAt'] } },
+  { model: 'MarketplaceSale', section: 'Trading & Market', options: { actions: accessActions(undefined, false, OPERATIONS_READERS), listProperties: ['listingId', 'definitionId', 'sellerId', 'buyerId', 'coinPrice', 'completedAt'] } },
 
   { model: 'RankDefinition', section: 'Ranked & Leaderboards', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS), listProperties: ['sortOrder', 'name', 'minimumRating', 'maximumRating', 'active', 'artworkPath'], properties: { artworkPath: imageProperty() } } },
   { model: 'RankedRating', section: 'Ranked & Leaderboards', options: { actions: accessActions(undefined, true, OPERATIONS_READERS) } },

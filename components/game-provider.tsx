@@ -8,6 +8,7 @@ import { endTurn, performBasicAttack, performSpecial } from "@/lib/game/engine";
 import { getFirebaseAuth } from "@/lib/firebase";
 import { ALLEGIANCES, ensurePlayerProfile, getPlayerProfile, REGIONS, savePlayerProfile, validateHandlerName, type ProfileInput } from "@/lib/player-profile";
 import { PROFILE_AVATARS } from "@/lib/art";
+import { loadCloudGameState, queueCloudGameState, type GameActivityType } from "@/lib/game-sync-client";
 
 type Accounts = Record<string, { passwordHash?: string; state: PlayerState }>;
 type GameContextValue = {
@@ -123,23 +124,26 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           setState(restored);
           // The local save is enough to render immediately. Firestore identity data can hydrate afterward.
           setReady(true);
+          let cloudState: PlayerState | null = null;
+          try { cloudState = await loadCloudGameState(); } catch { /* The local save remains available while the API recovers. */ }
+          const hydrated = cloudState ?? restored;
+          hydrated.account = restored.account;
           try {
             const profile = await getPlayerProfile(user.uid);
-            restored.profile = profile;
-            if (profile) restored.account = { email: restored.account!.email, username: profile.handlerName };
-            const accountEmail = restored.account?.email;
-            if (accountEmail) {
-              const accounts = getAccounts();
-              accounts[accountEmail] = { ...accounts[accountEmail], state: restored };
-              localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
-            }
-            setState(structuredClone(restored));
+            hydrated.profile = profile;
+            if (profile) hydrated.account = { email: hydrated.account!.email, username: profile.handlerName };
             setError(null);
           } catch (cause) {
-            // Authentication and the local game save are still valid if Firestore is briefly unavailable.
-            // Keep the player in the game and reserve the global error toast for actionable setup failures.
             setError(isTemporaryProfileSyncFailure(cause) ? null : authMessage(cause));
           }
+          const accountEmail = hydrated.account?.email;
+          if (accountEmail) {
+            const accounts = getAccounts();
+            accounts[accountEmail] = { ...accounts[accountEmail], state: hydrated };
+            localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+          }
+          setState(structuredClone(hydrated));
+          if (!cloudState) void queueCloudGameState(hydrated, "SESSION_STARTED");
         } else { localStorage.removeItem(CURRENT_KEY); setState(initialState); setReady(true); }
       }, (cause) => { setError(authMessage(cause)); setReady(true); });
     } catch (cause) {
@@ -148,7 +152,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const commit = useCallback((mutator: (draft: PlayerState) => void) => {
+  const commit = useCallback((mutator: (draft: PlayerState) => void, activity: GameActivityType, payload?: Record<string, unknown>) => {
     setState((current) => {
       const draft = structuredClone(current);
       try { mutator(draft); setError(null); } catch (cause) { setError(cause instanceof Error ? cause.message : "Something went wrong"); return current; }
@@ -158,6 +162,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         const existing = accounts[email];
         accounts[email] = { ...existing, state: draft };
         localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+        void queueCloudGameState(draft, activity, payload);
       }
       return draft;
     });
@@ -189,6 +194,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       accounts[normalized] = { ...accounts[normalized], state: next };
       localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts)); localStorage.setItem(CURRENT_KEY, normalized);
       setState(next); setError(null);
+      void queueCloudGameState(next, "PROFILE_UPDATED", { handlerName: profile.handlerName, accountCreated: true });
     } catch (cause) {
       if (createdUser && !identitySaved) await deleteUser(createdUser).catch(() => undefined);
       throw new Error(authMessage(cause));
@@ -214,6 +220,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       restored.account = { email: credential.user.email!.toLowerCase(), username: profile.handlerName };
       setState(restored);
       setError(null);
+      void queueCloudGameState(restored, "PROFILE_UPDATED", { handlerName: profile.handlerName, googleSignIn: true });
       return Boolean(getAdditionalUserInfo(credential)?.isNewUser);
     } catch (cause) {
       throw new Error(authMessage(cause));
@@ -240,7 +247,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       commit((draft) => {
         draft.profile = profile;
         if (draft.account) draft.account.username = profile.handlerName;
-      });
+      }, "PROFILE_UPDATED", { handlerName: profile.handlerName });
     } catch (cause) {
       throw new Error(authMessage(cause));
     }
@@ -255,34 +262,37 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       completed,
       updatedAt: new Date().toISOString(),
     };
-  }), [commit]);
+  }, "COMIC_PROGRESS_SAVED", { volumeId, pageIndex, completed }), [commit]);
 
   const reveal = useCallback((openingId: string, cardId?: string) => commit((draft) => {
     const opening = draft.openings.find((item) => item.id === openingId); if (!opening) throw new Error("Opening not found");
     opening.cards.forEach((card) => { if (!cardId || card.id === cardId) card.revealed = true; });
     opening.complete = opening.cards.every((card) => card.revealed);
-  }), [commit]);
-  const buyPack = useCallback((packId: string, order?: string) => commit((draft) => buyPackRule(draft, packId, order)), [commit]);
-  const activateBoost = useCallback((id: string) => commit((draft) => activateBoostRule(draft, id)), [commit]);
+  }, "PACK_REVEALED", { openingId, cardId }), [commit]);
+  const buyPack = useCallback((packId: string, order?: string) => {
+    commit((draft) => buyPackRule(draft, packId, order), "PACK_PURCHASED", { packId, order });
+    router.push("/open");
+  }, [commit, router]);
+  const activateBoost = useCallback((id: string) => commit((draft) => activateBoostRule(draft, id), "BOOST_ACTIVATED", { inventoryItemId: id }), [commit]);
   const saveLoadout = useCallback((loadout: Omit<Loadout, "id">) => commit((draft) => {
     if (loadout.mysticIds.length !== loadout.size) throw new Error(`Select exactly ${loadout.size} Mystics`);
     if (loadout.handlerIds.length > 3) throw new Error("Select no more than 3 Handlers");
     draft.loadouts.push({ ...loadout, id: `loadout-${Date.now()}` });
-  }), [commit]);
-  const deleteLoadout = useCallback((id: string) => commit((draft) => { draft.loadouts = draft.loadouts.filter((item) => item.id !== id); }), [commit]);
-  const createBinder = useCallback((name: string) => commit((draft) => { if (!name.trim()) throw new Error("Give the collection a name"); draft.binders.push({ id: `binder-${Date.now()}`, name: name.trim(), cardIds: [] }); }), [commit]);
-  const renameBinder = useCallback((id: string, name: string) => commit((draft) => { const binder = draft.binders.find((item) => item.id === id); if (binder && name.trim()) binder.name = name.trim(); }), [commit]);
-  const toggleBinderCard = useCallback((binderId: string, ownedId: string) => commit((draft) => { const binder = draft.binders.find((item) => item.id === binderId); if (!binder) return; binder.cardIds = binder.cardIds.includes(ownedId) ? binder.cardIds.filter((id) => id !== ownedId) : [...binder.cardIds, ownedId]; }), [commit]);
+  }, "LOADOUT_SAVED", { name: loadout.name, size: loadout.size }), [commit]);
+  const deleteLoadout = useCallback((id: string) => commit((draft) => { draft.loadouts = draft.loadouts.filter((item) => item.id !== id); }, "LOADOUT_DELETED", { loadoutId: id }), [commit]);
+  const createBinder = useCallback((name: string) => commit((draft) => { if (!name.trim()) throw new Error("Give the collection a name"); draft.binders.push({ id: `binder-${Date.now()}`, name: name.trim(), cardIds: [] }); }, "BINDER_CREATED", { name }), [commit]);
+  const renameBinder = useCallback((id: string, name: string) => commit((draft) => { const binder = draft.binders.find((item) => item.id === id); if (binder && name.trim()) binder.name = name.trim(); }, "BINDER_RENAMED", { binderId: id, name }), [commit]);
+  const toggleBinderCard = useCallback((binderId: string, ownedId: string) => commit((draft) => { const binder = draft.binders.find((item) => item.id === binderId); if (!binder) return; binder.cardIds = binder.cardIds.includes(ownedId) ? binder.cardIds.filter((id) => id !== ownedId) : [...binder.cardIds, ownedId]; }, "BINDER_CARD_TOGGLED", { binderId, ownedId }), [commit]);
   const sellDuplicate = useCallback((ownedId: string) => commit((draft) => {
     const owned = draft.ownedCards.find((card) => card.id === ownedId); if (!owned) return;
     const copies = draft.ownedCards.filter((card) => card.definitionId === owned.definitionId); if (copies.length < 2) throw new Error("Only duplicate copies can be sold");
     const definition = definitionFor(owned.definitionId)!; const values: Record<string, number> = { Wild: 20, Hunter: 35, Predator: 60, Prime: 100, Alpha: 180, Apex: 350, Unassigned: 80 };
     draft.ownedCards = draft.ownedCards.filter((card) => card.id !== ownedId); draft.coins += values[definition.rarity]; draft.binders.forEach((binder) => binder.cardIds = binder.cardIds.filter((id) => id !== ownedId));
-  }), [commit]);
-  const startBattle = useCallback((opponentId: string, loadoutId?: string) => { commit((draft) => createBattle(draft, opponentId, loadoutId)); router.push("/battle"); }, [commit, router]);
+  }, "CARD_SOLD", { ownedId }), [commit]);
+  const startBattle = useCallback((opponentId: string, loadoutId?: string) => { commit((draft) => createBattle(draft, opponentId, loadoutId), "BATTLE_STARTED", { opponentId, loadoutId }); router.push("/battle"); }, [commit, router]);
 
   const finalize = (draft: PlayerState) => { if (draft.battle?.winner) rewardCompletedBattle(draft); };
-  const basicAttack = useCallback((attackerId: string, defenderId: string) => commit((draft) => { if (!draft.battle) return; performBasicAttack(draft.battle, "player", attackerId, defenderId); finalize(draft); }), [commit]);
+  const basicAttack = useCallback((attackerId: string, defenderId: string) => commit((draft) => { if (!draft.battle) return; performBasicAttack(draft.battle, "player", attackerId, defenderId); finalize(draft); }, "BASIC_ATTACK", { attackerId, defenderId }), [commit]);
   const specialAttack = useCallback((attackerId: string, defenderId: string, moveIndex: number, rolledFace?: number) => commit((draft) => {
     if (!draft.battle) return;
     let useProvidedRoll = rolledFace !== undefined;
@@ -292,7 +302,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     } };
     performSpecial(draft.battle, "player", attackerId, defenderId, moveIndex, dice);
     finalize(draft);
-  }), [commit]);
+  }, "SPECIAL_ATTACK", { attackerId, defenderId, moveIndex, rolledFace }), [commit]);
 
   const useHandler = useCallback((handlerIndex: number, targetId: string, rolledFace?: number) => commit((draft) => {
     const battle = draft.battle; if (!battle || battle.currentTurn !== "player" || battle.winner) throw new Error("It is not your turn");
@@ -318,7 +328,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
     if (battle.ai.mystics.every((m) => m.defeated)) battle.winner = "player";
     if (!battle.winner) endTurn(battle); finalize(draft);
-  }), [commit]);
+  }, "HANDLER_USED", { handlerIndex, targetId, rolledFace }), [commit]);
 
   const aiTurn = useCallback(() => commit((draft) => {
     const battle = draft.battle; if (!battle || battle.currentTurn !== "ai" || battle.winner) return;
@@ -328,7 +338,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (available.length && Math.random() > 0.38) { const choice = available.sort((a, b) => (b.move.attackModifier ?? 0) - (a.move.attackModifier ?? 0))[0]; performSpecial(battle, "ai", actor.instanceId, target.instanceId, choice.index); }
     else performBasicAttack(battle, "ai", actor.instanceId, target.instanceId);
     finalize(draft);
-  }), [commit]);
+  }, "AI_TURN"), [commit]);
 
   const value = useMemo<GameContextValue>(() => ({ state, ready, error, signup, login, loginWithGoogle, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn }), [state, ready, error, signup, login, loginWithGoogle, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn]);
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

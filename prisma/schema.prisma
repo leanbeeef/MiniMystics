@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -89,13 +90,34 @@ enum MatchTiming {
   ASYNC
 }
 
+enum TradeStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  COMPLETED
+}
+
+enum TradeSide {
+  OFFERED
+  REQUESTED
+}
+
+enum MarketplaceListingStatus {
+  ACTIVE
+  SOLD
+  CANCELLED
+  EXPIRED
+}
+
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  username     String   @unique
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id           String         @id @default(cuid())
+  firebaseUid  String?        @unique
+  email        String         @unique
+  passwordHash String?
+  username     String         @unique
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
   profile      PlayerProfile?
   sessions     Session[]
   authAccounts AuthAccount[]
@@ -111,22 +133,24 @@ model AuthAccount {
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
   user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([provider, providerAccountId])
   @@unique([userId, provider])
   @@index([userId])
 }
 
 model HandlerName {
-  id             String   @id @default(cuid())
-  userId         String   @unique
+  id             String    @id @default(cuid())
+  userId         String    @unique
   displayName    String
-  normalizedName String   @unique
-  forcedRename   Boolean  @default(false)
+  normalizedName String    @unique
+  forcedRename   Boolean   @default(false)
   prohibitedAt   DateTime?
   prohibitedById String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([normalizedName])
 }
 
@@ -137,50 +161,90 @@ model Session {
   expiresAt DateTime
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
 }
 
 model PlayerProfile {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  level           Int      @default(1)
-  xp              Int      @default(0)
-  coins           Int      @default(800)
-  premiumCurrency Int      @default(0)
-  rankedRating    Int      @default(1000)
-  starterGranted  Boolean  @default(false)
-  wins            Int      @default(0)
-  losses          Int      @default(0)
-  tagline         String   @default("")
-  region          String   @default("North America")
-  allegiance      String   @default("Mortalborn")
-  avatarPath      String?
-  favoriteMysticId String?
-  currentStreak   Int      @default(0)
-  peakStreak      Int      @default(0)
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ownedCards      OwnedCard[]
-  inventory       InventoryItem[]
-  activeBoosts    ActiveBoost[]
-  loadouts        SavedLoadout[]
-  collections     CustomCollection[]
-  pityCounters    PityCounter[]
-  packOpenings    PackOpening[]
-  campaign        CampaignProgress[]
-  rewards         RewardTransaction[]
-  currencyTxns    CurrencyTransaction[]
-  matches         MatchParticipant[]
-  friendshipsSent Friendship[] @relation("FriendRequester")
-  friendshipsReceived Friendship[] @relation("FriendAddressee")
-  avatarUploads   AvatarUpload[]
-  moderation      ModerationRecord[]
-  rankedRatings   RankedRating[]
-  rankHistory     RankHistory[]
-  multiplayerStats MultiplayerStatistic[]
-  leaderboardRecords LeaderboardRecord[]
-  seasonProgress  PlayerSeasonProgress[]
-  challengeAssignments DailyChallengeAssignment[]
-  adminAdjustments AdminAdjustmentTransaction[]
+  id                     String                       @id @default(cuid())
+  userId                 String                       @unique
+  level                  Int                          @default(1)
+  xp                     Int                          @default(0)
+  coins                  Int                          @default(800)
+  premiumCurrency        Int                          @default(0)
+  rankedRating           Int                          @default(1000)
+  starterGranted         Boolean                      @default(false)
+  wins                   Int                          @default(0)
+  losses                 Int                          @default(0)
+  tagline                String                       @default("")
+  region                 String                       @default("North America")
+  allegiance             String                       @default("Mortalborn")
+  avatarPath             String?
+  favoriteMysticId       String?
+  currentStreak          Int                          @default(0)
+  peakStreak             Int                          @default(0)
+  user                   User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ownedCards             OwnedCard[]
+  inventory              InventoryItem[]
+  activeBoosts           ActiveBoost[]
+  loadouts               SavedLoadout[]
+  collections            CustomCollection[]
+  pityCounters           PityCounter[]
+  packOpenings           PackOpening[]
+  campaign               CampaignProgress[]
+  rewards                RewardTransaction[]
+  currencyTxns           CurrencyTransaction[]
+  matches                MatchParticipant[]
+  friendshipsSent        Friendship[]                 @relation("FriendRequester")
+  friendshipsReceived    Friendship[]                 @relation("FriendAddressee")
+  avatarUploads          AvatarUpload[]
+  moderation             ModerationRecord[]
+  rankedRatings          RankedRating[]
+  rankHistory            RankHistory[]
+  multiplayerStats       MultiplayerStatistic[]
+  leaderboardRecords     LeaderboardRecord[]
+  seasonProgress         PlayerSeasonProgress[]
+  challengeAssignments   DailyChallengeAssignment[]
+  adminAdjustments       AdminAdjustmentTransaction[]
+  gameState              PlayerGameState?
+  gameActivity           GameActivity[]
+  comicProgress          ComicProgress[]
+  tradeOffersSent        TradeOffer[]                 @relation("TradeSender")
+  tradeOffersReceived    TradeOffer[]                 @relation("TradeRecipient")
+  marketplaceListings    MarketplaceListing[]         @relation("MarketplaceSeller")
+  marketplaceSalesSold   MarketplaceSale[]            @relation("MarketplaceSaleSeller")
+  marketplaceSalesBought MarketplaceSale[]            @relation("MarketplaceSaleBuyer")
+}
+
+model PlayerGameState {
+  profileId String        @id
+  state     Json
+  version   Int           @default(1)
+  updatedAt DateTime      @updatedAt
+  profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model GameActivity {
+  id        String        @id @default(cuid())
+  profileId String
+  type      String
+  payload   Json?
+  createdAt DateTime      @default(now())
+  profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, createdAt])
+  @@index([type, createdAt])
+}
+
+model ComicProgress {
+  profileId String
+  volumeId  String
+  pageIndex Int
+  completed Boolean       @default(false)
+  updatedAt DateTime      @updatedAt
+  profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, volumeId])
 }
 
 model Friendship {
@@ -192,44 +256,47 @@ model Friendship {
   updatedAt   DateTime         @updatedAt
   requester   PlayerProfile    @relation("FriendRequester", fields: [requesterId], references: [id], onDelete: Cascade)
   addressee   PlayerProfile    @relation("FriendAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
   @@unique([requesterId, addresseeId])
   @@index([addresseeId, status])
   @@index([requesterId, status])
 }
 
 model AvatarUpload {
-  id                 String           @id @default(cuid())
-  profileId          String
-  privateObjectKey   String
-  publicObjectKey    String?
-  mimeType           String
-  byteSize           Int
-  width              Int?
-  height             Int?
-  moderationStatus   ModerationStatus @default(PENDING)
-  automatedResult    String?
-  automatedScore     Float?
-  automatedDetails   Json?
-  reviewedById       String?
-  reviewedAt         DateTime?
-  rejectionReason    String?
-  uploadedAt         DateTime         @default(now())
-  profile            PlayerProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  reviewedBy         AdminUser?       @relation(fields: [reviewedById], references: [id])
+  id               String           @id @default(cuid())
+  profileId        String
+  privateObjectKey String
+  publicObjectKey  String?
+  mimeType         String
+  byteSize         Int
+  width            Int?
+  height           Int?
+  moderationStatus ModerationStatus @default(PENDING)
+  automatedResult  String?
+  automatedScore   Float?
+  automatedDetails Json?
+  reviewedById     String?
+  reviewedAt       DateTime?
+  rejectionReason  String?
+  uploadedAt       DateTime         @default(now())
+  profile          PlayerProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  reviewedBy       AdminUser?       @relation(fields: [reviewedById], references: [id])
+
   @@index([moderationStatus, uploadedAt])
   @@index([profileId])
 }
 
 model ProhibitedHandlerName {
-  id             String   @id @default(cuid())
-  normalizedName String   @unique
-  matchType      String   @default("EXACT")
+  id             String    @id @default(cuid())
+  normalizedName String    @unique
+  matchType      String    @default("EXACT")
   reason         String
-  active         Boolean  @default(true)
+  active         Boolean   @default(true)
   createdById    String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
   createdBy      AdminUser @relation(fields: [createdById], references: [id])
+
   @@index([active, normalizedName])
 }
 
@@ -248,12 +315,13 @@ model ModerationRecord {
   updatedAt     DateTime         @updatedAt
   profile       PlayerProfile?   @relation(fields: [profileId], references: [id], onDelete: SetNull)
   reviewedBy    AdminUser?       @relation(fields: [reviewedById], references: [id])
+
   @@index([status, type, createdAt])
   @@index([targetId])
 }
 
 model CardDefinition {
-  id              String   @id
+  id              String              @id
   kind            CardKind
   name            String
   order           String
@@ -261,30 +329,31 @@ model CardDefinition {
   rarity          Rarity?
   sourceRarity    String
   imageFilename   String?
-  edition         String?  @default("base")
-  variant         String?  @default("standard")
-  finish          String?  @default("normal")
-  artworkVariant  String?  @default("default")
-  active          Boolean  @default(true)
+  edition         String?             @default("base")
+  variant         String?             @default("standard")
+  finish          String?             @default("normal")
+  artworkVariant  String?             @default("default")
+  active          Boolean             @default(true)
   mystic          MysticDefinition?
   handler         HandlerDefinition?
   ownedCopies     OwnedCard[]
   packResults     PackOpeningResult[]
+  marketplaceSales MarketplaceSale[]
 }
 
 model MysticDefinition {
-  id          String @id
+  id          String         @id
   power       Int
   defense     Int
   baseAttack  Int
   rawMoves    String
   movesJson   Json
-  needsReview Boolean @default(false)
+  needsReview Boolean        @default(false)
   card        CardDefinition @relation(fields: [id], references: [id], onDelete: Cascade)
 }
 
 model HandlerDefinition {
-  id             String @id
+  id             String         @id
   activationRoll String
   activationDice Int
   effect         String
@@ -299,59 +368,64 @@ model HandlerDefinition {
 }
 
 model OwnedCard {
-  id             String   @id @default(cuid())
-  profileId      String
-  definitionId   String
-  acquiredAt     DateTime @default(now())
-  acquisition    String
-  edition        String   @default("base")
-  variant        String   @default("standard")
-  finish         String   @default("normal")
-  artworkVariant String   @default("default")
-  soldAt         DateTime?
-  profile        PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  definition     CardDefinition @relation(fields: [definitionId], references: [id])
-  loadoutCards   SavedLoadoutCard[]
-  collectionCards CustomCollectionCard[]
+  id                  String                 @id @default(cuid())
+  profileId           String
+  definitionId        String
+  acquiredAt          DateTime               @default(now())
+  acquisition         String
+  edition             String                 @default("base")
+  variant             String                 @default("standard")
+  finish              String                 @default("normal")
+  artworkVariant      String                 @default("default")
+  soldAt              DateTime?
+  profile             PlayerProfile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  definition          CardDefinition         @relation(fields: [definitionId], references: [id])
+  loadoutCards        SavedLoadoutCard[]
+  collectionCards     CustomCollectionCard[]
+  tradeItems          TradeOfferItem[]
+  marketplaceListings MarketplaceListing[]
+
   @@index([profileId, definitionId])
 }
 
 model InventoryItem {
-  id        String   @id @default(cuid())
-  profileId String
-  itemType  String
-  rarity    Rarity?
-  quantity  Int      @default(1)
-  metadata  Json?
+  id                String           @id @default(cuid())
+  profileId         String
+  itemType          String
+  rarity            Rarity?
+  quantity          Int              @default(1)
+  metadata          Json?
   boostDefinitionId String?
-  profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  boostDefinition BoostDefinition? @relation(fields: [boostDefinitionId], references: [id])
+  profile           PlayerProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  boostDefinition   BoostDefinition? @relation(fields: [boostDefinitionId], references: [id])
+
   @@unique([profileId, itemType, rarity])
 }
 
 model BoostDefinition {
-  id          String    @id
-  name        String
-  kind        BoostKind
-  multiplier  Int       @default(2)
-  matchCount  Int
-  active      Boolean   @default(true)
-  metadata    Json?
-  inventory   InventoryItem[]
+  id         String          @id
+  name       String
+  kind       BoostKind
+  multiplier Int             @default(2)
+  matchCount Int
+  active     Boolean         @default(true)
+  metadata   Json?
+  inventory  InventoryItem[]
 }
 
 model ActiveBoost {
-  id               String @id @default(cuid())
+  id               String        @id @default(cuid())
   profileId        String
   kind             BoostKind
-  multiplier       Int    @default(2)
+  multiplier       Int           @default(2)
   matchesRemaining Int
   profile          PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
   @@unique([profileId, kind])
 }
 
 model PackDefinition {
-  id               String @id
+  id               String        @id
   name             String
   description      String
   cardCount        Int
@@ -364,379 +438,393 @@ model PackDefinition {
   pityRules        Json?
   theme            String
   artwork          String?
-  active           Boolean @default(true)
+  active           Boolean       @default(true)
   startsAt         DateTime?
   endsAt           DateTime?
   openings         PackOpening[]
 }
 
 model PackOpening {
-  id             String @id @default(cuid())
+  id             String              @id @default(cuid())
   profileId      String
   packId         String
-  idempotencyKey String @unique
+  idempotencyKey String              @unique
   currency       CurrencyKind?
-  openedAt       DateTime @default(now())
-  profile        PlayerProfile @relation(fields: [profileId], references: [id])
-  pack           PackDefinition @relation(fields: [packId], references: [id])
+  openedAt       DateTime            @default(now())
+  profile        PlayerProfile       @relation(fields: [profileId], references: [id])
+  pack           PackDefinition      @relation(fields: [packId], references: [id])
   results        PackOpeningResult[]
 }
 
 model PackOpeningResult {
-  id             String @id @default(cuid())
-  openingId      String
-  position       Int
-  resultType     String
-  definitionId   String?
-  rarity         Rarity?
-  quantity       Int?
-  metadata       Json?
-  opening        PackOpening @relation(fields: [openingId], references: [id], onDelete: Cascade)
-  definition     CardDefinition? @relation(fields: [definitionId], references: [id])
+  id           String          @id @default(cuid())
+  openingId    String
+  position     Int
+  resultType   String
+  definitionId String?
+  rarity       Rarity?
+  quantity     Int?
+  metadata     Json?
+  opening      PackOpening     @relation(fields: [openingId], references: [id], onDelete: Cascade)
+  definition   CardDefinition? @relation(fields: [definitionId], references: [id])
+
   @@unique([openingId, position])
 }
 
 model PityCounter {
-  id        String @id @default(cuid())
+  id        String        @id @default(cuid())
   profileId String
   packId    String
-  counter   Int @default(0)
+  counter   Int           @default(0)
   profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
   @@unique([profileId, packId])
 }
 
 model SavedLoadout {
-  id        String @id @default(cuid())
-  profileId String
-  name      String
+  id         String             @id @default(cuid())
+  profileId  String
+  name       String
   battleSize Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  cards     SavedLoadoutCard[]
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  profile    PlayerProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  cards      SavedLoadoutCard[]
 }
 
 model SavedLoadoutCard {
-  id          String @id @default(cuid())
+  id          String       @id @default(cuid())
   loadoutId   String
   ownedCardId String
   slot        Int
   kind        CardKind
   loadout     SavedLoadout @relation(fields: [loadoutId], references: [id], onDelete: Cascade)
-  ownedCard   OwnedCard @relation(fields: [ownedCardId], references: [id])
+  ownedCard   OwnedCard    @relation(fields: [ownedCardId], references: [id])
+
   @@unique([loadoutId, kind, slot])
 }
 
 model CustomCollection {
-  id        String @id @default(cuid())
+  id        String                 @id @default(cuid())
   profileId String
   name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+  profile   PlayerProfile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
   cards     CustomCollectionCard[]
 }
 
 model CustomCollectionCard {
   collectionId String
   ownedCardId  String
-  addedAt      DateTime @default(now())
+  addedAt      DateTime         @default(now())
   collection   CustomCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-  ownedCard    OwnedCard @relation(fields: [ownedCardId], references: [id])
+  ownedCard    OwnedCard        @relation(fields: [ownedCardId], references: [id])
+
   @@id([collectionId, ownedCardId])
 }
 
 model CampaignOpponent {
-  id            String @id
-  name          String
-  difficulty    String
-  playstyle     String
-  deckConfig    Json
-  rewardConfig  Json
-  unlockLevel   Int
-  sortOrder     Int
-  active        Boolean @default(true)
-  progress      CampaignProgress[]
+  id           String             @id
+  name         String
+  difficulty   String
+  playstyle    String
+  deckConfig   Json
+  rewardConfig Json
+  unlockLevel  Int
+  sortOrder    Int
+  active       Boolean            @default(true)
+  progress     CampaignProgress[]
 }
 
 model CampaignProgress {
-  profileId String
+  profileId  String
   opponentId String
-  wins      Int @default(0)
+  wins       Int              @default(0)
   bestResult Json?
-  profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  opponent  CampaignOpponent @relation(fields: [opponentId], references: [id])
+  profile    PlayerProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  opponent   CampaignOpponent @relation(fields: [opponentId], references: [id])
+
   @@id([profileId, opponentId])
 }
 
 model Match {
-  id          String @id @default(cuid())
-  status      MatchStatus
-  battleSize  Int
-  engineVersion String
-  state       Json
-  winnerSide  MatchSide?
-  mode        MatchMode   @default(CAMPAIGN)
-  timing      MatchTiming @default(LIVE)
+  id                   String              @id @default(cuid())
+  status               MatchStatus
+  battleSize           Int
+  engineVersion        String
+  state                Json
+  winnerSide           MatchSide?
+  mode                 MatchMode           @default(CAMPAIGN)
+  timing               MatchTiming         @default(LIVE)
   currentTurnProfileId String?
-  turnDeadline DateTime?
-  lastActionAt DateTime?
-  forfeitedTurns Int      @default(0)
-  disconnectEvents Json?
-  ratingChanges Json?
-  startedAt   DateTime @default(now())
-  completedAt DateTime?
-  participants MatchParticipant[]
-  events      BattleEvent[]
-  cardStates  MatchCardState[]
-  handlerStates MatchHandlerState[]
+  turnDeadline         DateTime?
+  lastActionAt         DateTime?
+  forfeitedTurns       Int                 @default(0)
+  disconnectEvents     Json?
+  ratingChanges        Json?
+  startedAt            DateTime            @default(now())
+  completedAt          DateTime?
+  participants         MatchParticipant[]
+  events               BattleEvent[]
+  cardStates           MatchCardState[]
+  handlerStates        MatchHandlerState[]
 }
 
 model RankDefinition {
-  id                 String   @id
-  name               String   @unique
-  sortOrder          Int      @unique
-  artworkPath        String
-  divisions          Json
-  minimumRating      Int
-  maximumRating      Int?
-  ratingGainConfig   Json
-  ratingLossConfig   Json
-  matchmakingConfig  Json
-  placementConfig    Json
-  resetConfig        Json
-  active             Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  ratings            RankedRating[]
+  id                String         @id
+  name              String         @unique
+  sortOrder         Int            @unique
+  artworkPath       String
+  divisions         Json
+  minimumRating     Int
+  maximumRating     Int?
+  ratingGainConfig  Json
+  ratingLossConfig  Json
+  matchmakingConfig Json
+  placementConfig   Json
+  resetConfig       Json
+  active            Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  ratings           RankedRating[]
 }
 
 model RankedRating {
-  id             String   @id @default(cuid())
+  id             String         @id @default(cuid())
   profileId      String
   battleSize     Int
-  rating         Int      @default(1000)
+  rating         Int            @default(1000)
   rankId         String
   division       Int?
-  peakRating     Int      @default(1000)
-  peakRank       String   @default("Wild III")
-  placementGames Int      @default(0)
-  updatedAt      DateTime @updatedAt
-  profile        PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  peakRating     Int            @default(1000)
+  peakRank       String         @default("Wild III")
+  placementGames Int            @default(0)
+  updatedAt      DateTime       @updatedAt
+  profile        PlayerProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   rank           RankDefinition @relation(fields: [rankId], references: [id])
+
   @@unique([profileId, battleSize])
   @@index([battleSize, rating])
 }
 
 model RankHistory {
-  id          String   @id @default(cuid())
-  profileId   String
-  seasonId    String?
-  battleSize  Int
-  oldRating   Int
-  newRating   Int
-  oldRank     String
-  newRank     String
-  reason      String
-  matchId     String?
-  createdAt   DateTime @default(now())
-  profile     PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  season      Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  id         String        @id @default(cuid())
+  profileId  String
+  seasonId   String?
+  battleSize Int
+  oldRating  Int
+  newRating  Int
+  oldRank    String
+  newRank    String
+  reason     String
+  matchId    String?
+  createdAt  DateTime      @default(now())
+  profile    PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  season     Season?       @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+
   @@index([profileId, battleSize, createdAt])
   @@index([seasonId])
 }
 
 model MultiplayerStatistic {
-  id                     String   @id @default(cuid())
-  profileId              String
-  battleSize             Int
-  wins                   Int      @default(0)
-  losses                 Int      @default(0)
-  currentStreak          Int      @default(0)
-  highestStreak          Int      @default(0)
-  topMysticId            String?
-  mostUsedMysticId       String?
-  totalDamage            Int      @default(0)
-  totalTurns             Int      @default(0)
-  totalMysticsDefeated   Int      @default(0)
-  updatedAt              DateTime @updatedAt
-  profile                PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  id                   String        @id @default(cuid())
+  profileId            String
+  battleSize           Int
+  wins                 Int           @default(0)
+  losses               Int           @default(0)
+  currentStreak        Int           @default(0)
+  highestStreak        Int           @default(0)
+  topMysticId          String?
+  mostUsedMysticId     String?
+  totalDamage          Int           @default(0)
+  totalTurns           Int           @default(0)
+  totalMysticsDefeated Int           @default(0)
+  updatedAt            DateTime      @updatedAt
+  profile              PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
   @@unique([profileId, battleSize])
 }
 
 model LeaderboardRecord {
-  id                 String   @id @default(cuid())
-  profileId          String
-  seasonId           String?
-  battleSize         Int?
-  rankPosition       Int
-  rating             Int
-  wins               Int
-  losses             Int
-  winPercentage      Float
-  topMysticId        String?
-  mostUsedMysticId   String?
-  averageDamage      Float
-  currentStreak      Int
-  peakRank           String
-  calculatedAt       DateTime @default(now())
-  profile            PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  season             Season? @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  id               String        @id @default(cuid())
+  profileId        String
+  seasonId         String?
+  battleSize       Int?
+  rankPosition     Int
+  rating           Int
+  wins             Int
+  losses           Int
+  winPercentage    Float
+  topMysticId      String?
+  mostUsedMysticId String?
+  averageDamage    Float
+  currentStreak    Int
+  peakRank         String
+  calculatedAt     DateTime      @default(now())
+  profile          PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  season           Season?       @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+
   @@unique([profileId, seasonId, battleSize])
   @@index([seasonId, battleSize, rankPosition])
 }
 
 model Season {
-  id                   String   @id @default(cuid())
-  number               Int      @unique
-  name                 String
-  startsAt             DateTime
-  endsAt               DateTime
-  active               Boolean  @default(false)
-  artworkPath          String?
-  rankedResetConfig    Json
-  xpConfig             Json
-  premiumTrackEnabled  Boolean  @default(false)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-  tiers                SeasonPassTier[]
-  progress             PlayerSeasonProgress[]
-  challenges           DailyChallengeDefinition[]
-  rankHistory          RankHistory[]
-  leaderboardRecords   LeaderboardRecord[]
+  id                  String                     @id @default(cuid())
+  number              Int                        @unique
+  name                String
+  startsAt            DateTime
+  endsAt              DateTime
+  active              Boolean                    @default(false)
+  artworkPath         String?
+  rankedResetConfig   Json
+  xpConfig            Json
+  premiumTrackEnabled Boolean                    @default(false)
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  tiers               SeasonPassTier[]
+  progress            PlayerSeasonProgress[]
+  challenges          DailyChallengeDefinition[]
+  rankHistory         RankHistory[]
+  leaderboardRecords  LeaderboardRecord[]
 }
 
 model SeasonPassTier {
-  id              String @id @default(cuid())
-  seasonId        String
-  tierNumber      Int
-  xpRequirement   Int
-  freeReward      Json?
-  premiumReward   Json?
-  assetPath       String?
-  rewardMetadata  Json?
-  season          Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  id             String  @id @default(cuid())
+  seasonId       String
+  tierNumber     Int
+  xpRequirement  Int
+  freeReward     Json?
+  premiumReward  Json?
+  assetPath      String?
+  rewardMetadata Json?
+  season         Season  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
   @@unique([seasonId, tierNumber])
 }
 
 model PlayerSeasonProgress {
-  id               String   @id @default(cuid())
-  profileId        String
-  seasonId         String
-  seasonXp         Int      @default(0)
-  currentTier      Int      @default(0)
-  premiumUnlocked  Boolean  @default(false)
-  claimedFree      Json
-  claimedPremium   Json
-  finalRank        Json?
-  peakRank         Json?
-  finalWins        Int?
-  finalWinRate     Float?
+  id                String        @id @default(cuid())
+  profileId         String
+  seasonId          String
+  seasonXp          Int           @default(0)
+  currentTier       Int           @default(0)
+  premiumUnlocked   Boolean       @default(false)
+  claimedFree       Json
+  claimedPremium    Json
+  finalRank         Json?
+  peakRank          Json?
+  finalWins         Int?
+  finalWinRate      Float?
   leaderboardFinish Json?
-  updatedAt        DateTime @updatedAt
-  profile          PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  season           Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  updatedAt         DateTime      @updatedAt
+  profile           PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  season            Season        @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
   @@unique([profileId, seasonId])
 }
 
 model DailyChallengeDefinition {
-  id                    String   @id @default(cuid())
-  name                  String
-  description           String
-  category              String
-  eventType             String
-  targetValue           Int
-  filters               Json
-  allowedGameModes      Json
+  id                     String                     @id @default(cuid())
+  name                   String
+  description            String
+  category               String
+  eventType              String
+  targetValue            Int
+  filters                Json
+  allowedGameModes       Json
   battleSizeRestrictions Json
-  orderRestrictions     Json
+  orderRestrictions      Json
   allegianceRestrictions Json
-  rarityRestrictions    Json
-  rewardType            String
-  rewardAmount          Int
-  difficulty            String
-  active                Boolean  @default(true)
-  seasonId              String?
-  startsAt              DateTime?
-  endsAt                DateTime?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  season                Season? @relation(fields: [seasonId], references: [id], onDelete: SetNull)
-  assignments           DailyChallengeAssignment[]
+  rarityRestrictions     Json
+  rewardType             String
+  rewardAmount           Int
+  difficulty             String
+  active                 Boolean                    @default(true)
+  seasonId               String?
+  startsAt               DateTime?
+  endsAt                 DateTime?
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  season                 Season?                    @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  assignments            DailyChallengeAssignment[]
+
   @@index([active, startsAt, endsAt])
 }
 
 model DailyChallengeAssignment {
-  id             String   @id @default(cuid())
-  profileId      String
-  definitionId   String
-  assignedDate   DateTime
-  progress       Int      @default(0)
-  completedAt    DateTime?
-  claimedAt      DateTime?
-  rerolled       Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  profile        PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  definition     DailyChallengeDefinition @relation(fields: [definitionId], references: [id])
+  id           String                   @id @default(cuid())
+  profileId    String
+  definitionId String
+  assignedDate DateTime
+  progress     Int                      @default(0)
+  completedAt  DateTime?
+  claimedAt    DateTime?
+  rerolled     Boolean                  @default(false)
+  createdAt    DateTime                 @default(now())
+  profile      PlayerProfile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  definition   DailyChallengeDefinition @relation(fields: [definitionId], references: [id])
+
   @@unique([profileId, definitionId, assignedDate])
   @@index([profileId, assignedDate])
 }
 
 model MatchParticipant {
-  id         String @id @default(cuid())
+  id         String         @id @default(cuid())
   matchId    String
   profileId  String?
   side       MatchSide
   opponentId String?
-  match      Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  match      Match          @relation(fields: [matchId], references: [id], onDelete: Cascade)
   profile    PlayerProfile? @relation(fields: [profileId], references: [id])
 }
 
 model MatchCardState {
-  id          String @id @default(cuid())
-  matchId     String
-  side        MatchSide
-  ownedCardId String?
+  id           String    @id @default(cuid())
+  matchId      String
+  side         MatchSide
+  ownedCardId  String?
   definitionId String
-  state       Json
-  match       Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  state        Json
+  match        Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
 }
 
 model MatchHandlerState {
-  id           String @id @default(cuid())
+  id           String    @id @default(cuid())
   matchId      String
   side         MatchSide
   definitionId String
   state        Json
-  match        Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  match        Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
 }
 
 model BattleEvent {
-  id       String @id @default(cuid())
-  matchId  String
-  sequence Int
-  turn     Int
-  type     String
-  payload  Json
+  id        String   @id @default(cuid())
+  matchId   String
+  sequence  Int
+  turn      Int
+  type      String
+  payload   Json
   createdAt DateTime @default(now())
-  match    Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
   @@unique([matchId, sequence])
 }
 
 model RewardTransaction {
-  id             String @id @default(cuid())
+  id             String        @id @default(cuid())
   profileId      String
-  matchId        String? @unique
+  matchId        String?       @unique
   xp             Int
   coins          Int
   calculation    Json
-  idempotencyKey String @unique
-  createdAt      DateTime @default(now())
+  idempotencyKey String        @unique
+  createdAt      DateTime      @default(now())
   profile        PlayerProfile @relation(fields: [profileId], references: [id])
 }
 
 model CurrencyTransaction {
-  id             String @id @default(cuid())
+  id             String          @id @default(cuid())
   profileId      String
   currency       CurrencyKind
   kind           TransactionKind
@@ -744,13 +832,13 @@ model CurrencyTransaction {
   balanceAfter   Int
   referenceType  String?
   referenceId    String?
-  idempotencyKey String @unique
-  createdAt      DateTime @default(now())
-  profile        PlayerProfile @relation(fields: [profileId], references: [id])
+  idempotencyKey String          @unique
+  createdAt      DateTime        @default(now())
+  profile        PlayerProfile   @relation(fields: [profileId], references: [id])
 }
 
 model AdminAdjustmentTransaction {
-  id            String       @id @default(cuid())
+  id            String        @id @default(cuid())
   adminUserId   String
   profileId     String
   currency      CurrencyKind
@@ -758,62 +846,106 @@ model AdminAdjustmentTransaction {
   balanceBefore Int
   balanceAfter  Int
   reason        String
-  createdAt     DateTime     @default(now())
-  adminUser     AdminUser    @relation(fields: [adminUserId], references: [id])
+  createdAt     DateTime      @default(now())
+  adminUser     AdminUser     @relation(fields: [adminUserId], references: [id])
   profile       PlayerProfile @relation(fields: [profileId], references: [id])
+
   @@index([profileId, createdAt])
   @@index([adminUserId, createdAt])
 }
 
 model AdminUser {
-  id              String    @id @default(cuid())
-  email           String    @unique
-  passwordHash    String
-  role            AdminRole
-  active          Boolean   @default(true)
-  lastLoginAt     DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  avatarReviews   AvatarUpload[]
+  id                String                       @id @default(cuid())
+  email             String                       @unique
+  passwordHash      String
+  role              AdminRole
+  active            Boolean                      @default(true)
+  lastLoginAt       DateTime?
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+  avatarReviews     AvatarUpload[]
   moderationReviews ModerationRecord[]
-  prohibitedNames ProhibitedHandlerName[]
-  adjustments     AdminAdjustmentTransaction[]
-  auditLogs       AdminAuditLog[]
+  prohibitedNames   ProhibitedHandlerName[]
+  adjustments       AdminAdjustmentTransaction[]
+  auditLogs         AdminAuditLog[]
 }
 
 model AdminAuditLog {
-  id             String   @id @default(cuid())
-  adminUserId    String
-  action         String
-  resource       String
-  recordId       String?
-  oldValue       Json?
-  newValue       Json?
-  reason         String?
-  ipAddress      String?
-  createdAt      DateTime @default(now())
-  adminUser      AdminUser @relation(fields: [adminUserId], references: [id])
+  id          String    @id @default(cuid())
+  adminUserId String
+  action      String
+  resource    String
+  recordId    String?
+  oldValue    Json?
+  newValue    Json?
+  reason      String?
+  ipAddress   String?
+  createdAt   DateTime  @default(now())
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id])
+
   @@index([adminUserId, createdAt])
   @@index([resource, recordId, createdAt])
 }
 
+model TradeOffer {
+  id                 String           @id @default(cuid())
+  senderProfileId    String
+  recipientProfileId String
+  status             TradeStatus      @default(PENDING)
+  note               String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  completedAt        DateTime?
+  sender             PlayerProfile    @relation("TradeSender", fields: [senderProfileId], references: [id], onDelete: Cascade)
+  recipient          PlayerProfile    @relation("TradeRecipient", fields: [recipientProfileId], references: [id], onDelete: Cascade)
+  items              TradeOfferItem[]
+
+  @@index([senderProfileId, status, createdAt])
+  @@index([recipientProfileId, status, createdAt])
+}
+
+model TradeOfferItem {
+  id          String     @id @default(cuid())
+  tradeId     String
+  side        TradeSide
+  ownedCardId String
+  trade       TradeOffer @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  ownedCard   OwnedCard  @relation(fields: [ownedCardId], references: [id])
+
+  @@unique([tradeId, ownedCardId])
+  @@index([ownedCardId])
+}
+
 model MarketplaceListing {
-  id          String @id @default(cuid())
+  id          String                   @id @default(cuid())
   sellerId    String
   ownedCardId String
   coinPrice   Int
-  status      String
-  createdAt   DateTime @default(now())
+  status      MarketplaceListingStatus @default(ACTIVE)
+  createdAt   DateTime                 @default(now())
   completedAt DateTime?
+  seller      PlayerProfile            @relation("MarketplaceSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  ownedCard   OwnedCard                @relation(fields: [ownedCardId], references: [id])
+  sale        MarketplaceSale?
+
+  @@index([status, createdAt])
+  @@index([sellerId, status])
 }
 
 model MarketplaceSale {
-  id          String @id @default(cuid())
-  listingId   String @unique
+  id           String             @id @default(cuid())
+  listingId    String             @unique
   definitionId String
-  sellerId    String
-  buyerId     String
-  coinPrice   Int
-  completedAt DateTime @default(now())
+  sellerId     String
+  buyerId      String
+  coinPrice    Int
+  completedAt  DateTime           @default(now())
+  listing      MarketplaceListing @relation(fields: [listingId], references: [id])
+  definition   CardDefinition     @relation(fields: [definitionId], references: [id])
+  seller       PlayerProfile      @relation("MarketplaceSaleSeller", fields: [sellerId], references: [id])
+  buyer        PlayerProfile      @relation("MarketplaceSaleBuyer", fields: [buyerId], references: [id])
+
   @@index([definitionId, completedAt])
+  @@index([sellerId, completedAt])
+  @@index([buyerId, completedAt])
 }

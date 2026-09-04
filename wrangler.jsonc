@@ -23,6 +23,12 @@
       "bucket_name": "mini-mystics-opennext-cache"
     }
   ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "a124d1bc630e4268a7cdf7f321025178"
+    }
+  ],
   "images": {
     "binding": "IMAGES"
   },
