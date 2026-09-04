@@ -31,6 +31,17 @@ Requirements: Node.js 20+, npm, a Firebase project, and PostgreSQL 15+ for the f
 
 Prisma generation, migration, and seeding are only needed when connecting the future server-authoritative PostgreSQL persistence layer. Google and Apple sign-in remain intentionally disabled until those Firebase providers and their callback domains are configured.
 
+## Cloudflare deployment
+
+The committed `wrangler.jsonc` and `open-next.config.ts` configure the existing `minimystics` Worker, custom domain, and OpenNext cache bindings. In Cloudflare Workers Builds use:
+
+- Build command: `npm run build:cloudflare`
+- Deploy command: `npx opennextjs-cloudflare deploy`
+- Version command: `npx opennextjs-cloudflare upload`
+- Root directory: `/`
+
+Add every `NEXT_PUBLIC_FIREBASE_*` value as a Cloudflare build variable for both production and preview builds. Do not commit `.env.local` or `.dev.vars`.
+
 ## Verification
 
 - `npm test` runs deterministic core-engine, boost, Handler-limit, and pity tests.
