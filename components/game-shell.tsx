@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Archive, Backpack, Bell, Boxes, ChevronLeft, ChevronRight, Coins, House, Layers3, LogOut, Menu, ScrollText, Settings, ShoppingBag, Swords, Trophy, UserRound, UsersRound, X, Zap } from "lucide-react";
+import { Archive, Backpack, Bell, BookOpen, Boxes, ChevronLeft, ChevronRight, Coins, House, Layers3, LogOut, Menu, ScrollText, Settings, ShoppingBag, Swords, Trophy, UserRound, UsersRound, X, Zap } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useGame } from "./game-provider";
 import { DashboardView, CollectionView, LoadoutsView, CampaignView, PacksView, OpeningView, InventoryView, ProfileView, BindersView, ComingSoonView, BattleView, SettingsView } from "./views";
 import { LOGO_ART } from "@/lib/art";
 import { xpForLevel } from "@/lib/game/rewards";
+import { ComicsLibraryPage } from "./comics/comics-library-page";
 
 const nav = [
   { href: "game", label: "Dashboard", icon: House },
@@ -18,6 +19,7 @@ const nav = [
   { href: "loadouts", label: "Loadouts", icon: Boxes },
   { href: "packs", label: "Packs", icon: ShoppingBag },
   { href: "inventory", label: "Inventory", icon: Backpack },
+  { href: "comics", label: "Comics", icon: BookOpen },
   { href: "profile", label: "Profile", icon: UserRound },
   { href: "marketplace", label: "Marketplace", icon: Trophy, soon: true },
   { href: "trading", label: "Trading", icon: UsersRound, soon: true },
@@ -55,6 +57,7 @@ export function GameShell({ view }: { view: string }) {
       case "packs": return <PacksView />;
       case "open": return <OpeningView />;
       case "inventory": return <InventoryView />;
+      case "comics": return <ComicsLibraryPage />;
       case "profile": return <ProfileView />;
       case "marketplace": return <ComingSoonView kind="Marketplace" />;
       case "trading": return <ComingSoonView kind="Trading" />;

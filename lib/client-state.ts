@@ -12,6 +12,7 @@ export type RewardCard = { id: string; kind: "mystic" | "handler" | "xp" | "coin
 export type PackOpening = { id: string; packId: string; name: string; cards: RewardCard[]; complete: boolean };
 export type Loadout = { id: string; name: string; size: 3 | 5 | 8; mysticIds: string[]; handlerIds: string[] };
 export type Binder = { id: string; name: string; cardIds: string[] };
+export type ComicProgress = { pageIndex: number; completed: boolean; updatedAt: string };
 export type PlayerState = {
   account: { email: string; username: string } | null;
   level: number;
@@ -26,6 +27,7 @@ export type PlayerState = {
   loadouts: Loadout[];
   binders: Binder[];
   campaignWins: string[];
+  comicProgress: Record<string, ComicProgress>;
   wins: number;
   losses: number;
   matches: number;
@@ -38,7 +40,7 @@ export type PlayerState = {
 export const initialState: PlayerState = {
   account: null, level: 1, xp: 0, coins: 0, premium: 0, ownedCards: [], inventory: [],
   activeBoosts: { xp: null, coins: null }, openings: [], activeOpeningId: null, loadouts: [], binders: [],
-  campaignWins: [], wins: 0, losses: 0, matches: 0, pity: 0, battle: null, battleRewarded: false, lastRewards: null,
+  campaignWins: [], comicProgress: {}, wins: 0, losses: 0, matches: 0, pity: 0, battle: null, battleRewarded: false, lastRewards: null,
 };
 
 const id = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;

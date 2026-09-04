@@ -15,7 +15,7 @@ export const PACK_ART: Record<string, string> = {
   "Agespire": "/art/packs/agespire.png",
   "First Spark": "/art/packs/first-spark.png",
   "Moonveil": "/art/packs/moonveil.png",
-  "Order of the Star": "",
+  "Order of the Star": "/art/packs/order-of-the-star.png",
   "Sovereign Order": "/art/packs/sovereign-order.png",
   "Stargate": "/art/packs/stargate.png",
   "Starwatch": "/art/packs/starwatch.png",

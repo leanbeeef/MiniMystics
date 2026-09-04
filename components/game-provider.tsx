@@ -15,6 +15,7 @@ type GameContextValue = {
   signup(email: string, username: string, password: string): Promise<void>;
   login(email: string, password: string): Promise<void>;
   logout(): Promise<void>;
+  saveComicProgress(volumeId: string, pageIndex: number, completed?: boolean): void;
   reveal(openingId: string, cardId?: string): void;
   buyPack(packId: string, order?: string): void;
   activateBoost(id: string): void;
@@ -67,6 +68,7 @@ function restoreProfile(user: User) {
     changed = true;
   }
   if (!Array.isArray(saved.campaignWins)) { saved.campaignWins = []; changed = true; }
+  if (!saved.comicProgress || typeof saved.comicProgress !== "object") { saved.comicProgress = {}; changed = true; }
   const campaign = CAMPAIGN.find((opponent) => opponent.id === saved.battle?.campaignId || opponent.name === saved.battle?.ai.name);
   if (saved.battle && campaign && !saved.battle.campaignId) { saved.battle.campaignId = campaign.id; changed = true; }
   if (saved.battle?.winner === "player" && saved.battleRewarded && campaign && !saved.campaignWins.includes(campaign.id)) {
@@ -139,6 +141,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => { await signOut(getFirebaseAuth()); localStorage.removeItem(CURRENT_KEY); setState(initialState); router.push("/"); }, [router]);
+
+  const saveComicProgress = useCallback((volumeId: string, pageIndex: number, completed = false) => commit((draft) => {
+    draft.comicProgress ??= {};
+    draft.comicProgress[volumeId] = {
+      pageIndex: Math.max(0, Math.floor(pageIndex)),
+      completed,
+      updatedAt: new Date().toISOString(),
+    };
+  }), [commit]);
 
   const reveal = useCallback((openingId: string, cardId?: string) => commit((draft) => {
     const opening = draft.openings.find((item) => item.id === openingId); if (!opening) throw new Error("Opening not found");
@@ -213,7 +224,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     finalize(draft);
   }), [commit]);
 
-  const value = useMemo<GameContextValue>(() => ({ state, ready, error, signup, login, logout, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn }), [state, ready, error, signup, login, logout, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn]);
+  const value = useMemo<GameContextValue>(() => ({ state, ready, error, signup, login, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn }), [state, ready, error, signup, login, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn]);
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }
 
