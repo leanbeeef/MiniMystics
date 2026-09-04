@@ -1,0 +1,404 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CardKind {
+  MYSTIC
+  HANDLER
+}
+
+enum Rarity {
+  WILD
+  HUNTER
+  PREDATOR
+  PRIME
+  ALPHA
+  APEX
+}
+
+enum CurrencyKind {
+  COINS
+  PREMIUM
+}
+
+enum TransactionKind {
+  GRANT
+  PURCHASE
+  REWARD
+  SALE
+  REDEEM
+  ADJUSTMENT
+}
+
+enum MatchStatus {
+  PENDING
+  ACTIVE
+  COMPLETE
+  ABANDONED
+}
+
+enum MatchSide {
+  PLAYER
+  OPPONENT
+}
+
+enum BoostKind {
+  XP
+  COINS
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  username     String   @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  profile      PlayerProfile?
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model PlayerProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  level           Int      @default(1)
+  xp              Int      @default(0)
+  coins           Int      @default(800)
+  premiumCurrency Int      @default(0)
+  rankedRating    Int      @default(1000)
+  starterGranted  Boolean  @default(false)
+  wins            Int      @default(0)
+  losses          Int      @default(0)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ownedCards      OwnedCard[]
+  inventory       InventoryItem[]
+  activeBoosts    ActiveBoost[]
+  loadouts        SavedLoadout[]
+  collections     CustomCollection[]
+  pityCounters    PityCounter[]
+  packOpenings    PackOpening[]
+  campaign        CampaignProgress[]
+  rewards         RewardTransaction[]
+  currencyTxns    CurrencyTransaction[]
+  matches         MatchParticipant[]
+}
+
+model CardDefinition {
+  id              String   @id
+  kind            CardKind
+  name            String
+  order           String
+  allegiance      String
+  rarity          Rarity?
+  sourceRarity    String
+  imageFilename   String?
+  edition         String?  @default("base")
+  variant         String?  @default("standard")
+  finish          String?  @default("normal")
+  artworkVariant  String?  @default("default")
+  active          Boolean  @default(true)
+  mystic          MysticDefinition?
+  handler         HandlerDefinition?
+  ownedCopies     OwnedCard[]
+  packResults     PackOpeningResult[]
+}
+
+model MysticDefinition {
+  id          String @id
+  power       Int
+  defense     Int
+  baseAttack  Int
+  rawMoves    String
+  movesJson   Json
+  needsReview Boolean @default(false)
+  card        CardDefinition @relation(fields: [id], references: [id], onDelete: Cascade)
+}
+
+model HandlerDefinition {
+  id             String @id
+  activationRoll String
+  activationDice Int
+  effect         String
+  effectType     String
+  effectValue    String
+  duration       String
+  usageLimit     String
+  maxUses        Int
+  target         String
+  notes          String
+  card           CardDefinition @relation(fields: [id], references: [id], onDelete: Cascade)
+}
+
+model OwnedCard {
+  id             String   @id @default(cuid())
+  profileId      String
+  definitionId   String
+  acquiredAt     DateTime @default(now())
+  acquisition    String
+  edition        String   @default("base")
+  variant        String   @default("standard")
+  finish         String   @default("normal")
+  artworkVariant String   @default("default")
+  soldAt         DateTime?
+  profile        PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  definition     CardDefinition @relation(fields: [definitionId], references: [id])
+  loadoutCards   SavedLoadoutCard[]
+  collectionCards CustomCollectionCard[]
+  @@index([profileId, definitionId])
+}
+
+model InventoryItem {
+  id        String   @id @default(cuid())
+  profileId String
+  itemType  String
+  rarity    Rarity?
+  quantity  Int      @default(1)
+  metadata  Json?
+  profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@unique([profileId, itemType, rarity])
+}
+
+model ActiveBoost {
+  id               String @id @default(cuid())
+  profileId        String
+  kind             BoostKind
+  multiplier       Int    @default(2)
+  matchesRemaining Int
+  profile          PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@unique([profileId, kind])
+}
+
+model PackDefinition {
+  id               String @id
+  name             String
+  description      String
+  cardCount        Int
+  poolConfig       Json
+  rarityWeights    Json
+  guaranteedSlots  Json
+  coinPrice        Int
+  premiumPrice     Int?
+  eligibilityRules Json?
+  pityRules        Json?
+  theme            String
+  artwork          String?
+  active           Boolean @default(true)
+  openings         PackOpening[]
+}
+
+model PackOpening {
+  id             String @id @default(cuid())
+  profileId      String
+  packId         String
+  idempotencyKey String @unique
+  currency       CurrencyKind?
+  openedAt       DateTime @default(now())
+  profile        PlayerProfile @relation(fields: [profileId], references: [id])
+  pack           PackDefinition @relation(fields: [packId], references: [id])
+  results        PackOpeningResult[]
+}
+
+model PackOpeningResult {
+  id             String @id @default(cuid())
+  openingId      String
+  position       Int
+  resultType     String
+  definitionId   String?
+  rarity         Rarity?
+  quantity       Int?
+  metadata       Json?
+  opening        PackOpening @relation(fields: [openingId], references: [id], onDelete: Cascade)
+  definition     CardDefinition? @relation(fields: [definitionId], references: [id])
+  @@unique([openingId, position])
+}
+
+model PityCounter {
+  id        String @id @default(cuid())
+  profileId String
+  packId    String
+  counter   Int @default(0)
+  profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@unique([profileId, packId])
+}
+
+model SavedLoadout {
+  id        String @id @default(cuid())
+  profileId String
+  name      String
+  battleSize Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  cards     SavedLoadoutCard[]
+}
+
+model SavedLoadoutCard {
+  id          String @id @default(cuid())
+  loadoutId   String
+  ownedCardId String
+  slot        Int
+  kind        CardKind
+  loadout     SavedLoadout @relation(fields: [loadoutId], references: [id], onDelete: Cascade)
+  ownedCard   OwnedCard @relation(fields: [ownedCardId], references: [id])
+  @@unique([loadoutId, kind, slot])
+}
+
+model CustomCollection {
+  id        String @id @default(cuid())
+  profileId String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  cards     CustomCollectionCard[]
+}
+
+model CustomCollectionCard {
+  collectionId String
+  ownedCardId  String
+  addedAt      DateTime @default(now())
+  collection   CustomCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  ownedCard    OwnedCard @relation(fields: [ownedCardId], references: [id])
+  @@id([collectionId, ownedCardId])
+}
+
+model CampaignOpponent {
+  id            String @id
+  name          String
+  difficulty    String
+  playstyle     String
+  deckConfig    Json
+  rewardConfig  Json
+  unlockLevel   Int
+  sortOrder     Int
+  active        Boolean @default(true)
+  progress      CampaignProgress[]
+}
+
+model CampaignProgress {
+  profileId String
+  opponentId String
+  wins      Int @default(0)
+  bestResult Json?
+  profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  opponent  CampaignOpponent @relation(fields: [opponentId], references: [id])
+  @@id([profileId, opponentId])
+}
+
+model Match {
+  id          String @id @default(cuid())
+  status      MatchStatus
+  battleSize  Int
+  engineVersion String
+  state       Json
+  winnerSide  MatchSide?
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  participants MatchParticipant[]
+  events      BattleEvent[]
+  cardStates  MatchCardState[]
+  handlerStates MatchHandlerState[]
+}
+
+model MatchParticipant {
+  id         String @id @default(cuid())
+  matchId    String
+  profileId  String?
+  side       MatchSide
+  opponentId String?
+  match      Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  profile    PlayerProfile? @relation(fields: [profileId], references: [id])
+}
+
+model MatchCardState {
+  id          String @id @default(cuid())
+  matchId     String
+  side        MatchSide
+  ownedCardId String?
+  definitionId String
+  state       Json
+  match       Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+}
+
+model MatchHandlerState {
+  id           String @id @default(cuid())
+  matchId      String
+  side         MatchSide
+  definitionId String
+  state        Json
+  match        Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+}
+
+model BattleEvent {
+  id       String @id @default(cuid())
+  matchId  String
+  sequence Int
+  turn     Int
+  type     String
+  payload  Json
+  createdAt DateTime @default(now())
+  match    Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  @@unique([matchId, sequence])
+}
+
+model RewardTransaction {
+  id             String @id @default(cuid())
+  profileId      String
+  matchId        String? @unique
+  xp             Int
+  coins          Int
+  calculation    Json
+  idempotencyKey String @unique
+  createdAt      DateTime @default(now())
+  profile        PlayerProfile @relation(fields: [profileId], references: [id])
+}
+
+model CurrencyTransaction {
+  id             String @id @default(cuid())
+  profileId      String
+  currency       CurrencyKind
+  kind           TransactionKind
+  amount         Int
+  balanceAfter   Int
+  referenceType  String?
+  referenceId    String?
+  idempotencyKey String @unique
+  createdAt      DateTime @default(now())
+  profile        PlayerProfile @relation(fields: [profileId], references: [id])
+}
+
+model MarketplaceListing {
+  id          String @id @default(cuid())
+  sellerId    String
+  ownedCardId String
+  coinPrice   Int
+  status      String
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+}
+
+model MarketplaceSale {
+  id          String @id @default(cuid())
+  listingId   String @unique
+  definitionId String
+  sellerId    String
+  buyerId     String
+  coinPrice   Int
+  completedAt DateTime @default(now())
+  @@index([definitionId, completedAt])
+}

@@ -1,0 +1,3542 @@
+{
+  "mystics": [
+    {
+      "id": "MM-001",
+      "name": "Swift",
+      "order": "Order of the Star",
+      "allegiance": "Unbound",
+      "rarity": "Wild",
+      "power": 52,
+      "defense": 22,
+      "baseAttack": 18,
+      "moves": [
+        {
+          "name": "Quickstrike",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Quickstrike: 4+ = +8 ATK",
+          "needsReview": false,
+          "attackModifier": 8
+        },
+        {
+          "name": "Tailwind Dash",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Tailwind Dash: 6 = attack twice",
+          "needsReview": false,
+          "multiHitCount": 2
+        }
+      ],
+      "image": "/cards/Mystics/order%20of%20the%20star/swift.png"
+    },
+    {
+      "id": "MM-002",
+      "name": "Duney",
+      "order": "Verdant Dawn",
+      "allegiance": "Unbound",
+      "rarity": "Wild",
+      "power": 50,
+      "defense": 24,
+      "baseAttack": 16,
+      "moves": [
+        {
+          "name": "Sand Toss",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Sand Toss: 4+ = enemy -5 ATK",
+          "needsReview": true,
+          "enemyAttackModifier": -5,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        },
+        {
+          "name": "Burrow",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Burrow: 6 = block next attack",
+          "needsReview": true,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Verdant/duney.png"
+    },
+    {
+      "id": "MM-003",
+      "name": "Leafo",
+      "order": "Verdant Dawn",
+      "allegiance": "Unbound",
+      "rarity": "Wild",
+      "power": 54,
+      "defense": 26,
+      "baseAttack": 17,
+      "moves": [
+        {
+          "name": "Vine Snap",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Vine Snap: 4+ = +7 ATK",
+          "needsReview": false,
+          "attackModifier": 7
+        },
+        {
+          "name": "Regrow",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Regrow: 6 = recover 12 Power",
+          "needsReview": false,
+          "healing": 12
+        }
+      ],
+      "image": "/cards/Mystics/Verdant/leafo.png"
+    },
+    {
+      "id": "MM-004",
+      "name": "Ember",
+      "order": "First Spark",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 49,
+      "defense": 18,
+      "baseAttack": 20,
+      "moves": [
+        {
+          "name": "Spark Bite",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Spark Bite: 4+ = +6 ATK",
+          "needsReview": false,
+          "attackModifier": 6
+        },
+        {
+          "name": "Flare Burst",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Flare Burst: 6 = +12 ATK",
+          "needsReview": false,
+          "attackModifier": 12
+        }
+      ],
+      "image": "/cards/Mystics/first%20spark/ember.png"
+    },
+    {
+      "id": "MM-005",
+      "name": "Bella",
+      "order": "Worldforge",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 53,
+      "defense": 29,
+      "baseAttack": 15,
+      "moves": [
+        {
+          "name": "Metal Bash",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Metal Bash: 4+ = +6 ATK",
+          "needsReview": false,
+          "attackModifier": 6
+        },
+        {
+          "name": "Iron Guard",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Iron Guard: 6 = +12 DEF",
+          "needsReview": false,
+          "defenseModifier": 12
+        }
+      ],
+      "image": "/cards/Mystics/Worldforge/bella.png"
+    },
+    {
+      "id": "MM-006",
+      "name": "Disco",
+      "order": "Sunspire",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 47,
+      "defense": 20,
+      "baseAttack": 17,
+      "moves": [
+        {
+          "name": "Flash Pop",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Flash Pop: 4+ = enemy -5 DEF",
+          "needsReview": false,
+          "enemyDefenseModifier": -5
+        },
+        {
+          "name": "Dazzle Spin",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Dazzle Spin: 6 = enemy misses",
+          "needsReview": true,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Sunspire/disco.png"
+    },
+    {
+      "id": "MM-007",
+      "name": "Rocky",
+      "order": "Worldforge",
+      "allegiance": "Mortalbound",
+      "rarity": "Hunter",
+      "power": 61,
+      "defense": 34,
+      "baseAttack": 19,
+      "moves": [
+        {
+          "name": "Stone Slam",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Stone Slam: 4+ = +8 ATK",
+          "needsReview": false,
+          "attackModifier": 8
+        },
+        {
+          "name": "Rooted Stance",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Rooted Stance: 6 = reduce damage by 15",
+          "needsReview": true,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Worldforge/rocky.png"
+    },
+    {
+      "id": "MM-008",
+      "name": "Coral",
+      "order": "Verdant Dawn",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 51,
+      "defense": 23,
+      "baseAttack": 19,
+      "moves": [
+        {
+          "name": "Coral Jab",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Coral Jab: 4+ = +7 ATK",
+          "needsReview": false,
+          "attackModifier": 7
+        },
+        {
+          "name": "Current Curl",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Current Curl: 6 = half-power second attack",
+          "needsReview": true,
+          "reviewReason": "effect pattern is not deterministic; timing or calculation needs rules confirmation"
+        }
+      ],
+      "image": "/cards/Mystics/Verdant/coral.png"
+    },
+    {
+      "id": "MM-009",
+      "name": "Jitsuki",
+      "order": "Sovereign Order",
+      "allegiance": "Mortalbound",
+      "rarity": "Hunter",
+      "power": 65,
+      "defense": 28,
+      "baseAttack": 27,
+      "moves": [
+        {
+          "name": "Rapid Jab",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Rapid Jab: 4+ = +9 ATK",
+          "needsReview": false,
+          "attackModifier": 9
+        },
+        {
+          "name": "Counter Form",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Counter Form: 6 = return 10 damage",
+          "needsReview": true,
+          "counter": 10,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Sovereign/jitsuki.png"
+    },
+    {
+      "id": "MM-010",
+      "name": "Nox",
+      "order": "Moonveil",
+      "allegiance": "Voidbound",
+      "rarity": "Hunter",
+      "power": 67,
+      "defense": 25,
+      "baseAttack": 29,
+      "moves": [
+        {
+          "name": "Void Claw",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Void Claw: 4+ = +10 ATK",
+          "needsReview": false,
+          "attackModifier": 10
+        },
+        {
+          "name": "Darkness Shroud",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Darkness Shroud: 6 = ignore DEF bonus",
+          "needsReview": false,
+          "ignoreDefense": true
+        }
+      ],
+      "image": "/cards/Mystics/moonveil/nox.png"
+    },
+    {
+      "id": "MM-011",
+      "name": "Gravemaw",
+      "order": "Moonveil",
+      "allegiance": "Voidbound",
+      "rarity": "Predator",
+      "power": 82,
+      "defense": 40,
+      "baseAttack": 32,
+      "moves": [
+        {
+          "name": "Grave Bite",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Grave Bite: 4+ = +12 ATK",
+          "needsReview": false,
+          "attackModifier": 12
+        },
+        {
+          "name": "Consume",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Consume: 6 = heal half damage dealt",
+          "needsReview": true,
+          "reviewReason": "effect pattern is not deterministic; timing or calculation needs rules confirmation"
+        }
+      ],
+      "image": "/cards/Mystics/moonveil/gravemaw.png"
+    },
+    {
+      "id": "MM-012",
+      "name": "Kairo",
+      "order": "Sovereign Order",
+      "allegiance": "Mortalbound",
+      "rarity": "Hunter",
+      "power": 63,
+      "defense": 27,
+      "baseAttack": 26,
+      "moves": [
+        {
+          "name": "Palm Strike",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Palm Strike: 4+ = +8 ATK",
+          "needsReview": false,
+          "attackModifier": 8
+        },
+        {
+          "name": "Focus Kata",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Focus Kata: 6 = next attack x2",
+          "needsReview": true,
+          "reviewReason": "effect pattern is not deterministic; timing or calculation needs rules confirmation"
+        }
+      ],
+      "image": "/cards/Mystics/Sovereign/kario.png"
+    },
+    {
+      "id": "MM-013",
+      "name": "Brawler",
+      "order": "Sovereign Order",
+      "allegiance": "Unbound",
+      "rarity": "Predator",
+      "power": 75,
+      "defense": 32,
+      "baseAttack": 33,
+      "moves": [
+        {
+          "name": "Haymaker",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Haymaker: 4+ = +12 ATK",
+          "needsReview": false,
+          "attackModifier": 12
+        },
+        {
+          "name": "Knockout Swing",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Knockout Swing: 6 = Base Attack x2",
+          "needsReview": false,
+          "attackMultiplier": 2
+        }
+      ],
+      "image": "/cards/Mystics/Sovereign/brawler.png"
+    },
+    {
+      "id": "MM-014",
+      "name": "Ripple",
+      "order": "Verdant Dawn",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 48,
+      "defense": 22,
+      "baseAttack": 17,
+      "moves": [
+        {
+          "name": "Ripple Shot",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Ripple Shot: 4+ = +6 ATK",
+          "needsReview": false,
+          "attackModifier": 6
+        },
+        {
+          "name": "Slip Away",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Slip Away: 6 = evade attack",
+          "needsReview": false,
+          "evade": true
+        }
+      ],
+      "image": "/cards/Mystics/Verdant/ripple.png"
+    },
+    {
+      "id": "MM-015",
+      "name": "Abyssal",
+      "order": "Moonveil",
+      "allegiance": "Unbound",
+      "rarity": "Predator",
+      "power": 81,
+      "defense": 37,
+      "baseAttack": 34,
+      "moves": [
+        {
+          "name": "Deep Strike",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Deep Strike: 4+ = +11 ATK",
+          "needsReview": false,
+          "attackModifier": 11
+        },
+        {
+          "name": "Undertow",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Undertow: 6 = enemy -15 DEF",
+          "needsReview": false,
+          "enemyDefenseModifier": -15
+        }
+      ],
+      "image": "/cards/Mystics/moonveil/abyssal.png"
+    },
+    {
+      "id": "MM-016",
+      "name": "Drizzle",
+      "order": "Verdant Dawn",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 46,
+      "defense": 20,
+      "baseAttack": 16,
+      "moves": [
+        {
+          "name": "Rain Drop",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Rain Drop: 4+ = +5 ATK",
+          "needsReview": false,
+          "attackModifier": 5
+        },
+        {
+          "name": "Downpour",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Downpour: 6 = +10 ATK",
+          "needsReview": false,
+          "attackModifier": 10
+        }
+      ],
+      "image": "/cards/Mystics/Verdant/Drizzle.png"
+    },
+    {
+      "id": "MM-017",
+      "name": "Tsunami",
+      "order": "Verdant Dawn",
+      "allegiance": "Ascendant",
+      "rarity": "Prime",
+      "power": 94,
+      "defense": 42,
+      "baseAttack": 41,
+      "moves": [
+        {
+          "name": "Crashing Wave",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Crashing Wave: 4+ = +15 ATK",
+          "needsReview": false,
+          "attackModifier": 15
+        },
+        {
+          "name": "Tidal Surge",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Tidal Surge: 6 = Base Attack x2",
+          "needsReview": false,
+          "attackMultiplier": 2
+        }
+      ],
+      "image": "/cards/Mystics/Verdant/Tsunami.png"
+    },
+    {
+      "id": "MM-018",
+      "name": "Cactus Jack",
+      "order": "Verdant Dawn",
+      "allegiance": "Unbound",
+      "rarity": "Hunter",
+      "power": 59,
+      "defense": 31,
+      "baseAttack": 22,
+      "moves": [
+        {
+          "name": "Needle Shot",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Needle Shot: 4+ = +8 ATK",
+          "needsReview": false,
+          "attackModifier": 8
+        },
+        {
+          "name": "Prickly Guard",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Prickly Guard: 6 = attacker takes 10",
+          "needsReview": true,
+          "reviewReason": "effect pattern is not deterministic"
+        }
+      ],
+      "image": "/cards/Mystics/Verdant/Cactus_Jack.png"
+    },
+    {
+      "id": "MM-019",
+      "name": "Mirage",
+      "order": "Moonveil",
+      "allegiance": "Unbound",
+      "rarity": "Predator",
+      "power": 74,
+      "defense": 27,
+      "baseAttack": 31,
+      "moves": [
+        {
+          "name": "False Strike",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "False Strike: 4+ = +10 ATK",
+          "needsReview": false,
+          "attackModifier": 10
+        },
+        {
+          "name": "Illusion Veil",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Illusion Veil: 6 = evade attack",
+          "needsReview": false,
+          "evade": true
+        }
+      ],
+      "image": "/cards/Mystics/moonveil/Mirage.png"
+    },
+    {
+      "id": "MM-020",
+      "name": "Zephyr",
+      "order": "Starwatch",
+      "allegiance": "Ascendant",
+      "rarity": "Hunter",
+      "power": 68,
+      "defense": 25,
+      "baseAttack": 29,
+      "moves": [
+        {
+          "name": "Wind Blade",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Wind Blade: 4+ = +9 ATK",
+          "needsReview": false,
+          "attackModifier": 9
+        },
+        {
+          "name": "Cyclone Rush",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Cyclone Rush: 6 = +18 ATK",
+          "needsReview": false,
+          "attackModifier": 18
+        }
+      ],
+      "image": "/cards/Mystics/starwatch/Zephyr.png"
+    },
+    {
+      "id": "MM-021",
+      "name": "Frostbite",
+      "order": "Agespire",
+      "allegiance": "Unbound",
+      "rarity": "Predator",
+      "power": 79,
+      "defense": 36,
+      "baseAttack": 32,
+      "moves": [
+        {
+          "name": "Ice Fang",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Ice Fang: 4+ = +11 ATK",
+          "needsReview": false,
+          "attackModifier": 11
+        },
+        {
+          "name": "Time Freeze",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Time Freeze: 6 = enemy loses attack",
+          "needsReview": true,
+          "skipTurn": true,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Worldforge/frostbite.png"
+    },
+    {
+      "id": "MM-022",
+      "name": "Sweep",
+      "order": "Starwatch",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 45,
+      "defense": 19,
+      "baseAttack": 16,
+      "moves": [
+        {
+          "name": "Gust Swipe",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Gust Swipe: 4+ = +5 ATK",
+          "needsReview": false,
+          "attackModifier": 5
+        },
+        {
+          "name": "Sweep Away",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Sweep Away: 6 = remove DEF bonus",
+          "needsReview": true,
+          "reviewReason": "effect pattern is not deterministic"
+        }
+      ],
+      "image": "/cards/Mystics/starwatch/Sweep.png"
+    },
+    {
+      "id": "MM-023",
+      "name": "Emberling",
+      "order": "First Spark",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 43,
+      "defense": 17,
+      "baseAttack": 18,
+      "moves": [
+        {
+          "name": "Ember Pop",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Ember Pop: 4+ = +5 ATK",
+          "needsReview": false,
+          "attackModifier": 5
+        },
+        {
+          "name": "Kindle Up",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Kindle Up: 6 = +10 ATK",
+          "needsReview": false,
+          "attackModifier": 10
+        }
+      ],
+      "image": "/cards/Mystics/first%20spark/Emberling.png"
+    },
+    {
+      "id": "MM-024",
+      "name": "Voltix",
+      "order": "First Spark",
+      "allegiance": "Mortalbound",
+      "rarity": "Hunter",
+      "power": 66,
+      "defense": 24,
+      "baseAttack": 30,
+      "moves": [
+        {
+          "name": "Static Shock",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Static Shock: 4+ = +9 ATK",
+          "needsReview": false,
+          "attackModifier": 9
+        },
+        {
+          "name": "Overcharge",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Overcharge: 6 = Base Attack x2",
+          "needsReview": false,
+          "attackMultiplier": 2
+        }
+      ],
+      "image": "/cards/Mystics/first%20spark/Voltix.png"
+    },
+    {
+      "id": "MM-025",
+      "name": "Pebblit",
+      "order": "Worldforge",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 44,
+      "defense": 26,
+      "baseAttack": 13,
+      "moves": [
+        {
+          "name": "Pebble Toss",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Pebble Toss: 4+ = +5 ATK",
+          "needsReview": false,
+          "attackModifier": 5
+        },
+        {
+          "name": "Harden",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Harden: 6 = +15 DEF",
+          "needsReview": false,
+          "defenseModifier": 15
+        }
+      ],
+      "image": "/cards/Mystics/Worldforge/Pebblit.png"
+    },
+    {
+      "id": "MM-026",
+      "name": "Glint",
+      "order": "Sunspire",
+      "allegiance": "Ascendant",
+      "rarity": "Hunter",
+      "power": 57,
+      "defense": 23,
+      "baseAttack": 22,
+      "moves": [
+        {
+          "name": "Gleam Shot",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Gleam Shot: 4+ = +7 ATK",
+          "needsReview": false,
+          "attackModifier": 7
+        },
+        {
+          "name": "Blinding Ray",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Blinding Ray: 6 = enemy misses",
+          "needsReview": true,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Sunspire/glint.png"
+    },
+    {
+      "id": "MM-027",
+      "name": "Mire",
+      "order": "Verdant Dawn",
+      "allegiance": "Unbound",
+      "rarity": "Hunter",
+      "power": 58,
+      "defense": 30,
+      "baseAttack": 20,
+      "moves": [
+        {
+          "name": "Mud Sling",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Mud Sling: 4+ = +7 ATK",
+          "needsReview": false,
+          "attackModifier": 7
+        },
+        {
+          "name": "Bogged Down",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Bogged Down: 6 = enemy -10 ATK",
+          "needsReview": true,
+          "enemyAttackModifier": -10,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Verdant/mire.png"
+    },
+    {
+      "id": "MM-028",
+      "name": "Slipstream",
+      "order": "Starwatch",
+      "allegiance": "Ascendant",
+      "rarity": "Prime",
+      "power": 88,
+      "defense": 33,
+      "baseAttack": 40,
+      "moves": [
+        {
+          "name": "Jet Strike",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Jet Strike: 4+ = +14 ATK",
+          "needsReview": false,
+          "attackModifier": 14
+        },
+        {
+          "name": "Sonic Rush",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Sonic Rush: 6 = attack twice",
+          "needsReview": false,
+          "multiHitCount": 2
+        }
+      ],
+      "image": "/cards/Mystics/starwatch/slipstream.png"
+    },
+    {
+      "id": "MM-029",
+      "name": "Ironjaw",
+      "order": "Worldforge",
+      "allegiance": "Unbound",
+      "rarity": "Alpha",
+      "power": 106,
+      "defense": 52,
+      "baseAttack": 43,
+      "moves": [
+        {
+          "name": "Iron Bite",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Iron Bite: 4+ = +17 ATK",
+          "needsReview": false,
+          "attackModifier": 17
+        },
+        {
+          "name": "Crushing Jaw",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Crushing Jaw: 6 = Base Attack x2",
+          "needsReview": false,
+          "attackMultiplier": 2
+        }
+      ],
+      "image": "/cards/Mystics/Worldforge/ironjaw.png"
+    },
+    {
+      "id": "MM-030",
+      "name": "Tallus",
+      "order": "Stargate",
+      "allegiance": "Unbound",
+      "rarity": "Alpha",
+      "power": 114,
+      "defense": 48,
+      "baseAttack": 38,
+      "moves": [
+        {
+          "name": "Gate Slam",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Gate Slam: 4+ = +18 ATK",
+          "needsReview": false,
+          "attackModifier": 18
+        },
+        {
+          "name": "Blink Gate",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Blink Gate: 6 = evade and counter",
+          "needsReview": true,
+          "evade": true,
+          "counter": "base",
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/stargate/tallus.png"
+    },
+    {
+      "id": "MM-031",
+      "name": "Bramble",
+      "order": "Verdant Dawn",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 48,
+      "defense": 25,
+      "baseAttack": 16,
+      "moves": [
+        {
+          "name": "Thorn Whip",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Thorn Whip: 4+ = +6 ATK",
+          "needsReview": false,
+          "attackModifier": 6
+        },
+        {
+          "name": "Tangle",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Tangle: 6 = enemy -8 ATK",
+          "needsReview": true,
+          "enemyAttackModifier": -8,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Verdant/bramble.png"
+    },
+    {
+      "id": "MM-032",
+      "name": "Mossback",
+      "order": "Verdant Dawn",
+      "allegiance": "Unbound",
+      "rarity": "Hunter",
+      "power": 64,
+      "defense": 35,
+      "baseAttack": 21,
+      "moves": [
+        {
+          "name": "Moss Slam",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Moss Slam: 4+ = +8 ATK",
+          "needsReview": false,
+          "attackModifier": 8
+        },
+        {
+          "name": "Overgrowth",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Overgrowth: 6 = recover 10 Power",
+          "needsReview": false,
+          "healing": 10
+        }
+      ],
+      "image": "/cards/Mystics/Verdant/mossback.png"
+    },
+    {
+      "id": "MM-033",
+      "name": "Bloomlet",
+      "order": "Verdant Dawn",
+      "allegiance": "Ascendant",
+      "rarity": "Wild",
+      "power": 53,
+      "defense": 24,
+      "baseAttack": 18,
+      "moves": [
+        {
+          "name": "Petal Shot",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Petal Shot: 4+ = +6 ATK",
+          "needsReview": false,
+          "attackModifier": 6
+        },
+        {
+          "name": "Bloom",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Bloom: 6 = +8 DEF and heal 8",
+          "needsReview": false,
+          "defenseModifier": 8,
+          "healing": 8
+        }
+      ],
+      "image": "/cards/Mystics/Verdant/bloomlet.png"
+    },
+    {
+      "id": "MM-034",
+      "name": "Thornox",
+      "order": "Verdant Dawn",
+      "allegiance": "Voidbound",
+      "rarity": "Predator",
+      "power": 77,
+      "defense": 34,
+      "baseAttack": 34,
+      "moves": [
+        {
+          "name": "Black Thorn",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Black Thorn: 4+ = +11 ATK",
+          "needsReview": false,
+          "attackModifier": 11
+        },
+        {
+          "name": "Rotvine",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Rotvine: 6 = enemy -12 DEF",
+          "needsReview": false,
+          "enemyDefenseModifier": -12
+        }
+      ],
+      "image": "/cards/Mystics/Verdant/Thornox.png"
+    },
+    {
+      "id": "MM-035",
+      "name": "Rootfang",
+      "order": "Verdant Dawn",
+      "allegiance": "Unbound",
+      "rarity": "Prime",
+      "power": 89,
+      "defense": 44,
+      "baseAttack": 36,
+      "moves": [
+        {
+          "name": "Root Crush",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Root Crush: 4+ = +14 ATK",
+          "needsReview": false,
+          "attackModifier": 14
+        },
+        {
+          "name": "Deep Roots",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Deep Roots: 6 = reduce damage by 20",
+          "needsReview": true,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Verdant/rootfang.png"
+    },
+    {
+      "id": "MM-036",
+      "name": "Flint",
+      "order": "Worldforge",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 50,
+      "defense": 27,
+      "baseAttack": 16,
+      "moves": [
+        {
+          "name": "Stone Chip",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Stone Chip: 4+ = +6 ATK",
+          "needsReview": false,
+          "attackModifier": 6
+        },
+        {
+          "name": "Brace",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Brace: 6 = +10 DEF",
+          "needsReview": false,
+          "defenseModifier": 10
+        }
+      ],
+      "image": "/cards/Mystics/Worldforge/Flint.png"
+    },
+    {
+      "id": "MM-037",
+      "name": "Brasshorn",
+      "order": "Worldforge",
+      "allegiance": "Mortalbound",
+      "rarity": "Hunter",
+      "power": 69,
+      "defense": 37,
+      "baseAttack": 26,
+      "moves": [
+        {
+          "name": "Horn Ram",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Horn Ram: 4+ = +9 ATK",
+          "needsReview": false,
+          "attackModifier": 9
+        },
+        {
+          "name": "Reinforce",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Reinforce: 6 = +16 DEF",
+          "needsReview": false,
+          "defenseModifier": 16
+        }
+      ],
+      "image": "/cards/Mystics/Worldforge/Brasshorn.png"
+    },
+    {
+      "id": "MM-038",
+      "name": "Craggle",
+      "order": "Worldforge",
+      "allegiance": "Unbound",
+      "rarity": "Wild",
+      "power": 46,
+      "defense": 28,
+      "baseAttack": 14,
+      "moves": [
+        {
+          "name": "Rock Toss",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Rock Toss: 4+ = +5 ATK",
+          "needsReview": false,
+          "attackModifier": 5
+        },
+        {
+          "name": "Boulder Hide",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Boulder Hide: 6 = halve next hit",
+          "needsReview": true,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Worldforge/Craggle.png"
+    },
+    {
+      "id": "MM-039",
+      "name": "Forgefang",
+      "order": "Worldforge",
+      "allegiance": "Ascendant",
+      "rarity": "Predator",
+      "power": 83,
+      "defense": 41,
+      "baseAttack": 34,
+      "moves": [
+        {
+          "name": "Molten Bite",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Molten Bite: 4+ = +12 ATK",
+          "needsReview": false,
+          "attackModifier": 12
+        },
+        {
+          "name": "Tempered Hide",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Tempered Hide: 6 = +20 DEF",
+          "needsReview": false,
+          "defenseModifier": 20
+        }
+      ],
+      "image": "/cards/Mystics/Worldforge/Forgefang.png"
+    },
+    {
+      "id": "MM-040",
+      "name": "Colosslate",
+      "order": "Worldforge",
+      "allegiance": "Ascendant",
+      "rarity": "Prime",
+      "power": 96,
+      "defense": 50,
+      "baseAttack": 38,
+      "moves": [
+        {
+          "name": "Seismic Fist",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Seismic Fist: 4+ = +15 ATK",
+          "needsReview": false,
+          "attackModifier": 15
+        },
+        {
+          "name": "Fortress Form",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Fortress Form: 6 = block 25 damage",
+          "needsReview": true,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Worldforge/Colosslate.png"
+    },
+    {
+      "id": "MM-041",
+      "name": "Glimmer",
+      "order": "Sunspire",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 45,
+      "defense": 18,
+      "baseAttack": 17,
+      "moves": [
+        {
+          "name": "Sparkle Shot",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Sparkle Shot: 4+ = +5 ATK",
+          "needsReview": false,
+          "attackModifier": 5
+        },
+        {
+          "name": "Flashstep",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Flashstep: 6 = evade next attack",
+          "needsReview": false,
+          "evade": true
+        }
+      ],
+      "image": "/cards/Mystics/Sunspire/Glimmer.png"
+    },
+    {
+      "id": "MM-042",
+      "name": "Halo",
+      "order": "Sunspire",
+      "allegiance": "Ascendant",
+      "rarity": "Hunter",
+      "power": 62,
+      "defense": 27,
+      "baseAttack": 24,
+      "moves": [
+        {
+          "name": "Radiant Bolt",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Radiant Bolt: 4+ = +8 ATK",
+          "needsReview": false,
+          "attackModifier": 8
+        },
+        {
+          "name": "Halo Guard",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Halo Guard: 6 = +14 DEF",
+          "needsReview": false,
+          "defenseModifier": 14
+        }
+      ],
+      "image": "/cards/Mystics/Sunspire/Halo.png"
+    },
+    {
+      "id": "MM-043",
+      "name": "Prism",
+      "order": "Sunspire",
+      "allegiance": "Mortalbound",
+      "rarity": "Hunter",
+      "power": 60,
+      "defense": 25,
+      "baseAttack": 25,
+      "moves": [
+        {
+          "name": "Prism Beam",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Prism Beam: 4+ = +8 ATK",
+          "needsReview": false,
+          "attackModifier": 8
+        },
+        {
+          "name": "Refraction",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Refraction: 6 = return 8 damage",
+          "needsReview": true,
+          "counter": 8,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Sunspire/Prism.png"
+    },
+    {
+      "id": "MM-044",
+      "name": "Lumilux",
+      "order": "Sunspire",
+      "allegiance": "Ascendant",
+      "rarity": "Predator",
+      "power": 80,
+      "defense": 34,
+      "baseAttack": 35,
+      "moves": [
+        {
+          "name": "Solar Arc",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Solar Arc: 4+ = +12 ATK",
+          "needsReview": false,
+          "attackModifier": 12
+        },
+        {
+          "name": "Sanctuary Light",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Sanctuary Light: 6 = heal 15",
+          "needsReview": false,
+          "healing": 15
+        }
+      ],
+      "image": "/cards/Mystics/Sunspire/Lumilux.png"
+    },
+    {
+      "id": "MM-045",
+      "name": "Dawnclaw",
+      "order": "Sunspire",
+      "allegiance": "Ascendant",
+      "rarity": "Prime",
+      "power": 91,
+      "defense": 39,
+      "baseAttack": 40,
+      "moves": [
+        {
+          "name": "Radiant Claw",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Radiant Claw: 4+ = +14 ATK",
+          "needsReview": false,
+          "attackModifier": 14
+        },
+        {
+          "name": "Sunrise",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Sunrise: 6 = +20 ATK",
+          "needsReview": false,
+          "attackModifier": 20
+        }
+      ],
+      "image": "/cards/Mystics/Sunspire/Dawnclaw.png"
+    },
+    {
+      "id": "MM-046",
+      "name": "Watchling",
+      "order": "Starwatch",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 48,
+      "defense": 20,
+      "baseAttack": 18,
+      "moves": [
+        {
+          "name": "Keen Strike",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Keen Strike: 4+ = +6 ATK",
+          "needsReview": false,
+          "attackModifier": 6
+        },
+        {
+          "name": "Read Move",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Read Move: 6 = +10 DEF",
+          "needsReview": false,
+          "defenseModifier": 10
+        }
+      ],
+      "image": "/cards/Mystics/starwatch/watchling_the_keen_lookout.png"
+    },
+    {
+      "id": "MM-047",
+      "name": "Farsee",
+      "order": "Starwatch",
+      "allegiance": "Ascendant",
+      "rarity": "Hunter",
+      "power": 63,
+      "defense": 24,
+      "baseAttack": 27,
+      "moves": [
+        {
+          "name": "Piercing Gaze",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Piercing Gaze: 4+ = +8 ATK",
+          "needsReview": false,
+          "attackModifier": 8
+        },
+        {
+          "name": "Predict",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Predict: 6 = evade attack",
+          "needsReview": false,
+          "evade": true
+        }
+      ],
+      "image": "/cards/Mystics/starwatch/farsee_the_horizon_seer.png"
+    },
+    {
+      "id": "MM-048",
+      "name": "Scoutwing",
+      "order": "Starwatch",
+      "allegiance": "Mortalbound",
+      "rarity": "Hunter",
+      "power": 59,
+      "defense": 23,
+      "baseAttack": 25,
+      "moves": [
+        {
+          "name": "Wing Slash",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Wing Slash: 4+ = +7 ATK",
+          "needsReview": false,
+          "attackModifier": 7
+        },
+        {
+          "name": "Recon",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Recon: 6 = next attack +12",
+          "needsReview": true,
+          "reviewReason": "effect pattern is not deterministic; parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/starwatch/scoutwing_the_recon_glider.png"
+    },
+    {
+      "id": "MM-049",
+      "name": "Nightwatch",
+      "order": "Starwatch",
+      "allegiance": "Unbound",
+      "rarity": "Predator",
+      "power": 78,
+      "defense": 31,
+      "baseAttack": 34,
+      "moves": [
+        {
+          "name": "Silent Dive",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Silent Dive: 4+ = +11 ATK",
+          "needsReview": false,
+          "attackModifier": 11
+        },
+        {
+          "name": "Foresight",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Foresight: 6 = counter Base Attack",
+          "needsReview": true,
+          "counter": "base",
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/starwatch/nightwatch_the_silent_tracker.png"
+    },
+    {
+      "id": "MM-050",
+      "name": "Astraleye",
+      "order": "Starwatch",
+      "allegiance": "Ascendant",
+      "rarity": "Alpha",
+      "power": 103,
+      "defense": 43,
+      "baseAttack": 45,
+      "moves": [
+        {
+          "name": "Star Lance",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Star Lance: 4+ = +17 ATK",
+          "needsReview": false,
+          "attackModifier": 17
+        },
+        {
+          "name": "Perfect Sight",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Perfect Sight: 6 = attack ignores DEF",
+          "needsReview": false,
+          "ignoreDefense": true
+        }
+      ],
+      "image": "/cards/Mystics/starwatch/astraleye_the_celestial_observer.png"
+    },
+    {
+      "id": "MM-051",
+      "name": "Flicker",
+      "order": "First Spark",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 42,
+      "defense": 17,
+      "baseAttack": 18,
+      "moves": [
+        {
+          "name": "Spark Snap",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Spark Snap: 4+ = +5 ATK",
+          "needsReview": false,
+          "attackModifier": 5
+        },
+        {
+          "name": "Charge",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Charge: 6 = next attack +10",
+          "needsReview": true,
+          "reviewReason": "effect pattern is not deterministic; parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/first%20spark/flicker_the_spark_skipper_card.png"
+    },
+    {
+      "id": "MM-052",
+      "name": "Crackle",
+      "order": "First Spark",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 51,
+      "defense": 19,
+      "baseAttack": 21,
+      "moves": [
+        {
+          "name": "Arc Bite",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Arc Bite: 4+ = +6 ATK",
+          "needsReview": false,
+          "attackModifier": 6
+        },
+        {
+          "name": "Chain Spark",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Chain Spark: 6 = +12 ATK",
+          "needsReview": false,
+          "attackModifier": 12
+        }
+      ],
+      "image": "/cards/Mystics/first%20spark/crackle_the_arc_nibbler_card.png"
+    },
+    {
+      "id": "MM-053",
+      "name": "Dynamo",
+      "order": "First Spark",
+      "allegiance": "Ascendant",
+      "rarity": "Hunter",
+      "power": 68,
+      "defense": 27,
+      "baseAttack": 30,
+      "moves": [
+        {
+          "name": "Power Slam",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Power Slam: 4+ = +9 ATK",
+          "needsReview": false,
+          "attackModifier": 9
+        },
+        {
+          "name": "Surge",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Surge: 6 = Base Attack x2",
+          "needsReview": false,
+          "attackMultiplier": 2
+        }
+      ],
+      "image": "/cards/Mystics/first%20spark/dynamo_the_surge_bruiser_card.png"
+    },
+    {
+      "id": "MM-054",
+      "name": "Wildfire",
+      "order": "First Spark",
+      "allegiance": "Unbound",
+      "rarity": "Predator",
+      "power": 76,
+      "defense": 29,
+      "baseAttack": 35,
+      "moves": [
+        {
+          "name": "Flame Rush",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Flame Rush: 4+ = +11 ATK",
+          "needsReview": false,
+          "attackModifier": 11
+        },
+        {
+          "name": "Burnout",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Burnout: 6 = +22 ATK, then lose 6 Power",
+          "needsReview": false,
+          "attackModifier": 22,
+          "selfDamage": 6
+        }
+      ],
+      "image": "/cards/Mystics/first%20spark/wildfire_fiery_creature_stat_card.png"
+    },
+    {
+      "id": "MM-055",
+      "name": "Stormvolt",
+      "order": "First Spark",
+      "allegiance": "Ascendant",
+      "rarity": "Prime",
+      "power": 95,
+      "defense": 38,
+      "baseAttack": 43,
+      "moves": [
+        {
+          "name": "Thunder Crash",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Thunder Crash: 4+ = +15 ATK",
+          "needsReview": false,
+          "attackModifier": 15
+        },
+        {
+          "name": "Supercharge",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Supercharge: 6 = attack twice",
+          "needsReview": false,
+          "multiHitCount": 2
+        }
+      ],
+      "image": "/cards/Mystics/first%20spark/stormvolt_the_thunder_crown.png"
+    },
+    {
+      "id": "MM-056",
+      "name": "Dreampuff",
+      "order": "Moonveil",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 43,
+      "defense": 18,
+      "baseAttack": 15,
+      "moves": [
+        {
+          "name": "Dream Dust",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Dream Dust: 4+ = enemy -5 ATK",
+          "needsReview": true,
+          "enemyAttackModifier": -5,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        },
+        {
+          "name": "Nap Trap",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Nap Trap: 6 = enemy skips attack",
+          "needsReview": true,
+          "skipTurn": true,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/moonveil/dreampuff_the_sleepy_drift.png"
+    },
+    {
+      "id": "MM-057",
+      "name": "Whimsy",
+      "order": "Moonveil",
+      "allegiance": "Unbound",
+      "rarity": "Wild",
+      "power": 50,
+      "defense": 21,
+      "baseAttack": 18,
+      "moves": [
+        {
+          "name": "Trick Shot",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Trick Shot: 4+ = +6 ATK",
+          "needsReview": false,
+          "attackModifier": 6
+        },
+        {
+          "name": "Switcheroo",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Switcheroo: 6 = swap ATK and DEF bonuses",
+          "needsReview": true,
+          "reviewReason": "effect pattern is not deterministic; timing or calculation needs rules confirmation; compound effect needs review"
+        }
+      ],
+      "image": "/cards/Mystics/moonveil/whimsy_the_trickstep_sprite.png"
+    },
+    {
+      "id": "MM-058",
+      "name": "Phantasm",
+      "order": "Moonveil",
+      "allegiance": "Ascendant",
+      "rarity": "Hunter",
+      "power": 66,
+      "defense": 26,
+      "baseAttack": 28,
+      "moves": [
+        {
+          "name": "Phantom Claw",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Phantom Claw: 4+ = +9 ATK",
+          "needsReview": false,
+          "attackModifier": 9
+        },
+        {
+          "name": "Vanish",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Vanish: 6 = evade attack",
+          "needsReview": false,
+          "evade": true
+        }
+      ],
+      "image": "/cards/Mystics/moonveil/phantasm_the_veiled_prowler.png"
+    },
+    {
+      "id": "MM-059",
+      "name": "Dreamfang",
+      "order": "Moonveil",
+      "allegiance": "Unbound",
+      "rarity": "Prime",
+      "power": 92,
+      "defense": 38,
+      "baseAttack": 42,
+      "moves": [
+        {
+          "name": "Nightmare Bite",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Nightmare Bite: 4+ = +14 ATK",
+          "needsReview": false,
+          "attackModifier": 14
+        },
+        {
+          "name": "Dreamlock",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Dreamlock: 6 = enemy loses next move",
+          "needsReview": false,
+          "skipTurn": true
+        }
+      ],
+      "image": "/cards/Mystics/moonveil/dreamfang_the_nightmare_hunter.png"
+    },
+    {
+      "id": "MM-060",
+      "name": "Umbraxis",
+      "order": "Moonveil",
+      "allegiance": "Voidbound",
+      "rarity": "Alpha",
+      "power": 109,
+      "defense": 42,
+      "baseAttack": 49,
+      "moves": [
+        {
+          "name": "Dread Slash",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Dread Slash: 4+ = +18 ATK",
+          "needsReview": false,
+          "attackModifier": 18
+        },
+        {
+          "name": "Endless Night",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Endless Night: 6 = enemy DEF becomes 0 this turn",
+          "needsReview": false,
+          "ignoreDefense": true
+        }
+      ],
+      "image": "/cards/Mystics/moonveil/umbraxis_the_endless_shade.png"
+    },
+    {
+      "id": "MM-061",
+      "name": "Ticktail",
+      "order": "Agespire",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 49,
+      "defense": 22,
+      "baseAttack": 17,
+      "moves": [
+        {
+          "name": "Clock Swipe",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Clock Swipe: 4+ = +6 ATK",
+          "needsReview": false,
+          "attackModifier": 6
+        },
+        {
+          "name": "Delay",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Delay: 6 = enemy -8 ATK",
+          "needsReview": true,
+          "enemyAttackModifier": -8,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Agespire/ticktail_the_clockskip_critter.png"
+    },
+    {
+      "id": "MM-062",
+      "name": "Epoch",
+      "order": "Agespire",
+      "allegiance": "Ascendant",
+      "rarity": "Hunter",
+      "power": 67,
+      "defense": 30,
+      "baseAttack": 27,
+      "moves": [
+        {
+          "name": "Age Strike",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Age Strike: 4+ = +9 ATK",
+          "needsReview": false,
+          "attackModifier": 9
+        },
+        {
+          "name": "Rewind",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Rewind: 6 = recover 12 Power",
+          "needsReview": false,
+          "healing": 12
+        }
+      ],
+      "image": "/cards/Mystics/Agespire/epoch_the_timeworn_sage.png"
+    },
+    {
+      "id": "MM-063",
+      "name": "Hourglass",
+      "order": "Agespire",
+      "allegiance": "Unbound",
+      "rarity": "Predator",
+      "power": 76,
+      "defense": 33,
+      "baseAttack": 32,
+      "moves": [
+        {
+          "name": "Sandfall",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Sandfall: 4+ = +10 ATK",
+          "needsReview": false,
+          "attackModifier": 10
+        },
+        {
+          "name": "Stasis",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Stasis: 6 = block attack",
+          "needsReview": true,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Agespire/hourglass_the_sandbound_stalker.png"
+    },
+    {
+      "id": "MM-064",
+      "name": "Relic",
+      "order": "Agespire",
+      "allegiance": "Mortalbound",
+      "rarity": "Hunter",
+      "power": 61,
+      "defense": 31,
+      "baseAttack": 22,
+      "moves": [
+        {
+          "name": "Ancient Blow",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Ancient Blow: 4+ = +8 ATK",
+          "needsReview": false,
+          "attackModifier": 8
+        },
+        {
+          "name": "Remembered Guard",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Remembered Guard: 6 = +15 DEF",
+          "needsReview": false,
+          "defenseModifier": 15
+        }
+      ],
+      "image": "/cards/Mystics/Agespire/relic_the_ancient_bastion.png"
+    },
+    {
+      "id": "MM-065",
+      "name": "Evermore",
+      "order": "Agespire",
+      "allegiance": "Ascendant",
+      "rarity": "Prime",
+      "power": 99,
+      "defense": 44,
+      "baseAttack": 41,
+      "moves": [
+        {
+          "name": "Eternal Strike",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Eternal Strike: 4+ = +15 ATK",
+          "needsReview": false,
+          "attackModifier": 15
+        },
+        {
+          "name": "Second Chance",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Second Chance: 6 = restore 20 Power",
+          "needsReview": false,
+          "healing": 20
+        }
+      ],
+      "image": "/cards/Mystics/Agespire/evermore_the_eternal_herald.png"
+    },
+    {
+      "id": "MM-066",
+      "name": "Blink",
+      "order": "Stargate",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 47,
+      "defense": 19,
+      "baseAttack": 18,
+      "moves": [
+        {
+          "name": "Blink Jab",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Blink Jab: 4+ = +6 ATK",
+          "needsReview": false,
+          "attackModifier": 6
+        },
+        {
+          "name": "Short Hop",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Short Hop: 6 = evade attack",
+          "needsReview": false,
+          "evade": true
+        }
+      ],
+      "image": "/cards/Mystics/stargate/Blink.png"
+    },
+    {
+      "id": "MM-067",
+      "name": "Riftling",
+      "order": "Stargate",
+      "allegiance": "Unbound",
+      "rarity": "Hunter",
+      "power": 65,
+      "defense": 26,
+      "baseAttack": 28,
+      "moves": [
+        {
+          "name": "Rift Swipe",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Rift Swipe: 4+ = +9 ATK",
+          "needsReview": false,
+          "attackModifier": 9
+        },
+        {
+          "name": "Portal Dodge",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Portal Dodge: 6 = evade and +5 ATK next turn",
+          "needsReview": false,
+          "attackModifier": 5,
+          "evade": true
+        }
+      ],
+      "image": "/cards/Mystics/stargate/Riftling.png"
+    },
+    {
+      "id": "MM-068",
+      "name": "Doorbit",
+      "order": "Stargate",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 44,
+      "defense": 21,
+      "baseAttack": 15,
+      "moves": [
+        {
+          "name": "Gate Bump",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Gate Bump: 4+ = +5 ATK",
+          "needsReview": false,
+          "attackModifier": 5
+        },
+        {
+          "name": "Shortcut",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Shortcut: 6 = attack before opponent next turn",
+          "needsReview": true,
+          "reviewReason": "effect pattern is not deterministic; timing or calculation needs rules confirmation"
+        }
+      ],
+      "image": "/cards/Mystics/stargate/Doorbit.png"
+    },
+    {
+      "id": "MM-069",
+      "name": "Wormhole",
+      "order": "Stargate",
+      "allegiance": "Ascendant",
+      "rarity": "Predator",
+      "power": 84,
+      "defense": 32,
+      "baseAttack": 38,
+      "moves": [
+        {
+          "name": "Warp Strike",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Warp Strike: 4+ = +12 ATK",
+          "needsReview": false,
+          "attackModifier": 12
+        },
+        {
+          "name": "Fold Space",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Fold Space: 6 = ignore DEF",
+          "needsReview": false,
+          "ignoreDefense": true
+        }
+      ],
+      "image": "/cards/Mystics/stargate/Wormhole.png"
+    },
+    {
+      "id": "MM-070",
+      "name": "Riftclaw",
+      "order": "Stargate",
+      "allegiance": "Voidbound",
+      "rarity": "Prime",
+      "power": 97,
+      "defense": 39,
+      "baseAttack": 45,
+      "moves": [
+        {
+          "name": "Rift Tear",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Rift Tear: 4+ = +15 ATK",
+          "needsReview": false,
+          "attackModifier": 15
+        },
+        {
+          "name": "Void Gate",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Void Gate: 6 = attack twice, lose 5 Power",
+          "needsReview": false,
+          "multiHitCount": 2,
+          "selfDamage": 5
+        }
+      ],
+      "image": "/cards/Mystics/stargate/Riftclaw.png"
+    },
+    {
+      "id": "MM-071",
+      "name": "Crownlet",
+      "order": "Sovereign Order",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 52,
+      "defense": 24,
+      "baseAttack": 18,
+      "moves": [
+        {
+          "name": "Command Jab",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Command Jab: 4+ = +6 ATK",
+          "needsReview": false,
+          "attackModifier": 6
+        },
+        {
+          "name": "Rally",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Rally: 6 = +10 DEF",
+          "needsReview": false,
+          "defenseModifier": 10
+        }
+      ],
+      "image": "/cards/Mystics/Sovereign/Crownlet.png"
+    },
+    {
+      "id": "MM-072",
+      "name": "Marshal",
+      "order": "Sovereign Order",
+      "allegiance": "Mortalbound",
+      "rarity": "Hunter",
+      "power": 69,
+      "defense": 31,
+      "baseAttack": 29,
+      "moves": [
+        {
+          "name": "Order Strike",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Order Strike: 4+ = +9 ATK",
+          "needsReview": false,
+          "attackModifier": 9
+        },
+        {
+          "name": "Discipline",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Discipline: 6 = +15 DEF",
+          "needsReview": false,
+          "defenseModifier": 15
+        }
+      ],
+      "image": "/cards/Mystics/Sovereign/Marshal.png"
+    },
+    {
+      "id": "MM-073",
+      "name": "Regent",
+      "order": "Sovereign Order",
+      "allegiance": "Ascendant",
+      "rarity": "Predator",
+      "power": 83,
+      "defense": 38,
+      "baseAttack": 35,
+      "moves": [
+        {
+          "name": "Royal Blow",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Royal Blow: 4+ = +12 ATK",
+          "needsReview": false,
+          "attackModifier": 12
+        },
+        {
+          "name": "Decree",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Decree: 6 = enemy -12 ATK",
+          "needsReview": true,
+          "enemyAttackModifier": -12,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Sovereign/Regent.png"
+    },
+    {
+      "id": "MM-074",
+      "name": "Tyrant",
+      "order": "Sovereign Order",
+      "allegiance": "Voidbound",
+      "rarity": "Prime",
+      "power": 98,
+      "defense": 39,
+      "baseAttack": 46,
+      "moves": [
+        {
+          "name": "Dominion Crush",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Dominion Crush: 4+ = +15 ATK",
+          "needsReview": false,
+          "attackModifier": 15
+        },
+        {
+          "name": "Submit",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Submit: 6 = enemy cannot use special move",
+          "needsReview": false,
+          "skipTurn": true
+        }
+      ],
+      "image": "/cards/Mystics/Sovereign/Tyrant.png"
+    },
+    {
+      "id": "MM-075",
+      "name": "Imperius",
+      "order": "Sovereign Order",
+      "allegiance": "Voidbound",
+      "rarity": "Alpha",
+      "power": 111,
+      "defense": 45,
+      "baseAttack": 50,
+      "moves": [
+        {
+          "name": "Crown Breaker",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Crown Breaker: 4+ = +18 ATK",
+          "needsReview": false,
+          "attackModifier": 18
+        },
+        {
+          "name": "Absolute Rule",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Absolute Rule: 6 = Base Attack x2",
+          "needsReview": false,
+          "attackMultiplier": 2
+        }
+      ],
+      "image": "/cards/Mystics/Sovereign/Imperius.png"
+    },
+    {
+      "id": "MM-076",
+      "name": "Starbit",
+      "order": "Order of the Star",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 46,
+      "defense": 20,
+      "baseAttack": 16,
+      "moves": [
+        {
+          "name": "Star Tap",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Star Tap: 4+ = +5 ATK",
+          "needsReview": false,
+          "attackModifier": 5
+        },
+        {
+          "name": "Guiding Glow",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Guiding Glow: 6 = +10 DEF",
+          "needsReview": false,
+          "defenseModifier": 10
+        }
+      ],
+      "image": "/cards/Mystics/order%20of%20the%20star/Starbit.png"
+    },
+    {
+      "id": "MM-077",
+      "name": "Comet",
+      "order": "Order of the Star",
+      "allegiance": "Unbound",
+      "rarity": "Hunter",
+      "power": 67,
+      "defense": 24,
+      "baseAttack": 30,
+      "moves": [
+        {
+          "name": "Comet Ram",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Comet Ram: 4+ = +9 ATK",
+          "needsReview": false,
+          "attackModifier": 9
+        },
+        {
+          "name": "Meteor Rush",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Meteor Rush: 6 = +18 ATK",
+          "needsReview": false,
+          "attackModifier": 18
+        }
+      ],
+      "image": "/cards/Mystics/order%20of%20the%20star/Comet.png"
+    },
+    {
+      "id": "MM-078",
+      "name": "Celestail",
+      "order": "Order of the Star",
+      "allegiance": "Ascendant",
+      "rarity": "Predator",
+      "power": 81,
+      "defense": 34,
+      "baseAttack": 36,
+      "moves": [
+        {
+          "name": "Star Tail",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Star Tail: 4+ = +12 ATK",
+          "needsReview": false,
+          "attackModifier": 12
+        },
+        {
+          "name": "Celestial Guard",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Celestial Guard: 6 = +18 DEF",
+          "needsReview": false,
+          "defenseModifier": 18
+        }
+      ],
+      "image": "/cards/Mystics/order%20of%20the%20star/Celestail.png"
+    },
+    {
+      "id": "MM-079",
+      "name": "Nova",
+      "order": "Order of the Star",
+      "allegiance": "Ascendant",
+      "rarity": "Prime",
+      "power": 96,
+      "defense": 38,
+      "baseAttack": 45,
+      "moves": [
+        {
+          "name": "Nova Burst",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Nova Burst: 4+ = +15 ATK",
+          "needsReview": false,
+          "attackModifier": 15
+        },
+        {
+          "name": "Supernova",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Supernova: 6 = +25 ATK",
+          "needsReview": false,
+          "attackModifier": 25
+        }
+      ],
+      "image": "/cards/Mystics/order%20of%20the%20star/Nova.png"
+    },
+    {
+      "id": "MM-080",
+      "name": "Polaris",
+      "order": "Order of the Star",
+      "allegiance": "Ascendant",
+      "rarity": "Alpha",
+      "power": 108,
+      "defense": 46,
+      "baseAttack": 47,
+      "moves": [
+        {
+          "name": "Northstar Strike",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Northstar Strike: 4+ = +17 ATK",
+          "needsReview": false,
+          "attackModifier": 17
+        },
+        {
+          "name": "Guiding Star",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Guiding Star: 6 = heal 15 and +10 ATK",
+          "needsReview": false,
+          "attackModifier": 10,
+          "healing": 15
+        }
+      ],
+      "image": "/cards/Mystics/order%20of%20the%20star/Polaris.png"
+    },
+    {
+      "id": "MM-081",
+      "name": "Glowmoss",
+      "order": "Verdant Dawn",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 54,
+      "defense": 26,
+      "baseAttack": 18,
+      "moves": [
+        {
+          "name": "Spore Pop",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Spore Pop: 4+ = +6 ATK",
+          "needsReview": false,
+          "attackModifier": 6
+        },
+        {
+          "name": "Healing Spores",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Healing Spores: 6 = recover 10 Power",
+          "needsReview": false,
+          "healing": 10
+        }
+      ],
+      "image": "/cards/Mystics/Verdant/Glowmoss.png"
+    },
+    {
+      "id": "MM-082",
+      "name": "Granite",
+      "order": "Worldforge",
+      "allegiance": "Unbound",
+      "rarity": "Predator",
+      "power": 80,
+      "defense": 43,
+      "baseAttack": 29,
+      "moves": [
+        {
+          "name": "Stone Fist",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Stone Fist: 4+ = +11 ATK",
+          "needsReview": false,
+          "attackModifier": 11
+        },
+        {
+          "name": "Bedrock",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Bedrock: 6 = +20 DEF",
+          "needsReview": false,
+          "defenseModifier": 20
+        }
+      ],
+      "image": "/cards/Mystics/Worldforge/Granite.png"
+    },
+    {
+      "id": "MM-083",
+      "name": "Solflare",
+      "order": "Sunspire",
+      "allegiance": "Ascendant",
+      "rarity": "Prime",
+      "power": 93,
+      "defense": 38,
+      "baseAttack": 42,
+      "moves": [
+        {
+          "name": "Solar Lash",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Solar Lash: 4+ = +14 ATK",
+          "needsReview": false,
+          "attackModifier": 14
+        },
+        {
+          "name": "Flare Shield",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Flare Shield: 6 = reflect 12 damage",
+          "needsReview": true,
+          "counter": 12,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Sunspire/Solflare.png"
+    },
+    {
+      "id": "MM-084",
+      "name": "Lookout",
+      "order": "Starwatch",
+      "allegiance": "Mortalbound",
+      "rarity": "Wild",
+      "power": 53,
+      "defense": 23,
+      "baseAttack": 19,
+      "moves": [
+        {
+          "name": "Scout Strike",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Scout Strike: 4+ = +6 ATK",
+          "needsReview": false,
+          "attackModifier": 6
+        },
+        {
+          "name": "Spot Weakness",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Spot Weakness: 6 = enemy -10 DEF",
+          "needsReview": false,
+          "enemyDefenseModifier": -10
+        }
+      ],
+      "image": "/cards/Mystics/starwatch/Lookout.png"
+    },
+    {
+      "id": "MM-085",
+      "name": "Arcflash",
+      "order": "First Spark",
+      "allegiance": "Unbound",
+      "rarity": "Predator",
+      "power": 79,
+      "defense": 30,
+      "baseAttack": 37,
+      "moves": [
+        {
+          "name": "Arc Slash",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Arc Slash: 4+ = +11 ATK",
+          "needsReview": false,
+          "attackModifier": 11
+        },
+        {
+          "name": "Flash Charge",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Flash Charge: 6 = attack twice",
+          "needsReview": false,
+          "multiHitCount": 2
+        }
+      ],
+      "image": "/cards/Mystics/first%20spark/Arcflash.png"
+    },
+    {
+      "id": "MM-086",
+      "name": "Moonkin",
+      "order": "Moonveil",
+      "allegiance": "Mortalbound",
+      "rarity": "Hunter",
+      "power": 64,
+      "defense": 27,
+      "baseAttack": 26,
+      "moves": [
+        {
+          "name": "Crescent Cut",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Crescent Cut: 4+ = +8 ATK",
+          "needsReview": false,
+          "attackModifier": 8
+        },
+        {
+          "name": "Dreamstep",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Dreamstep: 6 = evade next attack",
+          "needsReview": false,
+          "evade": true
+        }
+      ],
+      "image": "/cards/Mystics/moonveil/Moonkin.png"
+    },
+    {
+      "id": "MM-087",
+      "name": "Timelock",
+      "order": "Agespire",
+      "allegiance": "Ascendant",
+      "rarity": "Prime",
+      "power": 90,
+      "defense": 41,
+      "baseAttack": 38,
+      "moves": [
+        {
+          "name": "Chrono Hit",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Chrono Hit: 4+ = +14 ATK",
+          "needsReview": false,
+          "attackModifier": 14
+        },
+        {
+          "name": "Lock Time",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Lock Time: 6 = enemy skips turn",
+          "needsReview": true,
+          "skipTurn": true,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Agespire/Timelock.png"
+    },
+    {
+      "id": "MM-088",
+      "name": "Gateway",
+      "order": "Stargate",
+      "allegiance": "Ascendant",
+      "rarity": "Prime",
+      "power": 92,
+      "defense": 40,
+      "baseAttack": 40,
+      "moves": [
+        {
+          "name": "Portal Crush",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Portal Crush: 4+ = +14 ATK",
+          "needsReview": false,
+          "attackModifier": 14
+        },
+        {
+          "name": "Crossworld",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Crossworld: 6 = evade and counter",
+          "needsReview": true,
+          "evade": true,
+          "counter": "base",
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/stargate/Gateway.png"
+    },
+    {
+      "id": "MM-089",
+      "name": "Banner",
+      "order": "Sovereign Order",
+      "allegiance": "Mortalbound",
+      "rarity": "Hunter",
+      "power": 62,
+      "defense": 30,
+      "baseAttack": 24,
+      "moves": [
+        {
+          "name": "Rally Strike",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Rally Strike: 4+ = +8 ATK",
+          "needsReview": false,
+          "attackModifier": 8
+        },
+        {
+          "name": "Stand Firm",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Stand Firm: 6 = +16 DEF",
+          "needsReview": false,
+          "defenseModifier": 16
+        }
+      ],
+      "image": "/cards/Mystics/Sovereign/Banner.png"
+    },
+    {
+      "id": "MM-090",
+      "name": "Starcrest",
+      "order": "Order of the Star",
+      "allegiance": "Mortalbound",
+      "rarity": "Prime",
+      "power": 89,
+      "defense": 39,
+      "baseAttack": 38,
+      "moves": [
+        {
+          "name": "Crest Slash",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Crest Slash: 4+ = +13 ATK",
+          "needsReview": false,
+          "attackModifier": 13
+        },
+        {
+          "name": "Rallying Star",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Rallying Star: 6 = heal 10 and +10 DEF",
+          "needsReview": false,
+          "defenseModifier": 10,
+          "healing": 10
+        }
+      ],
+      "image": "/cards/Mystics/order%20of%20the%20star/Starcrest.png"
+    },
+    {
+      "id": "MM-091",
+      "name": "Briar King",
+      "order": "Verdant Dawn",
+      "allegiance": "Ascendant",
+      "rarity": "Alpha",
+      "power": 101,
+      "defense": 48,
+      "baseAttack": 42,
+      "moves": [
+        {
+          "name": "Thorn Crown",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Thorn Crown: 4+ = +16 ATK",
+          "needsReview": false,
+          "attackModifier": 16
+        },
+        {
+          "name": "Ancient Growth",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Ancient Growth: 6 = heal 20",
+          "needsReview": false,
+          "healing": 20
+        }
+      ],
+      "image": "/cards/Mystics/Verdant/Briar_King.png"
+    },
+    {
+      "id": "MM-092",
+      "name": "Iron Titan",
+      "order": "Worldforge",
+      "allegiance": "Ascendant",
+      "rarity": "Alpha",
+      "power": 115,
+      "defense": 58,
+      "baseAttack": 44,
+      "moves": [
+        {
+          "name": "Titan Fist",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Titan Fist: 4+ = +18 ATK",
+          "needsReview": false,
+          "attackModifier": 18
+        },
+        {
+          "name": "Unbreakable",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Unbreakable: 6 = block 30 damage",
+          "needsReview": true,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/Worldforge/Iron_Titan.png"
+    },
+    {
+      "id": "MM-093",
+      "name": "Helion",
+      "order": "Sunspire",
+      "allegiance": "Ascendant",
+      "rarity": "Alpha",
+      "power": 112,
+      "defense": 46,
+      "baseAttack": 50,
+      "moves": [
+        {
+          "name": "Sun Spear",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Sun Spear: 4+ = +18 ATK",
+          "needsReview": false,
+          "attackModifier": 18
+        },
+        {
+          "name": "Solar Judgment",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Solar Judgment: 6 = Base Attack x2",
+          "needsReview": false,
+          "attackMultiplier": 2
+        }
+      ],
+      "image": "/cards/Mystics/Sunspire/Helion.png"
+    },
+    {
+      "id": "MM-094",
+      "name": "Oracle",
+      "order": "Starwatch",
+      "allegiance": "Ascendant",
+      "rarity": "Alpha",
+      "power": 105,
+      "defense": 41,
+      "baseAttack": 47,
+      "moves": [
+        {
+          "name": "Foreseen Strike",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Foreseen Strike: 4+ = +17 ATK",
+          "needsReview": false,
+          "attackModifier": 17
+        },
+        {
+          "name": "Perfect Prediction",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Perfect Prediction: 6 = evade and counter",
+          "needsReview": true,
+          "evade": true,
+          "counter": "base",
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/starwatch/Oracle.png"
+    },
+    {
+      "id": "MM-095",
+      "name": "Wildspark",
+      "order": "First Spark",
+      "allegiance": "Unbound",
+      "rarity": "Alpha",
+      "power": 107,
+      "defense": 39,
+      "baseAttack": 51,
+      "moves": [
+        {
+          "name": "Wild Surge",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "Wild Surge: 4+ = +17 ATK",
+          "needsReview": false,
+          "attackModifier": 17
+        },
+        {
+          "name": "Chain Burst",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Chain Burst: 6 = attack twice",
+          "needsReview": false,
+          "multiHitCount": 2
+        }
+      ],
+      "image": "/cards/Mystics/first%20spark/Wildspark.png"
+    },
+    {
+      "id": "MM-096",
+      "name": "Nightweaver",
+      "order": "Moonveil",
+      "allegiance": "Ascendant",
+      "rarity": "Alpha",
+      "power": 104,
+      "defense": 43,
+      "baseAttack": 46,
+      "moves": [
+        {
+          "name": "Dream Rend",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Dream Rend: 4+ = +17 ATK",
+          "needsReview": false,
+          "attackModifier": 17
+        },
+        {
+          "name": "Waking Nightmare",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Waking Nightmare: 6 = enemy skips attack",
+          "needsReview": true,
+          "skipTurn": true,
+          "reviewReason": "parsed but not enabled in the v1 battle executor"
+        }
+      ],
+      "image": "/cards/Mystics/moonveil/Nightweaver.png"
+    },
+    {
+      "id": "MM-097",
+      "name": "Aeon",
+      "order": "Agespire",
+      "allegiance": "Ascendant",
+      "rarity": "Alpha",
+      "power": 117,
+      "defense": 50,
+      "baseAttack": 48,
+      "moves": [
+        {
+          "name": "Epoch Slam",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Epoch Slam: 4+ = +19 ATK",
+          "needsReview": false,
+          "attackModifier": 19
+        },
+        {
+          "name": "Rewind Fate",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Rewind Fate: 6 = restore 25 Power",
+          "needsReview": false,
+          "healing": 25
+        }
+      ],
+      "image": "/cards/Mystics/Agespire/Aeon.png"
+    },
+    {
+      "id": "MM-098",
+      "name": "Riftlord",
+      "order": "Stargate",
+      "allegiance": "Voidbound",
+      "rarity": "Alpha",
+      "power": 118,
+      "defense": 46,
+      "baseAttack": 54,
+      "moves": [
+        {
+          "name": "Dimensional Rend",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Dimensional Rend: 4+ = +19 ATK",
+          "needsReview": false,
+          "attackModifier": 19
+        },
+        {
+          "name": "Collapse Gate",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "self",
+          "rawText": "Collapse Gate: 6 = ignore DEF and +15 ATK",
+          "needsReview": false,
+          "attackModifier": 15,
+          "ignoreDefense": true
+        }
+      ],
+      "image": "/cards/Mystics/stargate/Riftlord.png"
+    },
+    {
+      "id": "MM-099",
+      "name": "High Regent",
+      "order": "Sovereign Order",
+      "allegiance": "Ascendant",
+      "rarity": "Alpha",
+      "power": 119,
+      "defense": 52,
+      "baseAttack": 51,
+      "moves": [
+        {
+          "name": "Sovereign Blow",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "enemy",
+          "rawText": "Sovereign Blow: 4+ = +19 ATK",
+          "needsReview": false,
+          "attackModifier": 19
+        },
+        {
+          "name": "Royal Command",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Royal Command: 6 = enemy loses special move",
+          "needsReview": false,
+          "skipTurn": true
+        }
+      ],
+      "image": "/cards/Mystics/Sovereign/High_Regent.png"
+    },
+    {
+      "id": "MM-100",
+      "name": "Starborn",
+      "order": "Order of the Star",
+      "allegiance": "Ascendant",
+      "rarity": "Alpha",
+      "power": 119,
+      "defense": 50,
+      "baseAttack": 54,
+      "moves": [
+        {
+          "name": "First Light",
+          "requiredRoll": 4,
+          "minimumRoll": 4,
+          "cooldown": 1,
+          "targetType": "self",
+          "rawText": "First Light: 4+ = +20 ATK",
+          "needsReview": false,
+          "attackModifier": 20
+        },
+        {
+          "name": "Celestial Awakening",
+          "requiredRoll": 6,
+          "exactRoll": 6,
+          "cooldown": 2,
+          "targetType": "enemy",
+          "rawText": "Celestial Awakening: 6 = Base Attack x2 and recover 10 Power",
+          "needsReview": false,
+          "healing": 10,
+          "attackMultiplier": 2
+        }
+      ],
+      "image": "/cards/Mystics/order%20of%20the%20star/Starborn.png"
+    }
+  ],
+  "handlers": [
+    {
+      "id": "H-001",
+      "name": "Max",
+      "allegiance": "Mortalborn",
+      "order": "Unbound",
+      "rarity": "Alpha",
+      "originalRarity": "Alpha",
+      "activationRoll": 4,
+      "exactRoll": false,
+      "activationDice": 1,
+      "effect": "Stand Together: Choose 1 allied Mystic. It gains +5 ATK and +3 DEF until the start of your next turn.",
+      "effectType": "Attack / Defense Buff",
+      "effectValue": "+5 ATK; +3 DEF",
+      "duration": "Until the start of your next turn",
+      "maxUses": 2,
+      "target": "ally",
+      "image": "/cards/Handlers/max.png",
+      "notes": "Leadership-focused Handler. Activation attempt consumes the turn whether it succeeds or fails."
+    },
+    {
+      "id": "H-002",
+      "name": "Sawyer",
+      "allegiance": "Mortalborn",
+      "order": "Unbound",
+      "rarity": "Alpha",
+      "originalRarity": "Alpha",
+      "activationRoll": 4,
+      "exactRoll": false,
+      "activationDice": 1,
+      "effect": "Lucky Break: Choose 1 allied Mystic. The next failed Special Move roll it makes before the start of your following turn may be rerolled once. The reroll result must be used.",
+      "effectType": "Special Reroll",
+      "effectValue": "1 reroll",
+      "duration": "Until triggered or until the start of your following turn",
+      "maxUses": 2,
+      "target": "ally",
+      "image": "/cards/Handlers/sawyer.png",
+      "notes": "Improvisation/comedic-risk Handler. This does not remove or bypass a Special Move cooldown."
+    },
+    {
+      "id": "H-003",
+      "name": "Henry",
+      "allegiance": "Mortalborn",
+      "order": "Unbound",
+      "rarity": "Alpha",
+      "originalRarity": "Alpha",
+      "activationRoll": 5,
+      "exactRoll": false,
+      "activationDice": 1,
+      "effect": "Awaken the Spark: Choose 1 allied Mystic. Reduce the cooldown of one of its Special Moves by 1, to a minimum of 0.",
+      "effectType": "Cooldown Reduction",
+      "effectValue": "-1 Special cooldown",
+      "duration": "Immediate",
+      "maxUses": 2,
+      "target": "ally",
+      "image": "/cards/Handlers/henry.png",
+      "notes": "Awakening-focused Handler. Can make a Special immediately available if its cooldown reaches 0. Activation attempt consumes the turn whether it succeeds or fails."
+    },
+    {
+      "id": "H-004",
+      "name": "Mr. Alden",
+      "allegiance": "Mortalborn",
+      "order": "Unbound",
+      "rarity": "Prime",
+      "originalRarity": "Prime",
+      "activationRoll": 4,
+      "exactRoll": false,
+      "activationDice": 1,
+      "effect": "Overcharge: Choose 1 allied Mystic. Its next attack gets +8 ATK. If that attack is a Special Move, the bonus applies only if the Special succeeds.",
+      "effectType": "Attack Buff",
+      "effectValue": "+8 ATK",
+      "duration": "Until that Mystic makes its next attack",
+      "maxUses": 1,
+      "target": "ally",
+      "image": "/cards/Handlers/mralden.png",
+      "notes": "Older historian/bookstore figure. Electricity-themed Handler concept. Activation attempt consumes the turn whether it succeeds or fails."
+    },
+    {
+      "id": "H-005",
+      "name": "Captain Edmund",
+      "allegiance": "Mortalborn",
+      "order": "Unbound",
+      "rarity": "Hunter",
+      "originalRarity": "Hunter",
+      "activationRoll": 5,
+      "exactRoll": false,
+      "activationDice": 1,
+      "effect": "Battle Command: Choose 1 allied Mystic. It may immediately make a Basic Attack as part of this Handler action.",
+      "effectType": "Immediate Attack",
+      "effectValue": "1 Basic Attack",
+      "duration": "Immediate",
+      "maxUses": 1,
+      "target": "ally",
+      "image": "/cards/Handlers/edmund.png",
+      "notes": "Fighting-Mystic Handler concept. The Handler action still counts as the player's one action for the turn."
+    },
+    {
+      "id": "H-006",
+      "name": "Amelia",
+      "allegiance": "Mortalborn",
+      "order": "Unbound",
+      "rarity": "Hunter",
+      "originalRarity": "Hunter",
+      "activationRoll": 4,
+      "exactRoll": false,
+      "activationDice": 1,
+      "effect": "Crystal Ward: Choose 1 allied Mystic. It gains +6 DEF until the start of your next turn.",
+      "effectType": "Defense Buff",
+      "effectValue": "+6 DEF",
+      "duration": "Until the start of your next turn",
+      "maxUses": 2,
+      "target": "ally",
+      "image": "/cards/Handlers/amelia.png",
+      "notes": "Historian. Crystal-Mystic Handler concept. Activation attempt consumes the turn whether it succeeds or fails."
+    },
+    {
+      "id": "H-007",
+      "name": "Arch, The Fallen",
+      "allegiance": "Voidbound",
+      "order": "Unbound",
+      "rarity": "Apex",
+      "originalRarity": "Apex",
+      "activationRoll": 6,
+      "exactRoll": true,
+      "activationDice": 1,
+      "effect": "Void Dominion: Choose 1 enemy Mystic. It loses 8 DEF until the start of your next turn, and its Special Moves cannot be used on its next turn.",
+      "effectType": "Debuff / Special Lock",
+      "effectValue": "-8 DEF",
+      "duration": "Until the start of your next turn; Special lock affects target's next turn",
+      "maxUses": 1,
+      "target": "enemy",
+      "image": "/cards/Handlers/arch.png",
+      "notes": "Primary Void-aligned Handler. Formerly Archeion, The Crowned. Strong control effect balanced by a 6-only activation."
+    },
+    {
+      "id": "H-008",
+      "name": "Captain Vesper",
+      "allegiance": "Voidbound",
+      "order": "Unbound",
+      "rarity": "Alpha",
+      "originalRarity": "Alpha",
+      "activationRoll": 5,
+      "exactRoll": false,
+      "activationDice": 1,
+      "effect": "Marked for Ruin: Choose 1 enemy Mystic. The next time it takes damage before the start of your next turn, it takes +6 additional damage after normal damage is calculated.",
+      "effectType": "Damage Amplifier",
+      "effectValue": "+6 damage",
+      "duration": "Until triggered or until the start of your next turn",
+      "maxUses": 2,
+      "target": "enemy",
+      "image": "/cards/Handlers/vesper.png",
+      "notes": "Void general/captain serving Arch. Bonus damage is added after Attack minus Defense is calculated."
+    },
+    {
+      "id": "H-009",
+      "name": "Lieutenant Morrow",
+      "allegiance": "Voidbound",
+      "order": "Unbound",
+      "rarity": "Prime",
+      "originalRarity": "Prime",
+      "activationRoll": 4,
+      "exactRoll": false,
+      "activationDice": 1,
+      "effect": "Shadow Step: Choose 1 allied Mystic. The next attack that targets it before the start of your next turn deals 0 damage.",
+      "effectType": "Damage Prevention",
+      "effectValue": "Prevent 1 attack",
+      "duration": "Until triggered or until the start of your next turn",
+      "maxUses": 1,
+      "target": "ally",
+      "image": "/cards/Handlers/morrow.png",
+      "notes": "Void lieutenant serving Arch. Prevents damage from one attack but does not cancel other non-damage effects unless explicitly stated."
+    }
+  ],
+  "importWarnings": [
+    "MM-002 Duney — Sand Toss: 4+ = enemy -5 ATK: parsed but not enabled in the v1 battle executor",
+    "MM-002 Duney — Burrow: 6 = block next attack: parsed but not enabled in the v1 battle executor",
+    "MM-006 Disco — Dazzle Spin: 6 = enemy misses: parsed but not enabled in the v1 battle executor",
+    "MM-007 Rocky — Rooted Stance: 6 = reduce damage by 15: parsed but not enabled in the v1 battle executor",
+    "MM-008 Coral — Current Curl: 6 = half-power second attack: effect pattern is not deterministic; timing or calculation needs rules confirmation",
+    "MM-009 Jitsuki — Counter Form: 6 = return 10 damage: parsed but not enabled in the v1 battle executor",
+    "MM-011 Gravemaw — Consume: 6 = heal half damage dealt: effect pattern is not deterministic; timing or calculation needs rules confirmation",
+    "MM-012 Kairo — Focus Kata: 6 = next attack x2: effect pattern is not deterministic; timing or calculation needs rules confirmation",
+    "MM-018 Cactus Jack — Prickly Guard: 6 = attacker takes 10: effect pattern is not deterministic",
+    "MM-021 Frostbite — Time Freeze: 6 = enemy loses attack: parsed but not enabled in the v1 battle executor",
+    "MM-022 Sweep — Sweep Away: 6 = remove DEF bonus: effect pattern is not deterministic",
+    "MM-026 Glint — Blinding Ray: 6 = enemy misses: parsed but not enabled in the v1 battle executor",
+    "MM-027 Mire — Bogged Down: 6 = enemy -10 ATK: parsed but not enabled in the v1 battle executor",
+    "MM-030 Tallus — Blink Gate: 6 = evade and counter: parsed but not enabled in the v1 battle executor",
+    "MM-031 Bramble — Tangle: 6 = enemy -8 ATK: parsed but not enabled in the v1 battle executor",
+    "MM-035 Rootfang — Deep Roots: 6 = reduce damage by 20: parsed but not enabled in the v1 battle executor",
+    "MM-038 Craggle — Boulder Hide: 6 = halve next hit: parsed but not enabled in the v1 battle executor",
+    "MM-040 Colosslate — Fortress Form: 6 = block 25 damage: parsed but not enabled in the v1 battle executor",
+    "MM-043 Prism — Refraction: 6 = return 8 damage: parsed but not enabled in the v1 battle executor",
+    "MM-048 Scoutwing — Recon: 6 = next attack +12: effect pattern is not deterministic; parsed but not enabled in the v1 battle executor",
+    "MM-049 Nightwatch — Foresight: 6 = counter Base Attack: parsed but not enabled in the v1 battle executor",
+    "MM-051 Flicker — Charge: 6 = next attack +10: effect pattern is not deterministic; parsed but not enabled in the v1 battle executor",
+    "MM-056 Dreampuff — Dream Dust: 4+ = enemy -5 ATK: parsed but not enabled in the v1 battle executor",
+    "MM-056 Dreampuff — Nap Trap: 6 = enemy skips attack: parsed but not enabled in the v1 battle executor",
+    "MM-057 Whimsy — Switcheroo: 6 = swap ATK and DEF bonuses: effect pattern is not deterministic; timing or calculation needs rules confirmation; compound effect needs review",
+    "MM-061 Ticktail — Delay: 6 = enemy -8 ATK: parsed but not enabled in the v1 battle executor",
+    "MM-063 Hourglass — Stasis: 6 = block attack: parsed but not enabled in the v1 battle executor",
+    "MM-068 Doorbit — Shortcut: 6 = attack before opponent next turn: effect pattern is not deterministic; timing or calculation needs rules confirmation",
+    "MM-073 Regent — Decree: 6 = enemy -12 ATK: parsed but not enabled in the v1 battle executor",
+    "MM-083 Solflare — Flare Shield: 6 = reflect 12 damage: parsed but not enabled in the v1 battle executor",
+    "MM-087 Timelock — Lock Time: 6 = enemy skips turn: parsed but not enabled in the v1 battle executor",
+    "MM-088 Gateway — Crossworld: 6 = evade and counter: parsed but not enabled in the v1 battle executor",
+    "MM-092 Iron Titan — Unbreakable: 6 = block 30 damage: parsed but not enabled in the v1 battle executor",
+    "MM-094 Oracle — Perfect Prediction: 6 = evade and counter: parsed but not enabled in the v1 battle executor",
+    "MM-096 Nightweaver — Waking Nightmare: 6 = enemy skips attack: parsed but not enabled in the v1 battle executor"
+  ]
+}

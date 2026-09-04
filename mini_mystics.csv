@@ -1,0 +1,101 @@
+MM #,Name,Order,Allegiance,Rarity,Power,Def,Base Attack,Moves
+MM-001,Swift,Order of the Star,Unbound,Wild,52,22,18,Quickstrike: 4+ = +8 ATK; Tailwind Dash: 6 = attack twice
+MM-002,Duney,Verdant Dawn,Unbound,Wild,50,24,16,Sand Toss: 4+ = enemy -5 ATK; Burrow: 6 = block next attack
+MM-003,Leafo,Verdant Dawn,Unbound,Wild,54,26,17,Vine Snap: 4+ = +7 ATK; Regrow: 6 = recover 12 Power
+MM-004,Ember,First Spark,Mortalbound,Wild,49,18,20,Spark Bite: 4+ = +6 ATK; Flare Burst: 6 = +12 ATK
+MM-005,Bella,Worldforge,Mortalbound,Wild,53,29,15,Metal Bash: 4+ = +6 ATK; Iron Guard: 6 = +12 DEF
+MM-006,Disco,Sunspire,Mortalbound,Wild,47,20,17,Flash Pop: 4+ = enemy -5 DEF; Dazzle Spin: 6 = enemy misses
+MM-007,Rocky,Worldforge,Mortalbound,Hunter,61,34,19,Stone Slam: 4+ = +8 ATK; Rooted Stance: 6 = reduce damage by 15
+MM-008,Coral,Verdant Dawn,Mortalbound,Wild,51,23,19,Coral Jab: 4+ = +7 ATK; Current Curl: 6 = half-power second attack
+MM-009,Jitsuki,Sovereign Order,Mortalbound,Hunter,65,28,27,Rapid Jab: 4+ = +9 ATK; Counter Form: 6 = return 10 damage
+MM-010,Nox,Moonveil,Voidbound,Hunter,67,25,29,Void Claw: 4+ = +10 ATK; Darkness Shroud: 6 = ignore DEF bonus
+MM-011,Gravemaw,Moonveil,Voidbound,Predator,82,40,32,Grave Bite: 4+ = +12 ATK; Consume: 6 = heal half damage dealt
+MM-012,Kairo,Sovereign Order,Mortalbound,Hunter,63,27,26,Palm Strike: 4+ = +8 ATK; Focus Kata: 6 = next attack x2
+MM-013,Brawler,Sovereign Order,Unbound,Predator,75,32,33,Haymaker: 4+ = +12 ATK; Knockout Swing: 6 = Base Attack x2
+MM-014,Ripple,Verdant Dawn,Mortalbound,Wild,48,22,17,Ripple Shot: 4+ = +6 ATK; Slip Away: 6 = evade attack
+MM-015,Abyssal,Moonveil,Unbound,Predator,81,37,34,Deep Strike: 4+ = +11 ATK; Undertow: 6 = enemy -15 DEF
+MM-016,Drizzle,Verdant Dawn,Mortalbound,Wild,46,20,16,Rain Drop: 4+ = +5 ATK; Downpour: 6 = +10 ATK
+MM-017,Tsunami,Verdant Dawn,Ascendant,Prime,94,42,41,Crashing Wave: 4+ = +15 ATK; Tidal Surge: 6 = Base Attack x2
+MM-018,Cactus Jack,Verdant Dawn,Unbound,Hunter,59,31,22,Needle Shot: 4+ = +8 ATK; Prickly Guard: 6 = attacker takes 10
+MM-019,Mirage,Moonveil,Unbound,Predator,74,27,31,False Strike: 4+ = +10 ATK; Illusion Veil: 6 = evade attack
+MM-020,Zephyr,Starwatch,Ascendant,Hunter,68,25,29,Wind Blade: 4+ = +9 ATK; Cyclone Rush: 6 = +18 ATK
+MM-021,Frostbite,Agespire,Unbound,Predator,79,36,32,Ice Fang: 4+ = +11 ATK; Time Freeze: 6 = enemy loses attack
+MM-022,Sweep,Starwatch,Mortalbound,Wild,45,19,16,Gust Swipe: 4+ = +5 ATK; Sweep Away: 6 = remove DEF bonus
+MM-023,Emberling,First Spark,Mortalbound,Wild,43,17,18,Ember Pop: 4+ = +5 ATK; Kindle Up: 6 = +10 ATK
+MM-024,Voltix,First Spark,Mortalbound,Hunter,66,24,30,Static Shock: 4+ = +9 ATK; Overcharge: 6 = Base Attack x2
+MM-025,Pebblit,Worldforge,Mortalbound,Wild,44,26,13,Pebble Toss: 4+ = +5 ATK; Harden: 6 = +15 DEF
+MM-026,Glint,Sunspire,Ascendant,Hunter,57,23,22,Gleam Shot: 4+ = +7 ATK; Blinding Ray: 6 = enemy misses
+MM-027,Mire,Verdant Dawn,Unbound,Hunter,58,30,20,Mud Sling: 4+ = +7 ATK; Bogged Down: 6 = enemy -10 ATK
+MM-028,Slipstream,Starwatch,Ascendant,Prime,88,33,40,Jet Strike: 4+ = +14 ATK; Sonic Rush: 6 = attack twice
+MM-029,Ironjaw,Worldforge,Unbound,Alpha,106,52,43,Iron Bite: 4+ = +17 ATK; Crushing Jaw: 6 = Base Attack x2
+MM-030,Tallus,Stargate,Unbound,Alpha,114,48,38,Gate Slam: 4+ = +18 ATK; Blink Gate: 6 = evade and counter
+MM-031,Bramble,Verdant Dawn,Mortalbound,Wild,48,25,16,Thorn Whip: 4+ = +6 ATK; Tangle: 6 = enemy -8 ATK
+MM-032,Mossback,Verdant Dawn,Unbound,Hunter,64,35,21,Moss Slam: 4+ = +8 ATK; Overgrowth: 6 = recover 10 Power
+MM-033,Bloomlet,Verdant Dawn,Ascendant,Wild,53,24,18,Petal Shot: 4+ = +6 ATK; Bloom: 6 = +8 DEF and heal 8
+MM-034,Thornox,Verdant Dawn,Voidbound,Predator,77,34,34,Black Thorn: 4+ = +11 ATK; Rotvine: 6 = enemy -12 DEF
+MM-035,Rootfang,Verdant Dawn,Unbound,Prime,89,44,36,Root Crush: 4+ = +14 ATK; Deep Roots: 6 = reduce damage by 20
+MM-036,Flint,Worldforge,Mortalbound,Wild,50,27,16,Stone Chip: 4+ = +6 ATK; Brace: 6 = +10 DEF
+MM-037,Brasshorn,Worldforge,Mortalbound,Hunter,69,37,26,Horn Ram: 4+ = +9 ATK; Reinforce: 6 = +16 DEF
+MM-038,Craggle,Worldforge,Unbound,Wild,46,28,14,Rock Toss: 4+ = +5 ATK; Boulder Hide: 6 = halve next hit
+MM-039,Forgefang,Worldforge,Ascendant,Predator,83,41,34,Molten Bite: 4+ = +12 ATK; Tempered Hide: 6 = +20 DEF
+MM-040,Colosslate,Worldforge,Ascendant,Prime,96,50,38,Seismic Fist: 4+ = +15 ATK; Fortress Form: 6 = block 25 damage
+MM-041,Glimmer,Sunspire,Mortalbound,Wild,45,18,17,Sparkle Shot: 4+ = +5 ATK; Flashstep: 6 = evade next attack
+MM-042,Halo,Sunspire,Ascendant,Hunter,62,27,24,Radiant Bolt: 4+ = +8 ATK; Halo Guard: 6 = +14 DEF
+MM-043,Prism,Sunspire,Mortalbound,Hunter,60,25,25,Prism Beam: 4+ = +8 ATK; Refraction: 6 = return 8 damage
+MM-044,Lumilux,Sunspire,Ascendant,Predator,80,34,35,Solar Arc: 4+ = +12 ATK; Sanctuary Light: 6 = heal 15
+MM-045,Dawnclaw,Sunspire,Ascendant,Prime,91,39,40,Radiant Claw: 4+ = +14 ATK; Sunrise: 6 = +20 ATK
+MM-046,Watchling,Starwatch,Mortalbound,Wild,48,20,18,Keen Strike: 4+ = +6 ATK; Read Move: 6 = +10 DEF
+MM-047,Farsee,Starwatch,Ascendant,Hunter,63,24,27,Piercing Gaze: 4+ = +8 ATK; Predict: 6 = evade attack
+MM-048,Scoutwing,Starwatch,Mortalbound,Hunter,59,23,25,Wing Slash: 4+ = +7 ATK; Recon: 6 = next attack +12
+MM-049,Nightwatch,Starwatch,Unbound,Predator,78,31,34,Silent Dive: 4+ = +11 ATK; Foresight: 6 = counter Base Attack
+MM-050,Astraleye,Starwatch,Ascendant,Alpha,103,43,45,Star Lance: 4+ = +17 ATK; Perfect Sight: 6 = attack ignores DEF
+MM-051,Flicker,First Spark,Mortalbound,Wild,42,17,18,Spark Snap: 4+ = +5 ATK; Charge: 6 = next attack +10
+MM-052,Crackle,First Spark,Mortalbound,Wild,51,19,21,Arc Bite: 4+ = +6 ATK; Chain Spark: 6 = +12 ATK
+MM-053,Dynamo,First Spark,Ascendant,Hunter,68,27,30,Power Slam: 4+ = +9 ATK; Surge: 6 = Base Attack x2
+MM-054,Wildfire,First Spark,Unbound,Predator,76,29,35,"Flame Rush: 4+ = +11 ATK; Burnout: 6 = +22 ATK, then lose 6 Power"
+MM-055,Stormvolt,First Spark,Ascendant,Prime,95,38,43,Thunder Crash: 4+ = +15 ATK; Supercharge: 6 = attack twice
+MM-056,Dreampuff,Moonveil,Mortalbound,Wild,43,18,15,Dream Dust: 4+ = enemy -5 ATK; Nap Trap: 6 = enemy skips attack
+MM-057,Whimsy,Moonveil,Unbound,Wild,50,21,18,Trick Shot: 4+ = +6 ATK; Switcheroo: 6 = swap ATK and DEF bonuses
+MM-058,Phantasm,Moonveil,Ascendant,Hunter,66,26,28,Phantom Claw: 4+ = +9 ATK; Vanish: 6 = evade attack
+MM-059,Dreamfang,Moonveil,Unbound,Prime,92,38,42,Nightmare Bite: 4+ = +14 ATK; Dreamlock: 6 = enemy loses next move
+MM-060,Umbraxis,Moonveil,Voidbound,Alpha,109,42,49,Dread Slash: 4+ = +18 ATK; Endless Night: 6 = enemy DEF becomes 0 this turn
+MM-061,Ticktail,Agespire,Mortalbound,Wild,49,22,17,Clock Swipe: 4+ = +6 ATK; Delay: 6 = enemy -8 ATK
+MM-062,Epoch,Agespire,Ascendant,Hunter,67,30,27,Age Strike: 4+ = +9 ATK; Rewind: 6 = recover 12 Power
+MM-063,Hourglass,Agespire,Unbound,Predator,76,33,32,Sandfall: 4+ = +10 ATK; Stasis: 6 = block attack
+MM-064,Relic,Agespire,Mortalbound,Hunter,61,31,22,Ancient Blow: 4+ = +8 ATK; Remembered Guard: 6 = +15 DEF
+MM-065,Evermore,Agespire,Ascendant,Prime,99,44,41,Eternal Strike: 4+ = +15 ATK; Second Chance: 6 = restore 20 Power
+MM-066,Blink,Stargate,Mortalbound,Wild,47,19,18,Blink Jab: 4+ = +6 ATK; Short Hop: 6 = evade attack
+MM-067,Riftling,Stargate,Unbound,Hunter,65,26,28,Rift Swipe: 4+ = +9 ATK; Portal Dodge: 6 = evade and +5 ATK next turn
+MM-068,Doorbit,Stargate,Mortalbound,Wild,44,21,15,Gate Bump: 4+ = +5 ATK; Shortcut: 6 = attack before opponent next turn
+MM-069,Wormhole,Stargate,Ascendant,Predator,84,32,38,Warp Strike: 4+ = +12 ATK; Fold Space: 6 = ignore DEF
+MM-070,Riftclaw,Stargate,Voidbound,Prime,97,39,45,"Rift Tear: 4+ = +15 ATK; Void Gate: 6 = attack twice, lose 5 Power"
+MM-071,Crownlet,Sovereign Order,Mortalbound,Wild,52,24,18,Command Jab: 4+ = +6 ATK; Rally: 6 = +10 DEF
+MM-072,Marshal,Sovereign Order,Mortalbound,Hunter,69,31,29,Order Strike: 4+ = +9 ATK; Discipline: 6 = +15 DEF
+MM-073,Regent,Sovereign Order,Ascendant,Predator,83,38,35,Royal Blow: 4+ = +12 ATK; Decree: 6 = enemy -12 ATK
+MM-074,Tyrant,Sovereign Order,Voidbound,Prime,98,39,46,Dominion Crush: 4+ = +15 ATK; Submit: 6 = enemy cannot use special move
+MM-075,Imperius,Sovereign Order,Voidbound,Alpha,111,45,50,Crown Breaker: 4+ = +18 ATK; Absolute Rule: 6 = Base Attack x2
+MM-076,Starbit,Order of the Star,Mortalbound,Wild,46,20,16,Star Tap: 4+ = +5 ATK; Guiding Glow: 6 = +10 DEF
+MM-077,Comet,Order of the Star,Unbound,Hunter,67,24,30,Comet Ram: 4+ = +9 ATK; Meteor Rush: 6 = +18 ATK
+MM-078,Celestail,Order of the Star,Ascendant,Predator,81,34,36,Star Tail: 4+ = +12 ATK; Celestial Guard: 6 = +18 DEF
+MM-079,Nova,Order of the Star,Ascendant,Prime,96,38,45,Nova Burst: 4+ = +15 ATK; Supernova: 6 = +25 ATK
+MM-080,Polaris,Order of the Star,Ascendant,Alpha,108,46,47,Northstar Strike: 4+ = +17 ATK; Guiding Star: 6 = heal 15 and +10 ATK
+MM-081,Glowmoss,Verdant Dawn,Mortalbound,Wild,54,26,18,Spore Pop: 4+ = +6 ATK; Healing Spores: 6 = recover 10 Power
+MM-082,Granite,Worldforge,Unbound,Predator,80,43,29,Stone Fist: 4+ = +11 ATK; Bedrock: 6 = +20 DEF
+MM-083,Solflare,Sunspire,Ascendant,Prime,93,38,42,Solar Lash: 4+ = +14 ATK; Flare Shield: 6 = reflect 12 damage
+MM-084,Lookout,Starwatch,Mortalbound,Wild,53,23,19,Scout Strike: 4+ = +6 ATK; Spot Weakness: 6 = enemy -10 DEF
+MM-085,Arcflash,First Spark,Unbound,Predator,79,30,37,Arc Slash: 4+ = +11 ATK; Flash Charge: 6 = attack twice
+MM-086,Moonkin,Moonveil,Mortalbound,Hunter,64,27,26,Crescent Cut: 4+ = +8 ATK; Dreamstep: 6 = evade next attack
+MM-087,Timelock,Agespire,Ascendant,Prime,90,41,38,Chrono Hit: 4+ = +14 ATK; Lock Time: 6 = enemy skips turn
+MM-088,Gateway,Stargate,Ascendant,Prime,92,40,40,Portal Crush: 4+ = +14 ATK; Crossworld: 6 = evade and counter
+MM-089,Banner,Sovereign Order,Mortalbound,Hunter,62,30,24,Rally Strike: 4+ = +8 ATK; Stand Firm: 6 = +16 DEF
+MM-090,Starcrest,Order of the Star,Mortalbound,Prime,89,39,38,Crest Slash: 4+ = +13 ATK; Rallying Star: 6 = heal 10 and +10 DEF
+MM-091,Briar King,Verdant Dawn,Ascendant,Alpha,101,48,42,Thorn Crown: 4+ = +16 ATK; Ancient Growth: 6 = heal 20
+MM-092,Iron Titan,Worldforge,Ascendant,Alpha,115,58,44,Titan Fist: 4+ = +18 ATK; Unbreakable: 6 = block 30 damage
+MM-093,Helion,Sunspire,Ascendant,Alpha,112,46,50,Sun Spear: 4+ = +18 ATK; Solar Judgment: 6 = Base Attack x2
+MM-094,Oracle,Starwatch,Ascendant,Alpha,105,41,47,Foreseen Strike: 4+ = +17 ATK; Perfect Prediction: 6 = evade and counter
+MM-095,Wildspark,First Spark,Unbound,Alpha,107,39,51,Wild Surge: 4+ = +17 ATK; Chain Burst: 6 = attack twice
+MM-096,Nightweaver,Moonveil,Ascendant,Alpha,104,43,46,Dream Rend: 4+ = +17 ATK; Waking Nightmare: 6 = enemy skips attack
+MM-097,Aeon,Agespire,Ascendant,Alpha,117,50,48,Epoch Slam: 4+ = +19 ATK; Rewind Fate: 6 = restore 25 Power
+MM-098,Riftlord,Stargate,Voidbound,Alpha,118,46,54,Dimensional Rend: 4+ = +19 ATK; Collapse Gate: 6 = ignore DEF and +15 ATK
+MM-099,High Regent,Sovereign Order,Ascendant,Alpha,119,52,51,Sovereign Blow: 4+ = +19 ATK; Royal Command: 6 = enemy loses special move
+MM-100,Starborn,Order of the Star,Ascendant,Alpha,119,50,54,First Light: 4+ = +20 ATK; Celestial Awakening: 6 = Base Attack x2 and recover 10 Power

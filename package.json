@@ -1,0 +1,40 @@
+{
+  "name": "mini-mystics",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "data:import": "tsx scripts/import-cards.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@pixi/particle-emitter": "^5.0.10",
+    "@prisma/client": "6.15.0",
+    "bcryptjs": "3.0.2",
+    "jose": "6.0.12",
+    "lucide-react": "0.542.0",
+    "next": "15.5.2",
+    "papaparse": "5.5.3",
+    "pixi.js": "^7.4.3",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "zod": "4.1.5"
+  },
+  "devDependencies": {
+    "@types/node": "24.3.0",
+    "@types/papaparse": "5.3.16",
+    "@types/react": "19.1.12",
+    "@types/react-dom": "19.1.9",
+    "prisma": "6.15.0",
+    "tsx": "4.20.5",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  }
+}
