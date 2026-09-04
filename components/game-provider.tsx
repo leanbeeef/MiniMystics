@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile, type User } from "firebase/auth";
 import { activateBoost as activateBoostRule, buyPack as buyPackRule, CAMPAIGN, catalog, createAccount, createBattle, definitionFor, initialState, rewardCompletedBattle, type Binder, type Loadout, type PlayerState } from "@/lib/client-state";
 import { endTurn, performBasicAttack, performSpecial } from "@/lib/game/engine";
-import { firebaseAuth } from "@/lib/firebase";
+import { getFirebaseAuth } from "@/lib/firebase";
 
 type Accounts = Record<string, { passwordHash?: string; state: PlayerState }>;
 type GameContextValue = {
@@ -45,6 +45,7 @@ function authMessage(cause: unknown) {
     "auth/email-already-in-use": "An account with that email already exists.",
     "auth/invalid-credential": "Email or password is incorrect.",
     "auth/invalid-email": "Enter a valid email address.",
+    "auth/missing-config": "Firebase is not configured for this deployment.",
     "auth/network-request-failed": "Could not reach Firebase. Check your connection and try again.",
     "auth/operation-not-allowed": "Email and password sign-in is not enabled yet.",
     "auth/too-many-requests": "Too many attempts. Wait a moment and try again.",
@@ -87,11 +88,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    return onAuthStateChanged(firebaseAuth, (user) => {
-      if (user) setState(restoreProfile(user));
-      else { localStorage.removeItem(CURRENT_KEY); setState(initialState); }
+    try {
+      return onAuthStateChanged(getFirebaseAuth(), (user) => {
+        if (user) setState(restoreProfile(user));
+        else { localStorage.removeItem(CURRENT_KEY); setState(initialState); }
+        setReady(true);
+      }, (cause) => { setError(authMessage(cause)); setReady(true); });
+    } catch (cause) {
+      setError(authMessage(cause));
       setReady(true);
-    }, (cause) => { setError(authMessage(cause)); setReady(true); });
+    }
   }, []);
 
   const commit = useCallback((mutator: (draft: PlayerState) => void) => {
@@ -113,7 +119,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const normalized = email.trim().toLowerCase();
     if (!normalized || username.trim().length < 2 || password.length < 8) throw new Error("Use a valid email, a username, and at least 8 password characters.");
     try {
-      const credential = await createUserWithEmailAndPassword(firebaseAuth, normalized, password);
+      const credential = await createUserWithEmailAndPassword(getFirebaseAuth(), normalized, password);
       await updateProfile(credential.user, { displayName: username.trim() });
       const accounts = getAccounts();
       const next = accounts[normalized]?.state ?? createAccount(normalized, username.trim());
@@ -127,12 +133,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const normalized = email.trim().toLowerCase();
     try {
-      const credential = await signInWithEmailAndPassword(firebaseAuth, normalized, password);
+      const credential = await signInWithEmailAndPassword(getFirebaseAuth(), normalized, password);
       setState(restoreProfile(credential.user)); setError(null);
     } catch (cause) { throw new Error(authMessage(cause)); }
   }, []);
 
-  const logout = useCallback(async () => { await signOut(firebaseAuth); localStorage.removeItem(CURRENT_KEY); setState(initialState); router.push("/"); }, [router]);
+  const logout = useCallback(async () => { await signOut(getFirebaseAuth()); localStorage.removeItem(CURRENT_KEY); setState(initialState); router.push("/"); }, [router]);
 
   const reveal = useCallback((openingId: string, cardId?: string) => commit((draft) => {
     const opening = draft.openings.find((item) => item.id === openingId); if (!opening) throw new Error("Opening not found");
