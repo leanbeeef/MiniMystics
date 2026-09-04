@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useGame } from "./game-provider";
 import { LOGO_ART } from "@/lib/art";
+import { validateHandlerName } from "@/lib/player-profile";
 
 type AuthMode = "signup" | "login";
 type FieldErrors = Partial<Record<"username" | "email" | "password", string>>;
@@ -33,14 +34,14 @@ function AuthButton({ busy }: { busy: boolean }) {
 
 function validate(mode: AuthMode, email: string, username: string, password: string) {
   const errors: FieldErrors = {};
-  if (mode === "signup" && username.trim().length < 2) errors.username = "Enter a Handler name with at least 2 characters.";
+  if (mode === "signup") errors.username = validateHandlerName(username) ?? undefined;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errors.email = "Enter a valid email address.";
   if (password.length < 8) errors.password = "Password must contain at least 8 characters.";
   return errors;
 }
 
 function AuthPanel() {
-  const { signup, login } = useGame();
+  const { signup, login, loginWithGoogle } = useGame();
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
@@ -74,6 +75,21 @@ function AuthPanel() {
     }
   };
 
+  const googleSignIn = async () => {
+    if (busy) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const isNew = await loginWithGoogle();
+      setSuccess(true);
+      await new Promise((resolve) => window.setTimeout(resolve, 300));
+      router.push(isNew ? "/profile" : "/game");
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : "Could not continue with Google.");
+      setBusy(false);
+    }
+  };
+
   return <section className={`auth-card ${success ? "success" : ""}`} aria-labelledby="auth-title">
     <MiniMysticsLogo />
     <div className="auth-heading"><span>THE FIRST CONVERGENCE</span><h1 id="auth-title">{mode === "login" ? "Enter the Convergence" : "Join the Convergence"}</h1><p>{mode === "login" ? "Build your collection. Command your Mystics. Shape your legend." : "Choose your Handler name and claim your first cards."}</p></div>
@@ -84,8 +100,10 @@ function AuthPanel() {
       <AuthError message={message} />
       <AuthButton busy={busy} />
     </form>
+    <div className="auth-divider"><span>OR</span></div>
+    <button className="auth-google-button" type="button" disabled={busy} onClick={googleSignIn}><span aria-hidden="true">G</span>Continue with Google</button>
     <button className="auth-mode-switch" type="button" disabled={busy} onClick={() => changeMode(mode === "login" ? "signup" : "login")}>{mode === "login" ? <>New Handler? <strong>Create your account</strong></> : <>Already a Handler? <strong>Return to login</strong></>}</button>
-    <p className="auth-storage-note">Your prototype account and collection are stored on this device.</p>
+    <p className="auth-storage-note">Your Handler identity stays with your Mini Mystics account.</p>
   </section>;
 }
 

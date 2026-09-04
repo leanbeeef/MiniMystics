@@ -1,0 +1,6 @@
+node_modules
+dist
+.adminjs
+# Keep environment variables out of version control
+.env
+.admin-credentials.txt

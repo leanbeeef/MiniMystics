@@ -1,0 +1,14 @@
+.git
+.next
+.open-next
+.wrangler
+node_modules
+admin/node_modules
+admin/dist
+admin/.adminjs
+admin/.env
+admin/.admin-credentials.txt
+public
+.optimized
+coverage
+*.log

@@ -1,3 +1,5 @@
+import { optimizedAsset } from "./asset-url";
+
 export type ComicVolume = {
   id: string;
   title: string;
@@ -12,9 +14,9 @@ export const COMIC_VOLUMES: ComicVolume[] = [
     id: "volume-1",
     title: "The Awakening",
     volume: 1,
-    cover: "/comic/cover.png",
-    backCover: "/comic/back.png",
-    pages: Array.from({ length: 22 }, (_, index) => `/comic/page${index + 1}.png`),
+    cover: optimizedAsset("/comic/cover.png"),
+    backCover: optimizedAsset("/comic/back.png"),
+    pages: Array.from({ length: 22 }, (_, index) => optimizedAsset(`/comic/page${index + 1}.png`)),
   },
 ];
 

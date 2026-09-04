@@ -3,15 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "npm run assets:optimize",
     "dev": "next dev --turbopack",
+    "prebuild": "npm run assets:optimize",
     "build": "next build",
     "build:cloudflare": "opennextjs-cloudflare build",
     "preview:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "admin:cloudflare:check": "wrangler deploy --config wrangler.admin.jsonc --dry-run --containers-rollout=none",
+    "admin:cloudflare:deploy": "wrangler deploy --config wrangler.admin.jsonc",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "assets:optimize": "node scripts/optimize-images.mjs",
     "data:import": "tsx scripts/import-cards.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -33,15 +38,17 @@
     "zod": "4.1.5"
   },
   "devDependencies": {
+    "@cloudflare/containers": "^0.3.7",
     "@opennextjs/cloudflare": "1.20.6",
     "@types/node": "24.3.0",
     "@types/papaparse": "5.3.16",
     "@types/react": "19.1.12",
     "@types/react-dom": "19.1.9",
     "prisma": "6.15.0",
+    "sharp": "^0.35.4",
     "tsx": "4.20.5",
     "typescript": "5.9.2",
-    "vitest": "3.2.4",
+    "vitest": "^3.2.7",
     "wrangler": "4.129.0"
   }
 }

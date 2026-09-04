@@ -2,10 +2,12 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile, type User } from "firebase/auth";
+import { createUserWithEmailAndPassword, deleteUser, getAdditionalUserInfo, GoogleAuthProvider, linkWithPopup, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, type User } from "firebase/auth";
 import { activateBoost as activateBoostRule, buyPack as buyPackRule, CAMPAIGN, catalog, createAccount, createBattle, definitionFor, initialState, rewardCompletedBattle, type Binder, type Loadout, type PlayerState } from "@/lib/client-state";
 import { endTurn, performBasicAttack, performSpecial } from "@/lib/game/engine";
 import { getFirebaseAuth } from "@/lib/firebase";
+import { ALLEGIANCES, ensurePlayerProfile, getPlayerProfile, REGIONS, savePlayerProfile, validateHandlerName, type ProfileInput } from "@/lib/player-profile";
+import { PROFILE_AVATARS } from "@/lib/art";
 
 type Accounts = Record<string, { passwordHash?: string; state: PlayerState }>;
 type GameContextValue = {
@@ -14,6 +16,9 @@ type GameContextValue = {
   error: string | null;
   signup(email: string, username: string, password: string): Promise<void>;
   login(email: string, password: string): Promise<void>;
+  loginWithGoogle(): Promise<boolean>;
+  linkGoogle(): Promise<void>;
+  updatePlayerProfile(profile: ProfileInput): Promise<void>;
   logout(): Promise<void>;
   saveComicProgress(volumeId: string, pageIndex: number, completed?: boolean): void;
   reveal(openingId: string, cardId?: string): void;
@@ -49,11 +54,31 @@ function authMessage(cause: unknown) {
     "auth/missing-config": "Firebase is not configured for this deployment.",
     "auth/network-request-failed": "Could not reach Firebase. Check your connection and try again.",
     "auth/operation-not-allowed": "Email and password sign-in is not enabled yet.",
+    "auth/popup-blocked": "The Google sign-in window was blocked. Allow popups and try again.",
+    "auth/popup-closed-by-user": "Google sign-in was cancelled.",
+    "auth/account-exists-with-different-credential": "This email already has a Mini Mystics account. Sign in with your password, then link Google from your profile.",
     "auth/too-many-requests": "Too many attempts. Wait a moment and try again.",
     "auth/user-disabled": "This account has been disabled.",
     "auth/weak-password": "Choose a password with at least 8 characters.",
+    "permission-denied": "Player profiles are not enabled yet. Deploy the included Firestore rules and try again.",
+    "failed-precondition": "Firebase needs one more setup step before player profiles can be saved.",
+    "firestore/failed-precondition": "Firebase needs one more setup step before player profiles can be saved.",
+    "unavailable": "Cloud profile sync is temporarily unavailable. Your game is still saved on this device.",
+    "firestore/unavailable": "Cloud profile sync is temporarily unavailable. Your game is still saved on this device.",
   };
-  return messages[code] ?? "Could not authenticate with Firebase.";
+  if (messages[code]) return messages[code];
+  if (cause instanceof Error && /client is offline|failed to get document/i.test(cause.message)) {
+    return "Cloud profile sync is temporarily unavailable. Your game is still saved on this device.";
+  }
+  if (cause instanceof Error && cause.message) return cause.message;
+  return "Could not authenticate with Firebase.";
+}
+
+function isTemporaryProfileSyncFailure(cause: unknown) {
+  const code = typeof cause === "object" && cause && "code" in cause ? String(cause.code) : "";
+  const message = cause instanceof Error ? cause.message : "";
+  return ["unavailable", "firestore/unavailable", "auth/network-request-failed"].includes(code)
+    || /client is offline|failed to get document/i.test(message);
 }
 
 function restoreProfile(user: User) {
@@ -69,6 +94,7 @@ function restoreProfile(user: User) {
   }
   if (!Array.isArray(saved.campaignWins)) { saved.campaignWins = []; changed = true; }
   if (!saved.comicProgress || typeof saved.comicProgress !== "object") { saved.comicProgress = {}; changed = true; }
+  if ((saved as Partial<PlayerState>).profile === undefined) { saved.profile = null; changed = true; }
   const campaign = CAMPAIGN.find((opponent) => opponent.id === saved.battle?.campaignId || opponent.name === saved.battle?.ai.name);
   if (saved.battle && campaign && !saved.battle.campaignId) { saved.battle.campaignId = campaign.id; changed = true; }
   if (saved.battle?.winner === "player" && saved.battleRewarded && campaign && !saved.campaignWins.includes(campaign.id)) {
@@ -91,10 +117,30 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      return onAuthStateChanged(getFirebaseAuth(), (user) => {
-        if (user) setState(restoreProfile(user));
-        else { localStorage.removeItem(CURRENT_KEY); setState(initialState); }
-        setReady(true);
+      return onAuthStateChanged(getFirebaseAuth(), async (user) => {
+        if (user) {
+          const restored = restoreProfile(user);
+          setState(restored);
+          // The local save is enough to render immediately. Firestore identity data can hydrate afterward.
+          setReady(true);
+          try {
+            const profile = await getPlayerProfile(user.uid);
+            restored.profile = profile;
+            if (profile) restored.account = { email: restored.account!.email, username: profile.handlerName };
+            const accountEmail = restored.account?.email;
+            if (accountEmail) {
+              const accounts = getAccounts();
+              accounts[accountEmail] = { ...accounts[accountEmail], state: restored };
+              localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+            }
+            setState(structuredClone(restored));
+            setError(null);
+          } catch (cause) {
+            // Authentication and the local game save are still valid if Firestore is briefly unavailable.
+            // Keep the player in the game and reserve the global error toast for actionable setup failures.
+            setError(isTemporaryProfileSyncFailure(cause) ? null : authMessage(cause));
+          }
+        } else { localStorage.removeItem(CURRENT_KEY); setState(initialState); setReady(true); }
       }, (cause) => { setError(authMessage(cause)); setReady(true); });
     } catch (cause) {
       setError(authMessage(cause));
@@ -119,17 +165,34 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const signup = useCallback(async (email: string, username: string, password: string) => {
     const normalized = email.trim().toLowerCase();
-    if (!normalized || username.trim().length < 2 || password.length < 8) throw new Error("Use a valid email, a username, and at least 8 password characters.");
+    const handlerError = validateHandlerName(username);
+    if (!normalized || handlerError || password.length < 8) throw new Error(handlerError ?? "Use a valid email and at least 8 password characters.");
+    let createdUser: User | null = null;
+    let identitySaved = false;
     try {
       const credential = await createUserWithEmailAndPassword(getFirebaseAuth(), normalized, password);
+      createdUser = credential.user;
       await updateProfile(credential.user, { displayName: username.trim() });
+      const profile = await savePlayerProfile(credential.user.uid, {
+        handlerName: username.trim(),
+        avatarPath: PROFILE_AVATARS[0].path,
+        tagline: "",
+        region: REGIONS[0],
+        allegiance: ALLEGIANCES[0],
+        favoriteMysticId: null,
+      });
+      identitySaved = true;
       const accounts = getAccounts();
       const next = accounts[normalized]?.state ?? createAccount(normalized, username.trim());
       next.account = { email: normalized, username: username.trim() };
+      next.profile = profile;
       accounts[normalized] = { ...accounts[normalized], state: next };
       localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts)); localStorage.setItem(CURRENT_KEY, normalized);
       setState(next); setError(null);
-    } catch (cause) { throw new Error(authMessage(cause)); }
+    } catch (cause) {
+      if (createdUser && !identitySaved) await deleteUser(createdUser).catch(() => undefined);
+      throw new Error(authMessage(cause));
+    }
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -139,6 +202,49 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setState(restoreProfile(credential.user)); setError(null);
     } catch (cause) { throw new Error(authMessage(cause)); }
   }, []);
+
+  const loginWithGoogle = useCallback(async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      const credential = await signInWithPopup(getFirebaseAuth(), provider);
+      const restored = restoreProfile(credential.user);
+      const profile = await ensurePlayerProfile(credential.user, credential.user.displayName ?? undefined);
+      restored.profile = profile;
+      restored.account = { email: credential.user.email!.toLowerCase(), username: profile.handlerName };
+      setState(restored);
+      setError(null);
+      return Boolean(getAdditionalUserInfo(credential)?.isNewUser);
+    } catch (cause) {
+      throw new Error(authMessage(cause));
+    }
+  }, []);
+
+  const linkGoogle = useCallback(async () => {
+    const user = getFirebaseAuth().currentUser;
+    if (!user) throw new Error("Sign in before linking Google.");
+    try {
+      await linkWithPopup(user, new GoogleAuthProvider());
+      setError(null);
+    } catch (cause) {
+      throw new Error(authMessage(cause));
+    }
+  }, []);
+
+  const updatePlayerProfile = useCallback(async (input: ProfileInput) => {
+    const user = getFirebaseAuth().currentUser;
+    if (!user) throw new Error("Sign in before editing your profile.");
+    try {
+      const profile = await savePlayerProfile(user.uid, input);
+      await updateProfile(user, { displayName: profile.handlerName });
+      commit((draft) => {
+        draft.profile = profile;
+        if (draft.account) draft.account.username = profile.handlerName;
+      });
+    } catch (cause) {
+      throw new Error(authMessage(cause));
+    }
+  }, [commit]);
 
   const logout = useCallback(async () => { await signOut(getFirebaseAuth()); localStorage.removeItem(CURRENT_KEY); setState(initialState); router.push("/"); }, [router]);
 
@@ -224,7 +330,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     finalize(draft);
   }), [commit]);
 
-  const value = useMemo<GameContextValue>(() => ({ state, ready, error, signup, login, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn }), [state, ready, error, signup, login, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn]);
+  const value = useMemo<GameContextValue>(() => ({ state, ready, error, signup, login, loginWithGoogle, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn }), [state, ready, error, signup, login, loginWithGoogle, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn]);
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }
 

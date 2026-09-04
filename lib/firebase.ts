@@ -1,7 +1,9 @@
-import { getApp, getApps, initializeApp, type FirebaseOptions } from "firebase/app";
+import { getApp, getApps, initializeApp, type FirebaseApp, type FirebaseOptions } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
 
 let auth: Auth | undefined;
+let firestore: Firestore | undefined;
 
 const publicFirebaseDefaults: FirebaseOptions = {
   apiKey: "AIzaSyDnmJgsdmMHFe0TgBBlBsjuIpc8_rFQEuo",
@@ -13,9 +15,7 @@ const publicFirebaseDefaults: FirebaseOptions = {
   measurementId: "G-H7XZ64CTJT",
 };
 
-export function getFirebaseAuth() {
-  if (auth) return auth;
-
+export function getFirebaseApp(): FirebaseApp {
   const firebaseConfig: FirebaseOptions = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || publicFirebaseDefaults.apiKey,
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || publicFirebaseDefaults.authDomain,
@@ -30,7 +30,17 @@ export function getFirebaseAuth() {
     throw Object.assign(new Error("Firebase is not configured for this deployment."), { code: "auth/missing-config" });
   }
 
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  auth = getAuth(app);
+  return getApps().length ? getApp() : initializeApp(firebaseConfig);
+}
+
+export function getFirebaseAuth() {
+  if (auth) return auth;
+  auth = getAuth(getFirebaseApp());
   return auth;
+}
+
+export function getFirebaseFirestore() {
+  if (firestore) return firestore;
+  firestore = getFirestore(getFirebaseApp());
+  return firestore;
 }

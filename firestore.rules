@@ -1,0 +1,74 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function validHandle(handle) {
+      return handle is string
+        && handle.size() >= 3
+        && handle.size() <= 20
+        && handle.matches('^[a-z0-9_-]+$')
+        && !(handle in ['admin', 'administrator', 'moderator', 'mod', 'minimystics', 'mini-mystics', 'support', 'system', 'staff'])
+        && !handle.matches('.*(fuck|shit|bitch|cunt|nigger|faggot).*');
+    }
+
+    function ownsHandle(uid, handle) {
+      return existsAfter(/databases/$(database)/documents/handles/$(handle))
+        && getAfter(/databases/$(database)/documents/handles/$(handle)).data.uid == uid;
+    }
+
+    match /handles/{handle} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && validHandle(handle)
+        && request.resource.data.keys().hasOnly(['uid', 'handlerName', 'updatedAt'])
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /profiles/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && uid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'uid', 'handlerName', 'handleNormalized', 'avatarPath', 'tagline',
+          'region', 'allegiance', 'favoriteMysticId', 'rankedTier',
+          'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.uid == uid
+        && validHandle(request.resource.data.handleNormalized)
+        && request.resource.data.handlerName.lower() == request.resource.data.handleNormalized
+        && request.resource.data.avatarPath.matches('^/art/opponents/[A-Za-z0-9_%.-]+\\.png$')
+        && request.resource.data.tagline.size() <= 80
+        && request.resource.data.region in ['North America', 'South America', 'Europe', 'Asia Pacific', 'Middle East & Africa']
+        && request.resource.data.allegiance in ['Mortalborn', 'Ascendant', 'Unbound', 'Voidbound']
+        && ownsHandle(uid, request.resource.data.handleNormalized);
+      allow delete: if false;
+    }
+
+    match /friendships/{friendshipId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.members;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['members', 'requestedBy', 'status', 'createdAt', 'updatedAt'])
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && request.resource.data.members[0] < request.resource.data.members[1]
+        && request.resource.data.members[0] != request.resource.data.members[1]
+        && request.auth.uid in request.resource.data.members
+        && request.resource.data.requestedBy == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && friendshipId == request.resource.data.members[0] + '_' + request.resource.data.members[1];
+      allow update: if signedIn()
+        && request.auth.uid in resource.data.members
+        && request.auth.uid != resource.data.requestedBy
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'friends'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if signedIn() && request.auth.uid in resource.data.members;
+    }
+  }
+}

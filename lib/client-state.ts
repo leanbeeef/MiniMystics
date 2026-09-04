@@ -4,8 +4,15 @@ import { PACK_DEFINITIONS, nextAlphaPity, shouldGuaranteeAlpha, weightedRarity }
 import { BOOST_MATCHES, stackBoost } from "./game/boosts";
 import { calculateRewards, xpForLevel } from "./game/rewards";
 import { rollStartingPlayer } from "./game/engine";
+import type { PlayerProfile } from "./player-profile";
+import { optimizedAsset } from "./asset-url";
 
-export const catalog = catalogData as CardCatalog;
+const sourceCatalog = catalogData as CardCatalog;
+export const catalog: CardCatalog = {
+  ...sourceCatalog,
+  mystics: sourceCatalog.mystics.map((card) => ({ ...card, image: optimizedAsset(card.image) })),
+  handlers: sourceCatalog.handlers.map((card) => ({ ...card, image: optimizedAsset(card.image) })),
+};
 
 export type OwnedCard = { id: string; definitionId: string; acquiredAt: string };
 export type RewardCard = { id: string; kind: "mystic" | "handler" | "xp" | "coins" | "xpBoost" | "coinBoost"; definitionId?: string; rarity: Rarity | "Unassigned"; amount?: number; revealed: boolean };
@@ -15,6 +22,7 @@ export type Binder = { id: string; name: string; cardIds: string[] };
 export type ComicProgress = { pageIndex: number; completed: boolean; updatedAt: string };
 export type PlayerState = {
   account: { email: string; username: string } | null;
+  profile: PlayerProfile | null;
   level: number;
   xp: number;
   coins: number;
@@ -38,7 +46,7 @@ export type PlayerState = {
 };
 
 export const initialState: PlayerState = {
-  account: null, level: 1, xp: 0, coins: 0, premium: 0, ownedCards: [], inventory: [],
+  account: null, profile: null, level: 1, xp: 0, coins: 0, premium: 0, ownedCards: [], inventory: [],
   activeBoosts: { xp: null, coins: null }, openings: [], activeOpeningId: null, loadouts: [], binders: [],
   campaignWins: [], comicProgress: {}, wins: 0, losses: 0, matches: 0, pity: 0, battle: null, battleRewarded: false, lastRewards: null,
 };

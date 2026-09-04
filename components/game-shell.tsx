@@ -5,10 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { Archive, Backpack, Bell, BookOpen, Boxes, ChevronLeft, ChevronRight, Coins, House, Layers3, LogOut, Menu, ScrollText, Settings, ShoppingBag, Swords, Trophy, UserRound, UsersRound, X, Zap } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useGame } from "./game-provider";
-import { DashboardView, CollectionView, LoadoutsView, CampaignView, PacksView, OpeningView, InventoryView, ProfileView, BindersView, ComingSoonView, BattleView, SettingsView } from "./views";
+import { DashboardView, CollectionView, LoadoutsView, CampaignView, PacksView, OpeningView, InventoryView, BindersView, ComingSoonView, BattleView, SettingsView } from "./views";
 import { LOGO_ART } from "@/lib/art";
 import { xpForLevel } from "@/lib/game/rewards";
 import { ComicsLibraryPage } from "./comics/comics-library-page";
+import { ProfileView } from "./profile-view";
+import { FriendsView } from "./friends-view";
+import { optimizedAsset } from "@/lib/asset-url";
 
 const nav = [
   { href: "game", label: "Dashboard", icon: House },
@@ -21,6 +24,7 @@ const nav = [
   { href: "inventory", label: "Inventory", icon: Backpack },
   { href: "comics", label: "Comics", icon: BookOpen },
   { href: "profile", label: "Profile", icon: UserRound },
+  { href: "friends", label: "Friends", icon: UsersRound },
   { href: "marketplace", label: "Marketplace", icon: Trophy, soon: true },
   { href: "trading", label: "Trading", icon: UsersRound, soon: true },
   { href: "settings", label: "Settings", icon: Settings },
@@ -59,6 +63,7 @@ export function GameShell({ view }: { view: string }) {
       case "inventory": return <InventoryView />;
       case "comics": return <ComicsLibraryPage />;
       case "profile": return <ProfileView />;
+      case "friends": return <FriendsView />;
       case "marketplace": return <ComingSoonView kind="Marketplace" />;
       case "trading": return <ComingSoonView kind="Trading" />;
       case "settings": return <SettingsView />;
@@ -93,7 +98,7 @@ export function GameShell({ view }: { view: string }) {
             {state.activeBoosts.xp ? <div className="top-boost xp"><Zap /><span><strong>2× XP</strong><small>{state.activeBoosts.xp.matches} matches</small></span></div> : null}
             {state.activeBoosts.coins ? <div className="top-boost coins"><Coins /><span><strong>2× Coins</strong><small>{state.activeBoosts.coins.matches} matches</small></span></div> : null}
             <button className="icon-button notifications" title="Notifications" aria-label="Notifications"><Bell /></button>
-            <Link href="/profile" className="profile-chip" title="Profile"><span className="avatar">{state.account.username.slice(0, 2).toUpperCase()}</span><span><strong>{state.account.username}</strong><small>Handler</small></span></Link>
+            <Link href="/profile" className="profile-chip" title="Profile"><span className="avatar">{state.profile?.avatarPath ? <img src={optimizedAsset(state.profile.avatarPath) ?? state.profile.avatarPath} alt="" decoding="async" /> : state.account.username.slice(0, 2).toUpperCase()}</span><span><strong>{state.profile?.handlerName ?? state.account.username}</strong><small>Handler</small></span></Link>
           </div>
         </header>
         {error ? <div className="toast-error" role="alert">{error}</div> : null}
