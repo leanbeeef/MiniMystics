@@ -2,17 +2,19 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile, type User } from "firebase/auth";
 import { activateBoost as activateBoostRule, buyPack as buyPackRule, CAMPAIGN, catalog, createAccount, createBattle, definitionFor, initialState, rewardCompletedBattle, type Binder, type Loadout, type PlayerState } from "@/lib/client-state";
 import { endTurn, performBasicAttack, performSpecial } from "@/lib/game/engine";
+import { firebaseAuth } from "@/lib/firebase";
 
-type Accounts = Record<string, { passwordHash: string; state: PlayerState }>;
+type Accounts = Record<string, { passwordHash?: string; state: PlayerState }>;
 type GameContextValue = {
   state: PlayerState;
   ready: boolean;
   error: string | null;
   signup(email: string, username: string, password: string): Promise<void>;
   login(email: string, password: string): Promise<void>;
-  logout(): void;
+  logout(): Promise<void>;
   reveal(openingId: string, cardId?: string): void;
   buyPack(packId: string, order?: string): void;
   activateBoost(id: string): void;
@@ -33,13 +35,49 @@ const GameContext = createContext<GameContextValue | null>(null);
 const ACCOUNTS_KEY = "mini-mystics.accounts.v1";
 const CURRENT_KEY = "mini-mystics.current.v1";
 
-async function digest(value: string) {
-  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(bytes)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
 function getAccounts(): Accounts {
   try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) ?? "{}"); } catch { return {}; }
+}
+
+function authMessage(cause: unknown) {
+  const code = typeof cause === "object" && cause && "code" in cause ? String(cause.code) : "";
+  const messages: Record<string, string> = {
+    "auth/email-already-in-use": "An account with that email already exists.",
+    "auth/invalid-credential": "Email or password is incorrect.",
+    "auth/invalid-email": "Enter a valid email address.",
+    "auth/network-request-failed": "Could not reach Firebase. Check your connection and try again.",
+    "auth/operation-not-allowed": "Email and password sign-in is not enabled yet.",
+    "auth/too-many-requests": "Too many attempts. Wait a moment and try again.",
+    "auth/user-disabled": "This account has been disabled.",
+    "auth/weak-password": "Choose a password with at least 8 characters.",
+  };
+  return messages[code] ?? "Could not authenticate with Firebase.";
+}
+
+function restoreProfile(user: User) {
+  const email = user.email?.trim().toLowerCase();
+  if (!email) return initialState;
+  const accounts = getAccounts();
+  let saved = accounts[email]?.state;
+  let changed = false;
+  if (!saved) {
+    const fallbackName = user.displayName?.trim() || email.split("@")[0] || "Handler";
+    saved = createAccount(email, fallbackName);
+    changed = true;
+  }
+  if (!Array.isArray(saved.campaignWins)) { saved.campaignWins = []; changed = true; }
+  const campaign = CAMPAIGN.find((opponent) => opponent.id === saved.battle?.campaignId || opponent.name === saved.battle?.ai.name);
+  if (saved.battle && campaign && !saved.battle.campaignId) { saved.battle.campaignId = campaign.id; changed = true; }
+  if (saved.battle?.winner === "player" && saved.battleRewarded && campaign && !saved.campaignWins.includes(campaign.id)) {
+    saved.campaignWins.push(campaign.id);
+    changed = true;
+  }
+  if (changed || !accounts[email]) {
+    accounts[email] = { ...accounts[email], state: saved };
+    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+  }
+  localStorage.setItem(CURRENT_KEY, email);
+  return saved;
 }
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
@@ -49,24 +87,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const email = localStorage.getItem(CURRENT_KEY);
-    if (email) {
-      const accounts = getAccounts();
-      const saved = accounts[email]?.state;
-      if (saved) {
-        let changed = false;
-        if (!Array.isArray(saved.campaignWins)) { saved.campaignWins = []; changed = true; }
-        const campaign = CAMPAIGN.find((opponent) => opponent.id === saved.battle?.campaignId || opponent.name === saved.battle?.ai.name);
-        if (saved.battle && campaign && !saved.battle.campaignId) { saved.battle.campaignId = campaign.id; changed = true; }
-        if (saved.battle?.winner === "player" && saved.battleRewarded && campaign && !saved.campaignWins.includes(campaign.id)) {
-          saved.campaignWins.push(campaign.id);
-          changed = true;
-        }
-        if (changed) localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
-        setState(saved);
-      } else setState(initialState);
-    }
-    setReady(true);
+    return onAuthStateChanged(firebaseAuth, (user) => {
+      if (user) setState(restoreProfile(user));
+      else { localStorage.removeItem(CURRENT_KEY); setState(initialState); }
+      setReady(true);
+    }, (cause) => { setError(authMessage(cause)); setReady(true); });
   }, []);
 
   const commit = useCallback((mutator: (draft: PlayerState) => void) => {
@@ -77,7 +102,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (email) {
         const accounts = getAccounts();
         const existing = accounts[email];
-        accounts[email] = { passwordHash: existing?.passwordHash ?? "", state: draft };
+        accounts[email] = { ...existing, state: draft };
         localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
       }
       return draft;
@@ -87,21 +112,27 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const signup = useCallback(async (email: string, username: string, password: string) => {
     const normalized = email.trim().toLowerCase();
     if (!normalized || username.trim().length < 2 || password.length < 8) throw new Error("Use a valid email, a username, and at least 8 password characters.");
-    const accounts = getAccounts();
-    if (accounts[normalized]) throw new Error("An account with that email already exists.");
-    const next = createAccount(normalized, username.trim());
-    accounts[normalized] = { passwordHash: await digest(password), state: next };
-    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts)); localStorage.setItem(CURRENT_KEY, normalized);
-    setState(next); setError(null); router.push("/open");
-  }, [router]);
+    try {
+      const credential = await createUserWithEmailAndPassword(firebaseAuth, normalized, password);
+      await updateProfile(credential.user, { displayName: username.trim() });
+      const accounts = getAccounts();
+      const next = accounts[normalized]?.state ?? createAccount(normalized, username.trim());
+      next.account = { email: normalized, username: username.trim() };
+      accounts[normalized] = { ...accounts[normalized], state: next };
+      localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts)); localStorage.setItem(CURRENT_KEY, normalized);
+      setState(next); setError(null);
+    } catch (cause) { throw new Error(authMessage(cause)); }
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const normalized = email.trim().toLowerCase(); const account = getAccounts()[normalized];
-    if (!account || account.passwordHash !== await digest(password)) throw new Error("Email or password is incorrect.");
-    localStorage.setItem(CURRENT_KEY, normalized); setState(account.state); setError(null); router.push("/game");
-  }, [router]);
+    const normalized = email.trim().toLowerCase();
+    try {
+      const credential = await signInWithEmailAndPassword(firebaseAuth, normalized, password);
+      setState(restoreProfile(credential.user)); setError(null);
+    } catch (cause) { throw new Error(authMessage(cause)); }
+  }, []);
 
-  const logout = useCallback(() => { localStorage.removeItem(CURRENT_KEY); setState(initialState); router.push("/"); }, [router]);
+  const logout = useCallback(async () => { await signOut(firebaseAuth); localStorage.removeItem(CURRENT_KEY); setState(initialState); router.push("/"); }, [router]);
 
   const reveal = useCallback((openingId: string, cardId?: string) => commit((draft) => {
     const opening = draft.openings.find((item) => item.id === openingId); if (!opening) throw new Error("Opening not found");
