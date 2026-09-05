@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Archive, ArrowRight, Backpack, Boxes, Check, ChevronRight, Coins, Crown, Dices, Filter, FolderPlus, Heart, ImageOff, Layers3, LockKeyhole, MonitorCog, PackageOpen, ScrollText, Shield, Sparkles, Swords, Target, TimerReset, Trash2, Trophy, UsersRound, WandSparkles, Zap } from "lucide-react";
+import { Archive, ArrowRight, Backpack, Boxes, Check, ChevronRight, Coins, Crown, Dices, Filter, FolderPlus, Heart, ImageOff, Layers3, LockKeyhole, MonitorCog, PackageOpen, Pencil, ScrollText, Shield, Sparkles, Swords, Target, TimerReset, Trash2, Trophy, UsersRound, WandSparkles, Zap } from "lucide-react";
 import { useGame } from "./game-provider";
 import { CardTile } from "./card-tile";
 import { CardInspectModal } from "./card-inspect-modal";
+import { FormationPreview } from "./formation-preview";
 import { BattleView as RefinedBattleView } from "./battle/battle-view";
 import { VFXManager, useVFX } from "./vfx/vfx-manager";
 import { CAMPAIGN, catalog, definitionFor } from "@/lib/client-state";
@@ -52,13 +54,25 @@ export function CollectionView() {
 }
 
 export function LoadoutsView() {
-  const { state, saveLoadout, deleteLoadout } = useGame(); const [size, setSize] = useState<3 | 5 | 8>(5); const [name, setName] = useState("Fivefold Line"); const [mystics, setMystics] = useState<string[]>([]); const [handlers, setHandlers] = useState<string[]>([]);
-  const ownedMystics = state.ownedCards.filter((owned) => catalog.mystics.some((card) => card.id === owned.definitionId)); const ownedHandlers = state.ownedCards.filter((owned) => catalog.handlers.some((card) => card.id === owned.definitionId));
+  const { state, saveLoadout, deleteLoadout } = useGame();
+  const editParam = useSearchParams().get("edit");
+  const [size, setSize] = useState<3 | 5 | 8>(5);
+  const [name, setName] = useState("Fivefold Line");
+  const [mystics, setMystics] = useState<string[]>([]);
+  const [handlers, setHandlers] = useState<string[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const ownedMystics = state.ownedCards.filter((owned) => catalog.mystics.some((card) => card.id === owned.definitionId));
+  const ownedHandlers = state.ownedCards.filter((owned) => catalog.handlers.some((card) => card.id === owned.definitionId));
+  const editLoadout = (loadout: typeof state.loadouts[number]) => { setEditingId(loadout.id); setName(loadout.name); setSize(loadout.size); setMystics([...loadout.mysticIds]); setHandlers([...loadout.handlerIds]); };
+  const resetEditor = () => { setEditingId(null); setName("Fivefold Line"); setSize(5); setMystics([]); setHandlers([]); };
   useEffect(() => { setMystics((current) => current.slice(0, size)); }, [size]);
+  useEffect(() => { const requested = state.loadouts.find((loadout) => loadout.id === editParam); if (requested) editLoadout(requested); }, [editParam]);
   const toggle = (id: string, list: string[], setList: (next: string[]) => void, max: number) => setList(list.includes(id) ? list.filter((item) => item !== id) : list.length < max ? [...list, id] : list);
-  return <div className="page"><PageHead eyebrow="BATTLE PREP" title="Saved loadouts" copy="Every lineup is made from individual owned card instances." />
-    <div className="loadout-layout"><section className="panel builder"><div className="builder-top"><label>Loadout name<input value={name} onChange={(e) => setName(e.target.value)} /></label><div><span>Battle size</span><div className="segmented small">{([3, 5, 8] as const).map((value) => <button key={value} className={size === value ? "active" : ""} onClick={() => setSize(value)}>{value}</button>)}</div></div></div><div className="selected-lineup"><div className="zone-label"><span>SELECTED LINEUP</span><strong>{mystics.length}/{size} Mystics · {handlers.length}/3 Handlers</strong></div><div className="lineup-slots">{Array.from({ length: size }, (_, index) => { const owned = ownedMystics.find((item) => item.id === mystics[index]); return owned ? <CardTile key={owned.id} compact definitionId={owned.definitionId} selected onClick={() => toggle(owned.id, mystics, setMystics, size)} /> : <span className="empty-slot" key={index}>+</span>; })}</div></div><h3>Available Mystics <span>{mystics.length}/{size}</span></h3><div className="picker-row">{ownedMystics.map((owned) => <CardTile key={owned.id} compact definitionId={owned.definitionId} selected={mystics.includes(owned.id)} onClick={() => toggle(owned.id, mystics, setMystics, size)} />)}</div><h3>Handlers <span>{handlers.length}/3</span></h3><div className="picker-row">{ownedHandlers.map((owned) => <CardTile key={owned.id} compact definitionId={owned.definitionId} selected={handlers.includes(owned.id)} onClick={() => toggle(owned.id, handlers, setHandlers, 3)} />)}</div><button className="button primary" disabled={mystics.length !== size} onClick={() => { saveLoadout({ name, size, mysticIds: mystics, handlerIds: handlers }); setMystics([]); setHandlers([]); }}>Save valid loadout <Check /></button></section>
-      <aside className="saved-list"><h2>Your formations</h2>{state.loadouts.length ? state.loadouts.map((loadout) => <div className="saved-loadout" key={loadout.id}><span className="formation-icon">{loadout.size}</span><div><strong>{loadout.name}</strong><small>{loadout.mysticIds.length} Mystics · {loadout.handlerIds.length} Handlers</small></div><button onClick={() => deleteLoadout(loadout.id)} aria-label="Delete loadout"><Trash2 /></button></div>) : <Empty icon={<Boxes />} title="No formations yet" copy="Select exactly the required number of Mystics, then save." />}</aside>
+  const save = () => { saveLoadout({ id: editingId ?? undefined, name, size, mysticIds: mystics, handlerIds: handlers }); resetEditor(); };
+
+  return <div className="page"><PageHead eyebrow="BATTLE PREP" title="Saved loadouts" copy="Build formations from individual owned card instances, then choose one before battle." />
+    <div className="loadout-layout"><section className="panel builder"><div className="builder-top"><label>Loadout name<input value={name} onChange={(e) => setName(e.target.value)} /></label><div><span>Battle size</span><div className="segmented small">{([3, 5, 8] as const).map((value) => <button key={value} className={size === value ? "active" : ""} onClick={() => setSize(value)}>{value}</button>)}</div></div></div><div className="selected-lineup"><div className="zone-label"><span>{editingId ? "EDITING FORMATION" : "SELECTED LINEUP"}</span><strong>{mystics.length}/{size} Mystics · {handlers.length}/3 Handlers</strong></div><div className="lineup-slots">{Array.from({ length: size }, (_, index) => { const owned = ownedMystics.find((item) => item.id === mystics[index]); return owned ? <CardTile key={owned.id} compact definitionId={owned.definitionId} selected onClick={() => toggle(owned.id, mystics, setMystics, size)} /> : <span className="empty-slot" key={index}>+</span>; })}</div></div><h3>Available Mystics <span>{mystics.length}/{size}</span></h3><div className="picker-row">{ownedMystics.map((owned) => <CardTile key={owned.id} compact definitionId={owned.definitionId} selected={mystics.includes(owned.id)} onClick={() => toggle(owned.id, mystics, setMystics, size)} />)}</div><h3>Handlers <span>{handlers.length}/3</span></h3><div className="picker-row">{ownedHandlers.map((owned) => <CardTile key={owned.id} compact definitionId={owned.definitionId} selected={handlers.includes(owned.id)} onClick={() => toggle(owned.id, handlers, setHandlers, 3)} />)}</div><div className="builder-actions"><button className="button primary" disabled={mystics.length !== size || !name.trim()} onClick={save}>{editingId ? "Update formation" : "Save formation"} <Check /></button>{editingId ? <button className="button ghost" onClick={resetEditor}>Cancel edit</button> : null}</div></section>
+      <aside className="saved-list"><h2>Your formations</h2>{state.loadouts.length ? state.loadouts.map((loadout) => <article className={`saved-loadout ${editingId === loadout.id ? "editing" : ""}`} key={loadout.id}><header><span className="formation-icon">{loadout.size}</span><div><strong>{loadout.name}</strong><small>{loadout.mysticIds.length} Mystics · {loadout.handlerIds.length} Handlers</small></div><button onClick={() => editLoadout(loadout)} aria-label={`Edit ${loadout.name}`} title="Edit formation"><Pencil /></button><button onClick={() => { deleteLoadout(loadout.id); if (editingId === loadout.id) resetEditor(); }} aria-label={`Delete ${loadout.name}`} title="Delete formation"><Trash2 /></button></header><FormationPreview ownedCards={state.ownedCards} mysticIds={loadout.mysticIds} handlerIds={loadout.handlerIds} size={loadout.size} /></article>) : <Empty icon={<Boxes />} title="No formations yet" copy="Select exactly the required number of Mystics, then save." />}</aside>
     </div>
   </div>;
 }

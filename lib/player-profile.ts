@@ -1,62 +1,54 @@
 import type { User } from "firebase/auth";
-import { doc, getDoc, runTransaction } from "firebase/firestore";
-import { getFirebaseFirestore } from "./firebase";
 import { PROFILE_AVATARS } from "./art";
+import { getFirebaseAuth } from "./firebase";
+import {
+  ALLEGIANCES,
+  REGIONS,
+  validateHandlerName,
+  type PlayerProfile,
+  type ProfileInput,
+} from "./profile-model";
 
-export const REGIONS = ["North America", "South America", "Europe", "Asia Pacific", "Middle East & Africa"] as const;
-export const ALLEGIANCES = ["Mortalborn", "Ascendant", "Unbound", "Voidbound"] as const;
-
-export type PlayerProfile = {
-  uid: string;
-  handlerName: string;
-  handleNormalized: string;
-  avatarPath: string;
-  tagline: string;
-  region: string;
-  allegiance: string;
-  favoriteMysticId: string | null;
-  rankedTier: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type ProfileInput = Pick<PlayerProfile, "handlerName" | "avatarPath" | "tagline" | "region" | "allegiance" | "favoriteMysticId">;
-
-const RESERVED = new Set(["admin", "administrator", "moderator", "mod", "minimystics", "mini-mystics", "support", "system", "staff"]);
-const BLOCKED_PARTS = ["fuck", "shit", "bitch", "cunt", "nigger", "faggot"];
-
-export function normalizeHandlerName(value: string) {
-  return value.trim().toLowerCase();
-}
-
-export function validateHandlerName(value: string): string | null {
-  const name = value.trim();
-  const normalized = normalizeHandlerName(name);
-  if (name.length < 3 || name.length > 20) return "Handler names must be 3 to 20 characters.";
-  if (!/^[A-Za-z0-9_-]+$/.test(name)) return "Use only letters, numbers, underscores, or hyphens.";
-  if (RESERVED.has(normalized)) return "That Handler name is reserved.";
-  if (BLOCKED_PARTS.some((part) => normalized.includes(part))) return "Choose a different Handler name.";
-  return null;
-}
+export { ALLEGIANCES, REGIONS, normalizeHandlerName, validateHandlerName } from "./profile-model";
+export type { PlayerProfile, ProfileInput } from "./profile-model";
 
 function profileError(code: string, message: string) {
   return Object.assign(new Error(message), { code });
 }
 
-export async function getPlayerProfile(uid: string): Promise<PlayerProfile | null> {
-  const snapshot = await getDoc(doc(getFirebaseFirestore(), "profiles", uid));
-  return snapshot.exists() ? snapshot.data() as PlayerProfile : null;
+async function authenticatedHeaders(json = false): Promise<Record<string, string>> {
+  const currentUser = getFirebaseAuth().currentUser;
+  if (!currentUser) throw profileError("auth/unauthenticated", "Sign in to manage your Handler profile.");
+  return {
+    Authorization: `Bearer ${await currentUser.getIdToken()}`,
+    ...(json ? { "Content-Type": "application/json" } : {}),
+  };
 }
 
-export async function isHandlerAvailable(value: string, currentUid?: string) {
+async function responseError(response: Response, fallback: string) {
+  const body = await response.json().catch(() => null) as { error?: string; code?: string } | null;
+  return profileError(body?.code ?? `profile/http-${response.status}`, body?.error ?? fallback);
+}
+
+export async function getPlayerProfile(_uid: string): Promise<PlayerProfile | null> {
+  const response = await fetch("/api/profile", { headers: await authenticatedHeaders(), cache: "no-store" });
+  if (response.status === 404) return null;
+  if (!response.ok) throw await responseError(response, "Could not load your Handler profile.");
+  return response.json() as Promise<PlayerProfile>;
+}
+
+export async function isHandlerAvailable(value: string, _currentUid?: string) {
   const error = validateHandlerName(value);
   if (error) return { available: false, error };
-  const snapshot = await getDoc(doc(getFirebaseFirestore(), "handles", normalizeHandlerName(value)));
-  const owner = snapshot.exists() ? String(snapshot.data().uid ?? "") : "";
-  return { available: !snapshot.exists() || owner === currentUid, error: snapshot.exists() && owner !== currentUid ? "That Handler name is already claimed." : null };
+  const response = await fetch(`/api/profile?handler=${encodeURIComponent(value)}`, {
+    headers: await authenticatedHeaders(),
+    cache: "no-store",
+  });
+  if (!response.ok) throw await responseError(response, "Could not check that Handler name.");
+  return response.json() as Promise<{ available: boolean; error: string | null }>;
 }
 
-export async function savePlayerProfile(uid: string, input: ProfileInput): Promise<PlayerProfile> {
+export async function savePlayerProfile(_uid: string, input: ProfileInput): Promise<PlayerProfile> {
   const nameError = validateHandlerName(input.handlerName);
   if (nameError) throw profileError("profile/invalid-handler", nameError);
   if (!PROFILE_AVATARS.some((avatar) => avatar.path === input.avatarPath)) throw profileError("profile/invalid-avatar", "Choose an available avatar.");
@@ -64,40 +56,13 @@ export async function savePlayerProfile(uid: string, input: ProfileInput): Promi
   if (!ALLEGIANCES.includes(input.allegiance as typeof ALLEGIANCES[number])) throw profileError("profile/invalid-allegiance", "Choose an allegiance.");
   if (input.tagline.trim().length > 80) throw profileError("profile/invalid-tagline", "Taglines can contain up to 80 characters.");
 
-  const db = getFirebaseFirestore();
-  const profileRef = doc(db, "profiles", uid);
-  const normalized = normalizeHandlerName(input.handlerName);
-  const handleRef = doc(db, "handles", normalized);
-  const now = new Date().toISOString();
-
-  return runTransaction(db, async (transaction) => {
-    const existingProfile = await transaction.get(profileRef);
-    const nextHandle = await transaction.get(handleRef);
-    const oldProfile = existingProfile.exists() ? existingProfile.data() as PlayerProfile : null;
-    const oldHandleRef = oldProfile && oldProfile.handleNormalized !== normalized ? doc(db, "handles", oldProfile.handleNormalized) : null;
-    const oldHandle = oldHandleRef ? await transaction.get(oldHandleRef) : null;
-
-    if (nextHandle.exists() && nextHandle.data().uid !== uid) throw profileError("profile/handler-taken", "That Handler name is already claimed.");
-
-    const profile: PlayerProfile = {
-      uid,
-      handlerName: input.handlerName.trim(),
-      handleNormalized: normalized,
-      avatarPath: input.avatarPath,
-      tagline: input.tagline.trim(),
-      region: input.region,
-      allegiance: input.allegiance,
-      favoriteMysticId: input.favoriteMysticId || null,
-      rankedTier: oldProfile?.rankedTier ?? "Wild III",
-      createdAt: oldProfile?.createdAt ?? now,
-      updatedAt: now,
-    };
-
-    transaction.set(handleRef, { uid, handlerName: profile.handlerName, updatedAt: now });
-    transaction.set(profileRef, profile);
-    if (oldHandleRef && oldHandle?.exists() && oldHandle.data().uid === uid) transaction.delete(oldHandleRef);
-    return profile;
+  const response = await fetch("/api/profile", {
+    method: "PUT",
+    headers: await authenticatedHeaders(true),
+    body: JSON.stringify(input),
   });
+  if (!response.ok) throw await responseError(response, "Could not save your Handler profile.");
+  return response.json() as Promise<PlayerProfile>;
 }
 
 function safeBaseName(user: User, preferredName?: string) {

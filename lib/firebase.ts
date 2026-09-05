@@ -1,9 +1,7 @@
 import { getApp, getApps, initializeApp, type FirebaseApp, type FirebaseOptions } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
 
 let auth: Auth | undefined;
-let firestore: Firestore | undefined;
 
 const publicFirebaseDefaults: FirebaseOptions = {
   apiKey: "AIzaSyDnmJgsdmMHFe0TgBBlBsjuIpc8_rFQEuo",
@@ -37,10 +35,4 @@ export function getFirebaseAuth() {
   if (auth) return auth;
   auth = getAuth(getFirebaseApp());
   return auth;
-}
-
-export function getFirebaseFirestore() {
-  if (firestore) return firestore;
-  firestore = getFirestore(getFirebaseApp());
-  return firestore;
 }

@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, deleteUser, getAdditionalUserInfo, GoogleAuthProvider, linkWithPopup, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, type User } from "firebase/auth";
-import { activateBoost as activateBoostRule, buyPack as buyPackRule, CAMPAIGN, catalog, createAccount, createBattle, definitionFor, initialState, rewardCompletedBattle, type Binder, type Loadout, type PlayerState } from "@/lib/client-state";
+import { activateBoost as activateBoostRule, buyPack as buyPackRule, CAMPAIGN, catalog, createAccount, createBattle, definitionFor, initialState, rewardCompletedBattle, type BattleSelection, type Binder, type Loadout, type PlayerState } from "@/lib/client-state";
 import { endTurn, performBasicAttack, performSpecial } from "@/lib/game/engine";
 import { getFirebaseAuth } from "@/lib/firebase";
 import { ALLEGIANCES, ensurePlayerProfile, getPlayerProfile, REGIONS, savePlayerProfile, validateHandlerName, type ProfileInput } from "@/lib/player-profile";
@@ -25,13 +25,13 @@ type GameContextValue = {
   reveal(openingId: string, cardId?: string): void;
   buyPack(packId: string, order?: string): void;
   activateBoost(id: string): void;
-  saveLoadout(loadout: Omit<Loadout, "id">): void;
+  saveLoadout(loadout: Omit<Loadout, "id"> & { id?: string }): void;
   deleteLoadout(id: string): void;
   createBinder(name: string): void;
   renameBinder(id: string, name: string): void;
   toggleBinderCard(binderId: string, ownedId: string): void;
   sellDuplicate(ownedId: string): void;
-  startBattle(opponentId: string, loadoutId?: string): void;
+  startBattle(opponentId: string, selection?: BattleSelection): void;
   basicAttack(attackerId: string, defenderId: string): void;
   specialAttack(attackerId: string, defenderId: string, moveIndex: number, rolledFace?: number): void;
   useHandler(handlerIndex: number, targetId: string, rolledFace?: number): void;
@@ -61,11 +61,9 @@ function authMessage(cause: unknown) {
     "auth/too-many-requests": "Too many attempts. Wait a moment and try again.",
     "auth/user-disabled": "This account has been disabled.",
     "auth/weak-password": "Choose a password with at least 8 characters.",
-    "permission-denied": "Player profiles are not enabled yet. Deploy the included Firestore rules and try again.",
-    "failed-precondition": "Firebase needs one more setup step before player profiles can be saved.",
-    "firestore/failed-precondition": "Firebase needs one more setup step before player profiles can be saved.",
+    "permission-denied": "You do not have permission to update this profile.",
+    "failed-precondition": "Profile storage needs one more setup step.",
     "unavailable": "Cloud profile sync is temporarily unavailable. Your game is still saved on this device.",
-    "firestore/unavailable": "Cloud profile sync is temporarily unavailable. Your game is still saved on this device.",
   };
   if (messages[code]) return messages[code];
   if (cause instanceof Error && /client is offline|failed to get document/i.test(cause.message)) {
@@ -78,8 +76,8 @@ function authMessage(cause: unknown) {
 function isTemporaryProfileSyncFailure(cause: unknown) {
   const code = typeof cause === "object" && cause && "code" in cause ? String(cause.code) : "";
   const message = cause instanceof Error ? cause.message : "";
-  return ["unavailable", "firestore/unavailable", "auth/network-request-failed"].includes(code)
-    || /client is offline|failed to get document/i.test(message);
+  return ["unavailable", "auth/network-request-failed", "profile/http-500", "profile/http-503"].includes(code)
+    || /network|failed to fetch|temporarily unavailable/i.test(message);
 }
 
 function restoreProfile(user: User) {
@@ -122,14 +120,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         if (user) {
           const restored = restoreProfile(user);
           setState(restored);
-          // The local save is enough to render immediately. Firestore identity data can hydrate afterward.
+          // The local save renders immediately while the PostgreSQL-backed API hydrates durable state.
           setReady(true);
           let cloudState: PlayerState | null = null;
           try { cloudState = await loadCloudGameState(); } catch { /* The local save remains available while the API recovers. */ }
           const hydrated = cloudState ?? restored;
           hydrated.account = restored.account;
           try {
-            const profile = await getPlayerProfile(user.uid);
+            const profile = await getPlayerProfile(user.uid)
+              ?? await ensurePlayerProfile(user, hydrated.account?.username);
             hydrated.profile = profile;
             if (profile) hydrated.account = { email: hydrated.account!.email, username: profile.handlerName };
             setError(null);
@@ -274,11 +273,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     router.push("/open");
   }, [commit, router]);
   const activateBoost = useCallback((id: string) => commit((draft) => activateBoostRule(draft, id), "BOOST_ACTIVATED", { inventoryItemId: id }), [commit]);
-  const saveLoadout = useCallback((loadout: Omit<Loadout, "id">) => commit((draft) => {
+  const saveLoadout = useCallback((loadout: Omit<Loadout, "id"> & { id?: string }) => commit((draft) => {
     if (loadout.mysticIds.length !== loadout.size) throw new Error(`Select exactly ${loadout.size} Mystics`);
     if (loadout.handlerIds.length > 3) throw new Error("Select no more than 3 Handlers");
-    draft.loadouts.push({ ...loadout, id: `loadout-${Date.now()}` });
-  }, "LOADOUT_SAVED", { name: loadout.name, size: loadout.size }), [commit]);
+    const next = { name: loadout.name.trim(), size: loadout.size, mysticIds: loadout.mysticIds, handlerIds: loadout.handlerIds };
+    if (!next.name) throw new Error("Give the formation a name");
+    const existing = loadout.id ? draft.loadouts.find((item) => item.id === loadout.id) : null;
+    if (existing) Object.assign(existing, next);
+    else draft.loadouts.push({ ...next, id: `loadout-${Date.now()}` });
+  }, "LOADOUT_SAVED", { name: loadout.name, size: loadout.size, loadoutId: loadout.id }), [commit]);
   const deleteLoadout = useCallback((id: string) => commit((draft) => { draft.loadouts = draft.loadouts.filter((item) => item.id !== id); }, "LOADOUT_DELETED", { loadoutId: id }), [commit]);
   const createBinder = useCallback((name: string) => commit((draft) => { if (!name.trim()) throw new Error("Give the collection a name"); draft.binders.push({ id: `binder-${Date.now()}`, name: name.trim(), cardIds: [] }); }, "BINDER_CREATED", { name }), [commit]);
   const renameBinder = useCallback((id: string, name: string) => commit((draft) => { const binder = draft.binders.find((item) => item.id === id); if (binder && name.trim()) binder.name = name.trim(); }, "BINDER_RENAMED", { binderId: id, name }), [commit]);
@@ -289,7 +292,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const definition = definitionFor(owned.definitionId)!; const values: Record<string, number> = { Wild: 20, Hunter: 35, Predator: 60, Prime: 100, Alpha: 180, Apex: 350, Unassigned: 80 };
     draft.ownedCards = draft.ownedCards.filter((card) => card.id !== ownedId); draft.coins += values[definition.rarity]; draft.binders.forEach((binder) => binder.cardIds = binder.cardIds.filter((id) => id !== ownedId));
   }, "CARD_SOLD", { ownedId }), [commit]);
-  const startBattle = useCallback((opponentId: string, loadoutId?: string) => { commit((draft) => createBattle(draft, opponentId, loadoutId), "BATTLE_STARTED", { opponentId, loadoutId }); router.push("/battle"); }, [commit, router]);
+  const startBattle = useCallback((opponentId: string, selection?: BattleSelection) => {
+    if (!selection) { router.push(`/battle?opponent=${encodeURIComponent(opponentId)}`); return; }
+    commit((draft) => createBattle(draft, opponentId, selection), "BATTLE_STARTED", { opponentId, loadoutId: selection.loadoutId, random: selection.random });
+    router.replace("/battle");
+  }, [commit, router]);
 
   const finalize = (draft: PlayerState) => { if (draft.battle?.winner) rewardCompletedBattle(draft); };
   const basicAttack = useCallback((attackerId: string, defenderId: string) => commit((draft) => { if (!draft.battle) return; performBasicAttack(draft.battle, "player", attackerId, defenderId); finalize(draft); }, "BASIC_ATTACK", { attackerId, defenderId }), [commit]);

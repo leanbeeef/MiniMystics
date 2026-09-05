@@ -1,5 +1,4 @@
-import { deleteDoc, doc, getDoc, getDocs, onSnapshot, query, runTransaction, updateDoc, where, collection } from "firebase/firestore";
-import { getFirebaseFirestore } from "./firebase";
+import { getFirebaseAuth } from "./firebase";
 import { normalizeHandlerName, type PlayerProfile } from "./player-profile";
 
 export type FriendshipStatus = "pending" | "friends";
@@ -14,47 +13,84 @@ export type Friendship = {
 
 export type FriendEntry = Friendship & { profile: PlayerProfile | null; direction: "incoming" | "outgoing" | "friends" };
 
-const pairId = (first: string, second: string) => [first, second].sort().join("_");
-
-export async function findProfileByHandler(handlerName: string) {
-  const snapshot = await getDocs(query(collection(getFirebaseFirestore(), "profiles"), where("handleNormalized", "==", normalizeHandlerName(handlerName))));
-  return snapshot.empty ? null : snapshot.docs[0].data() as PlayerProfile;
+async function authenticatedHeaders(json = false): Promise<Record<string, string>> {
+  const currentUser = getFirebaseAuth().currentUser;
+  if (!currentUser) throw new Error("Sign in to manage your friends.");
+  return {
+    Authorization: `Bearer ${await currentUser.getIdToken()}`,
+    ...(json ? { "Content-Type": "application/json" } : {}),
+  };
 }
 
-export async function sendFriendRequest(fromUid: string, toUid: string) {
-  if (fromUid === toUid) throw new Error("You cannot send a friend request to yourself.");
-  const db = getFirebaseFirestore();
-  const friendshipRef = doc(db, "friendships", pairId(fromUid, toUid));
-  await runTransaction(db, async (transaction) => {
-    const existing = await transaction.get(friendshipRef);
-    if (existing.exists()) throw new Error(existing.data().status === "friends" ? "You are already friends." : "A friend request is already pending.");
-    const now = new Date().toISOString();
-    transaction.set(friendshipRef, { members: [fromUid, toUid].sort(), requestedBy: fromUid, status: "pending", createdAt: now, updatedAt: now });
+async function responseError(response: Response, fallback: string) {
+  const body = await response.json().catch(() => null) as { error?: string } | null;
+  return new Error(body?.error ?? fallback);
+}
+
+function announceChange() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("mini-mystics:friends-changed"));
+}
+
+export async function findProfileByHandler(handlerName: string) {
+  const normalized = normalizeHandlerName(handlerName);
+  const response = await fetch(`/api/friends?handler=${encodeURIComponent(normalized)}`, {
+    headers: await authenticatedHeaders(),
+    cache: "no-store",
   });
+  if (response.status === 404) return null;
+  if (!response.ok) throw await responseError(response, "Could not search for that Handler.");
+  return response.json() as Promise<PlayerProfile>;
+}
+
+export async function sendFriendRequest(_fromUid: string, toUid: string) {
+  const response = await fetch("/api/friends", {
+    method: "POST",
+    headers: await authenticatedHeaders(true),
+    body: JSON.stringify({ recipientUid: toUid }),
+  });
+  if (!response.ok) throw await responseError(response, "Could not send the friend request.");
+  announceChange();
 }
 
 export async function acceptFriendRequest(friendshipId: string) {
-  await updateDoc(doc(getFirebaseFirestore(), "friendships", friendshipId), { status: "friends", updatedAt: new Date().toISOString() });
+  const response = await fetch("/api/friends", {
+    method: "PATCH",
+    headers: await authenticatedHeaders(true),
+    body: JSON.stringify({ friendshipId }),
+  });
+  if (!response.ok) throw await responseError(response, "Could not accept the friend request.");
+  announceChange();
 }
 
 export async function removeFriendship(friendshipId: string) {
-  await deleteDoc(doc(getFirebaseFirestore(), "friendships", friendshipId));
+  const response = await fetch("/api/friends", {
+    method: "DELETE",
+    headers: await authenticatedHeaders(true),
+    body: JSON.stringify({ friendshipId }),
+  });
+  if (!response.ok) throw await responseError(response, "Could not update that friendship.");
+  announceChange();
 }
 
-export function subscribeToFriends(uid: string, callback: (entries: FriendEntry[]) => void, onError: (error: Error) => void) {
-  const relationships = query(collection(getFirebaseFirestore(), "friendships"), where("members", "array-contains", uid));
-  return onSnapshot(relationships, async (snapshot) => {
+export function subscribeToFriends(_uid: string, callback: (entries: FriendEntry[]) => void, onError: (error: Error) => void) {
+  let active = true;
+  const load = async () => {
     try {
-      const entries = await Promise.all(snapshot.docs.map(async (item) => {
-        const friendship = { id: item.id, ...item.data() } as Friendship;
-        const otherUid = friendship.members.find((member) => member !== uid)!;
-        const profileSnapshot = await getDoc(doc(getFirebaseFirestore(), "profiles", otherUid));
-        const direction = friendship.status === "friends" ? "friends" : friendship.requestedBy === uid ? "outgoing" : "incoming";
-        return { ...friendship, profile: profileSnapshot.exists() ? profileSnapshot.data() as PlayerProfile : null, direction } as FriendEntry;
-      }));
-      callback(entries.sort((a, b) => (a.profile?.handlerName ?? "").localeCompare(b.profile?.handlerName ?? "")));
+      const response = await fetch("/api/friends", { headers: await authenticatedHeaders(), cache: "no-store" });
+      if (!response.ok) throw await responseError(response, "Could not load friends.");
+      const entries = await response.json() as FriendEntry[];
+      if (active) callback(entries);
     } catch (cause) {
-      onError(cause instanceof Error ? cause : new Error("Could not load friends."));
+      if (active) onError(cause instanceof Error ? cause : new Error("Could not load friends."));
     }
-  }, (cause) => onError(cause));
+  };
+  const refresh = () => { void load(); };
+  void load();
+  const timer = window.setInterval(load, 15_000);
+  window.addEventListener("mini-mystics:friends-changed", refresh);
+  return () => {
+    active = false;
+    window.clearInterval(timer);
+    window.removeEventListener("mini-mystics:friends-changed", refresh);
+  };
 }

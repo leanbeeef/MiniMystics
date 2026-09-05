@@ -18,6 +18,7 @@ export type OwnedCard = { id: string; definitionId: string; acquiredAt: string }
 export type RewardCard = { id: string; kind: "mystic" | "handler" | "xp" | "coins" | "xpBoost" | "coinBoost"; definitionId?: string; rarity: Rarity | "Unassigned"; amount?: number; revealed: boolean };
 export type PackOpening = { id: string; packId: string; name: string; cards: RewardCard[]; complete: boolean };
 export type Loadout = { id: string; name: string; size: 3 | 5 | 8; mysticIds: string[]; handlerIds: string[] };
+export type BattleSelection = { loadoutId?: string; mysticIds?: string[]; handlerIds?: string[]; random?: boolean };
 export type Binder = { id: string; name: string; cardIds: string[] };
 export type ComicProgress = { pageIndex: number; completed: boolean; updatedAt: string };
 export type PlayerState = {
@@ -138,12 +139,33 @@ export const CAMPAIGN = [
   { id: "fallen", name: "Arch, The Fallen", difficulty: "Hard", style: "Void control", level: 6, size: 8 as const, reward: 500 },
 ];
 
-export function createBattle(state: PlayerState, opponentId: string, loadoutId?: string) {
+function shuffled<T>(items: T[]) {
+  const next = [...items];
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const swap = Math.floor(Math.random() * (index + 1));
+    [next[index], next[swap]] = [next[swap], next[index]];
+  }
+  return next;
+}
+
+export function createBattle(state: PlayerState, opponentId: string, selection?: BattleSelection) {
   const opponent = CAMPAIGN.find((item) => item.id === opponentId) ?? CAMPAIGN[0];
-  const loadout = state.loadouts.find((item) => item.id === loadoutId && item.size === opponent.size);
-  const mysticOwned = (loadout ? loadout.mysticIds.map((cardId) => state.ownedCards.find((owned) => owned.id === cardId)!).filter(Boolean) : state.ownedCards.filter((owned) => catalog.mystics.some((m) => m.id === owned.definitionId)).slice(0, opponent.size));
+  const loadout = state.loadouts.find((item) => item.id === selection?.loadoutId && item.size === opponent.size);
+  const mysticPool = state.ownedCards.filter((owned) => catalog.mystics.some((m) => m.id === owned.definitionId));
+  const chosenMysticIds = selection?.mysticIds ?? loadout?.mysticIds;
+  const mysticOwned = selection?.random
+    ? shuffled(mysticPool).slice(0, opponent.size)
+    : chosenMysticIds
+      ? chosenMysticIds.map((cardId) => state.ownedCards.find((owned) => owned.id === cardId)!).filter(Boolean)
+      : mysticPool.slice(0, opponent.size);
+  if (new Set(mysticOwned.map((card) => card.id)).size !== mysticOwned.length) throw new Error("A formation cannot use the same owned card twice");
   if (mysticOwned.length !== opponent.size) throw new Error(`A valid ${opponent.size}-Mystic loadout is required`);
-  const handlerOwned = (loadout ? loadout.handlerIds : state.ownedCards.filter((owned) => catalog.handlers.some((h) => h.id === owned.definitionId)).slice(0, 3).map((owned) => owned.id)).map((cardId) => state.ownedCards.find((owned) => owned.id === cardId)!).filter(Boolean);
+  const handlerPool = state.ownedCards.filter((owned) => catalog.handlers.some((h) => h.id === owned.definitionId));
+  const chosenHandlerIds = selection?.handlerIds ?? loadout?.handlerIds;
+  const handlerOwned = selection?.random
+    ? shuffled(handlerPool).slice(0, 3)
+    : (chosenHandlerIds ?? handlerPool.slice(0, 3).map((owned) => owned.id)).map((cardId) => state.ownedCards.find((owned) => owned.id === cardId)!).filter(Boolean);
+  if (handlerOwned.length > 3 || new Set(handlerOwned.map((card) => card.id)).size !== handlerOwned.length) throw new Error("Choose no more than three different Handlers");
   const aiPool = [...catalog.mystics].sort((a, b) => a.power + a.defense + a.baseAttack - (b.power + b.defense + b.baseAttack));
   const start = opponent.difficulty === "Hard" ? Math.max(0, aiPool.length - opponent.size * 2) : opponent.difficulty === "Medium" ? Math.floor(aiPool.length / 2) : 0;
   const aiCards = aiPool.slice(start, start + opponent.size).map((card, index) => ({ id: `ai-owned-${index}`, definitionId: card.id, acquiredAt: "" }));

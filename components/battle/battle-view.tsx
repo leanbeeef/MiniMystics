@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Activity, ArrowRight, Check, CircleOff, Clock3, Dices, Eye, GripHorizontal, Heart, Info, Maximize2, Minus, RotateCcw, ScrollText, Shield, Sparkles, Swords, Target, Trophy, WandSparkles, X, Zap } from "lucide-react";
 import { useGame } from "../game-provider";
@@ -9,6 +10,7 @@ import { BATTLE_ART, OPPONENT_ART, ORDER_ART, ORDER_COLORS } from "@/lib/art";
 import { catalog } from "@/lib/client-state";
 import type { BattleEvent, BattleSide, Combatant, HandlerDefinition, ParsedMove, StatusEffect } from "@/lib/game/types";
 import { ORDER_BATTLE_EFFECT } from "@/lib/vfx/presets";
+import { BattleSetup } from "./battle-setup";
 
 type BattleUiPhase = "INTRO" | "PLAYER_SELECT_ACTOR" | "PLAYER_SELECT_ACTION" | "PLAYER_SELECT_TARGET" | "PLAYER_ROLLING" | "PLAYER_RESOLVING" | "ENEMY_THINKING" | "ENEMY_ACTION" | "TURN_TRANSITION" | "VICTORY" | "DEFEAT";
 type ActionSelection = { kind: "basic" } | { kind: "special"; moveIndex: number } | { kind: "handler"; handlerIndex: number };
@@ -56,6 +58,8 @@ function startingRolls(message?: string) {
 }
 
 export function BattleView() {
+  const opponentId = useSearchParams().get("opponent");
+  if (opponentId) return <BattleSetup opponentId={opponentId} />;
   return <VFXManager scope="battle"><BattleExperience /></VFXManager>;
 }
 

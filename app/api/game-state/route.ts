@@ -245,7 +245,7 @@ async function synchronizeState(identity: Awaited<ReturnType<typeof requireFireb
     }
 
     return tx.playerGameState.findUniqueOrThrow({ where: { profileId: profile.id }, select: { version: true, updatedAt: true } });
-  });
+  }, { maxWait: 10_000, timeout: 30_000 });
 }
 
 function errorResponse(cause: unknown) {

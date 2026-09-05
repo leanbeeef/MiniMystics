@@ -3,7 +3,7 @@ import { calculateDamage, canUseHandler, checkVictory, performSpecial, tickCoold
 import { stackBoost } from "./boosts";
 import { nextAlphaPity, shouldGuaranteeAlpha } from "./packs";
 import type { BattleState, Combatant, ParsedMove } from "./types";
-import { initialState, rewardCompletedBattle } from "../client-state";
+import { catalog, createBattle, initialState, rewardCompletedBattle } from "../client-state";
 
 const move = (overrides: Partial<ParsedMove> = {}): ParsedMove => ({ name: "Quickstrike", requiredRoll: 4, minimumRoll: 4, attackModifier: 8, cooldown: 1, targetType: "enemy", rawText: "Quickstrike: 4+ = +8 ATK", needsReview: false, ...overrides });
 const fighter = (id: string, baseAttack = 12, defense = 5): Combatant => ({ instanceId: id, definitionId: id, name: id, image: null, rarity: "Wild", order: "Test", maxPower: 30, currentPower: 30, defense, baseAttack, moves: [move()], cooldowns: {}, effects: [], defeated: false });
@@ -17,6 +17,27 @@ describe("battle math", () => {
   it("ticks CD 1 across the owner's turns", () => { const s = battle(); s.player.mystics[0].cooldowns.Quickstrike = 2; tickCooldowns(s.player); expect(s.player.mystics[0].cooldowns.Quickstrike).toBe(1); tickCooldowns(s.player); expect(s.player.mystics[0].cooldowns.Quickstrike).toBe(0); });
   it("marks a zero-power Mystic defeated and detects victory", () => { const s = battle(); s.ai.mystics[0].currentPower = 0; s.ai.mystics[0].defeated = true; expect(checkVictory(s)).toBe("player"); });
   it("prevents Handler uses above Max Uses", () => { expect(canUseHandler(1, 1)).toBe(false); expect(canUseHandler(1, 2)).toBe(true); });
+});
+
+describe("battle formation selection", () => {
+  it("uses the exact owned cards chosen for a temporary formation", () => {
+    const state = structuredClone(initialState);
+    state.account = { email: "handler@example.com", username: "Handler" };
+    state.ownedCards = catalog.mystics.slice(0, 4).map((card, index) => ({ id: `owned-${index}`, definitionId: card.id, acquiredAt: "" }));
+    const selected = [state.ownedCards[2].id, state.ownedCards[0].id, state.ownedCards[3].id];
+    createBattle(state, "rookie", { mysticIds: selected, handlerIds: [] });
+    expect(state.battle?.player.mystics.map((card) => card.definitionId)).toEqual(selected.map((id) => state.ownedCards.find((card) => card.id === id)?.definitionId));
+  });
+
+  it("builds a valid unique lineup when random is selected", () => {
+    const state = structuredClone(initialState);
+    state.account = { email: "handler@example.com", username: "Handler" };
+    state.ownedCards = catalog.mystics.slice(0, 6).map((card, index) => ({ id: `owned-${index}`, definitionId: card.id, acquiredAt: "" }));
+    createBattle(state, "rookie", { random: true });
+    const lineup = state.battle?.player.mystics ?? [];
+    expect(lineup).toHaveLength(3);
+    expect(new Set(lineup.map((card) => card.instanceId)).size).toBe(3);
+  });
 });
 
 describe("economy rules", () => {
