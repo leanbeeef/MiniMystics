@@ -4,7 +4,7 @@ import { PROFILE_AVATARS } from "@/lib/art";
 import type { FriendEntry } from "@/lib/social";
 import type { PlayerProfile } from "@/lib/profile-model";
 import { normalizeHandlerName } from "@/lib/profile-model";
-import { requireFirebaseUser, type VerifiedFirebaseUser } from "@/lib/server/firebase-auth";
+import { requireSupabaseUser, type VerifiedSupabaseUser } from "@/lib/server/supabase-auth";
 import { getPrisma } from "@/lib/server/prisma";
 
 export const runtime = "nodejs";
@@ -22,7 +22,7 @@ function profileDto(profile: RelatedProfile): PlayerProfile | null {
   const handler = profile.user.handlerName;
   if (!handler) return null;
   return {
-    uid: profile.user.firebaseUid ?? profile.user.id,
+    uid: profile.user.supabaseAuthId ?? profile.user.firebaseUid ?? profile.user.id,
     handlerName: handler.displayName,
     handleNormalized: handler.normalizedName,
     avatarPath: profile.avatarPath ?? PROFILE_AVATARS[0].path,
@@ -36,25 +36,25 @@ function profileDto(profile: RelatedProfile): PlayerProfile | null {
   };
 }
 
-async function currentProfile(identity: VerifiedFirebaseUser) {
+async function currentProfile(identity: VerifiedSupabaseUser) {
   return getPrisma().playerProfile.findFirst({
-    where: { user: { OR: [{ firebaseUid: identity.uid }, { email: identity.email }] } },
+    where: { user: { OR: [{ supabaseAuthId: identity.uid }, { email: identity.email }] } },
     include: { user: { include: { handlerName: true } } },
   });
 }
 
 function relationshipDto(relationship: Relationship, mine: RelatedProfile): FriendEntry {
   const other = relationship.requesterId === mine.id ? relationship.addressee : relationship.requester;
-  const requesterUid = relationship.requester.user.firebaseUid ?? relationship.requester.user.id;
-  const mineUid = mine.user.firebaseUid ?? mine.user.id;
+  const requesterUid = relationship.requester.user.supabaseAuthId ?? relationship.requester.user.firebaseUid ?? relationship.requester.user.id;
+  const mineUid = mine.user.supabaseAuthId ?? mine.user.firebaseUid ?? mine.user.id;
   const direction = relationship.status === FriendshipStatus.FRIENDS
     ? "friends"
     : requesterUid === mineUid ? "outgoing" : "incoming";
   return {
     id: relationship.id,
     members: [
-      relationship.requester.user.firebaseUid ?? relationship.requester.user.id,
-      relationship.addressee.user.firebaseUid ?? relationship.addressee.user.id,
+      relationship.requester.user.supabaseAuthId ?? relationship.requester.user.firebaseUid ?? relationship.requester.user.id,
+      relationship.addressee.user.supabaseAuthId ?? relationship.addressee.user.firebaseUid ?? relationship.addressee.user.id,
     ],
     requestedBy: requesterUid,
     status: relationship.status === FriendshipStatus.FRIENDS ? "friends" : "pending",
@@ -80,7 +80,7 @@ function apiError(cause: unknown) {
 
 export async function GET(request: Request) {
   try {
-    const identity = await requireFirebaseUser(request);
+    const identity = await requireSupabaseUser(request);
     const handler = new URL(request.url).searchParams.get("handler");
     if (handler !== null) {
       const found = await getPrisma().playerProfile.findFirst({
@@ -118,13 +118,13 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const identity = await requireFirebaseUser(request);
+    const identity = await requireSupabaseUser(request);
     const recipientUid = await bodyId(request, "recipientUid");
     if (!recipientUid) return NextResponse.json({ error: "Choose a Handler first." }, { status: 400 });
     const mine = await currentProfile(identity);
     if (!mine) return NextResponse.json({ error: "Finish your Handler profile before adding friends." }, { status: 409 });
     const recipient = await getPrisma().playerProfile.findFirst({
-      where: { user: { OR: [{ firebaseUid: recipientUid }, { id: recipientUid }] } },
+      where: { user: { OR: [{ supabaseAuthId: recipientUid }, { firebaseUid: recipientUid }, { id: recipientUid }] } },
       include: { user: { include: { handlerName: true } } },
     });
     if (!recipient) return NextResponse.json({ error: "That Handler no longer exists." }, { status: 404 });
@@ -150,7 +150,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const identity = await requireFirebaseUser(request);
+    const identity = await requireSupabaseUser(request);
     const friendshipId = await bodyId(request, "friendshipId");
     const mine = await currentProfile(identity);
     if (!friendshipId || !mine) return NextResponse.json({ error: "Friend request not found." }, { status: 404 });
@@ -167,7 +167,7 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const identity = await requireFirebaseUser(request);
+    const identity = await requireSupabaseUser(request);
     const friendshipId = await bodyId(request, "friendshipId");
     const mine = await currentProfile(identity);
     if (!friendshipId || !mine) return NextResponse.json({ error: "Friendship not found." }, { status: 404 });

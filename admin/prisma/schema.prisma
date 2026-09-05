@@ -112,6 +112,7 @@ enum MarketplaceListingStatus {
 
 model User {
   id           String         @id @default(cuid())
+  supabaseAuthId String?       @unique
   firebaseUid  String?        @unique
   email        String         @unique
   passwordHash String?

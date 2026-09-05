@@ -2,12 +2,11 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createUserWithEmailAndPassword, deleteUser, getAdditionalUserInfo, GoogleAuthProvider, linkWithPopup, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, type User } from "firebase/auth";
+import type { User } from "@supabase/supabase-js";
 import { activateBoost as activateBoostRule, buyPack as buyPackRule, CAMPAIGN, catalog, createAccount, createBattle, definitionFor, initialState, rewardCompletedBattle, type BattleSelection, type Binder, type Loadout, type PlayerState } from "@/lib/client-state";
 import { endTurn, performBasicAttack, performSpecial } from "@/lib/game/engine";
-import { getFirebaseAuth } from "@/lib/firebase";
-import { ALLEGIANCES, ensurePlayerProfile, getPlayerProfile, REGIONS, savePlayerProfile, validateHandlerName, type ProfileInput } from "@/lib/player-profile";
-import { PROFILE_AVATARS } from "@/lib/art";
+import { getSupabaseClient } from "@/lib/supabase";
+import { ensurePlayerProfile, getPlayerProfile, savePlayerProfile, validateHandlerName, type ProfileInput } from "@/lib/player-profile";
 import { loadCloudGameState, queueCloudGameState, type GameActivityType } from "@/lib/game-sync-client";
 
 type Accounts = Record<string, { passwordHash?: string; state: PlayerState }>;
@@ -15,9 +14,10 @@ type GameContextValue = {
   state: PlayerState;
   ready: boolean;
   error: string | null;
-  signup(email: string, username: string, password: string): Promise<void>;
+  signup(email: string, username: string, password: string): Promise<boolean>;
   login(email: string, password: string): Promise<void>;
-  loginWithGoogle(): Promise<boolean>;
+  loginWithGoogle(): Promise<void>;
+  requestPasswordReset(email: string): Promise<void>;
   linkGoogle(): Promise<void>;
   updatePlayerProfile(profile: ProfileInput): Promise<void>;
   logout(): Promise<void>;
@@ -49,18 +49,17 @@ function getAccounts(): Accounts {
 function authMessage(cause: unknown) {
   const code = typeof cause === "object" && cause && "code" in cause ? String(cause.code) : "";
   const messages: Record<string, string> = {
-    "auth/email-already-in-use": "An account with that email already exists.",
-    "auth/invalid-credential": "Email or password is incorrect.",
-    "auth/invalid-email": "Enter a valid email address.",
-    "auth/missing-config": "Firebase is not configured for this deployment.",
-    "auth/network-request-failed": "Could not reach Firebase. Check your connection and try again.",
-    "auth/operation-not-allowed": "Email and password sign-in is not enabled yet.",
-    "auth/popup-blocked": "The Google sign-in window was blocked. Allow popups and try again.",
-    "auth/popup-closed-by-user": "Google sign-in was cancelled.",
-    "auth/account-exists-with-different-credential": "This email already has a Mini Mystics account. Sign in with your password, then link Google from your profile.",
-    "auth/too-many-requests": "Too many attempts. Wait a moment and try again.",
-    "auth/user-disabled": "This account has been disabled.",
-    "auth/weak-password": "Choose a password with at least 8 characters.",
+    "email_exists": "An account with that email already exists.",
+    "user_already_exists": "An account with that email already exists.",
+    "invalid_credentials": "Email or password is incorrect.",
+    "email_address_invalid": "Enter a valid email address.",
+    "auth/missing-config": "Supabase is not configured for this deployment.",
+    "email_provider_disabled": "Email and password sign-in is not enabled yet.",
+    "over_email_send_rate_limit": "Too many email attempts. Wait a moment and try again.",
+    "over_request_rate_limit": "Too many attempts. Wait a moment and try again.",
+    "user_banned": "This account has been disabled.",
+    "weak_password": "Choose a password with at least 8 characters.",
+    "email_not_confirmed": "Confirm your email before signing in.",
     "permission-denied": "You do not have permission to update this profile.",
     "failed-precondition": "Profile storage needs one more setup step.",
     "unavailable": "Cloud profile sync is temporarily unavailable. Your game is still saved on this device.",
@@ -70,13 +69,13 @@ function authMessage(cause: unknown) {
     return "Cloud profile sync is temporarily unavailable. Your game is still saved on this device.";
   }
   if (cause instanceof Error && cause.message) return cause.message;
-  return "Could not authenticate with Firebase.";
+  return "Could not authenticate with Supabase.";
 }
 
 function isTemporaryProfileSyncFailure(cause: unknown) {
   const code = typeof cause === "object" && cause && "code" in cause ? String(cause.code) : "";
   const message = cause instanceof Error ? cause.message : "";
-  return ["unavailable", "auth/network-request-failed", "profile/http-500", "profile/http-503"].includes(code)
+  return ["unavailable", "network_error", "profile/http-500", "profile/http-503"].includes(code)
     || /network|failed to fetch|temporarily unavailable/i.test(message);
 }
 
@@ -87,7 +86,8 @@ function restoreProfile(user: User) {
   let saved = accounts[email]?.state;
   let changed = false;
   if (!saved) {
-    const fallbackName = user.displayName?.trim() || email.split("@")[0] || "Handler";
+    const metadataName = user.user_metadata?.display_name ?? user.user_metadata?.full_name ?? user.user_metadata?.name;
+    const fallbackName = (typeof metadataName === "string" ? metadataName.trim() : "") || email.split("@")[0] || "Handler";
     saved = createAccount(email, fallbackName);
     changed = true;
   }
@@ -116,7 +116,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      return onAuthStateChanged(getFirebaseAuth(), async (user) => {
+      let active = true;
+      let sequence = 0;
+      const hydrate = async (user: User | null, currentSequence: number) => {
         if (user) {
           const restored = restoreProfile(user);
           setState(restored);
@@ -127,7 +129,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           const hydrated = cloudState ?? restored;
           hydrated.account = restored.account;
           try {
-            const profile = await getPlayerProfile(user.uid)
+            const profile = await getPlayerProfile(user.id)
               ?? await ensurePlayerProfile(user, hydrated.account?.username);
             hydrated.profile = profile;
             if (profile) hydrated.account = { email: hydrated.account!.email, username: profile.handlerName };
@@ -141,10 +143,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             accounts[accountEmail] = { ...accounts[accountEmail], state: hydrated };
             localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
           }
+          if (!active || currentSequence !== sequence) return;
           setState(structuredClone(hydrated));
           if (!cloudState) void queueCloudGameState(hydrated, "SESSION_STARTED");
         } else { localStorage.removeItem(CURRENT_KEY); setState(initialState); setReady(true); }
-      }, (cause) => { setError(authMessage(cause)); setReady(true); });
+      };
+      const { data: { subscription } } = getSupabaseClient().auth.onAuthStateChange((_event, session) => {
+        const currentSequence = ++sequence;
+        window.setTimeout(() => { if (active) void hydrate(session?.user ?? null, currentSequence); }, 0);
+      });
+      return () => { active = false; subscription.unsubscribe(); };
     } catch (cause) {
       setError(authMessage(cause));
       setReady(true);
@@ -171,31 +179,23 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const normalized = email.trim().toLowerCase();
     const handlerError = validateHandlerName(username);
     if (!normalized || handlerError || password.length < 8) throw new Error(handlerError ?? "Use a valid email and at least 8 password characters.");
-    let createdUser: User | null = null;
-    let identitySaved = false;
     try {
-      const credential = await createUserWithEmailAndPassword(getFirebaseAuth(), normalized, password);
-      createdUser = credential.user;
-      await updateProfile(credential.user, { displayName: username.trim() });
-      const profile = await savePlayerProfile(credential.user.uid, {
-        handlerName: username.trim(),
-        avatarPath: PROFILE_AVATARS[0].path,
-        tagline: "",
-        region: REGIONS[0],
-        allegiance: ALLEGIANCES[0],
-        favoriteMysticId: null,
+      const { data, error: signupError } = await getSupabaseClient().auth.signUp({
+        email: normalized,
+        password,
+        options: { data: { display_name: username.trim(), handler_name: username.trim() } },
       });
-      identitySaved = true;
+      if (signupError) throw signupError;
+      if (!data.user) throw new Error("Supabase did not create the account.");
+      if (!data.session) return false;
       const accounts = getAccounts();
       const next = accounts[normalized]?.state ?? createAccount(normalized, username.trim());
       next.account = { email: normalized, username: username.trim() };
-      next.profile = profile;
       accounts[normalized] = { ...accounts[normalized], state: next };
       localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts)); localStorage.setItem(CURRENT_KEY, normalized);
       setState(next); setError(null);
-      void queueCloudGameState(next, "PROFILE_UPDATED", { handlerName: profile.handlerName, accountCreated: true });
+      return true;
     } catch (cause) {
-      if (createdUser && !identitySaved) await deleteUser(createdUser).catch(() => undefined);
       throw new Error(authMessage(cause));
     }
   }, []);
@@ -203,34 +203,50 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const normalized = email.trim().toLowerCase();
     try {
-      const credential = await signInWithEmailAndPassword(getFirebaseAuth(), normalized, password);
-      setState(restoreProfile(credential.user)); setError(null);
+      const { data, error: loginError } = await getSupabaseClient().auth.signInWithPassword({ email: normalized, password });
+      if (loginError) throw loginError;
+      if (!data.user) throw new Error("Supabase did not return an authenticated user.");
+      setState(restoreProfile(data.user)); setError(null);
     } catch (cause) { throw new Error(authMessage(cause)); }
   }, []);
 
   const loginWithGoogle = useCallback(async () => {
     try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" });
-      const credential = await signInWithPopup(getFirebaseAuth(), provider);
-      const restored = restoreProfile(credential.user);
-      const profile = await ensurePlayerProfile(credential.user, credential.user.displayName ?? undefined);
-      restored.profile = profile;
-      restored.account = { email: credential.user.email!.toLowerCase(), username: profile.handlerName };
-      setState(restored);
-      setError(null);
-      void queueCloudGameState(restored, "PROFILE_UPDATED", { handlerName: profile.handlerName, googleSignIn: true });
-      return Boolean(getAdditionalUserInfo(credential)?.isNewUser);
+      const { error: oauthError } = await getSupabaseClient().auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/game`,
+          queryParams: { prompt: "select_account" },
+        },
+      });
+      if (oauthError) throw oauthError;
+    } catch (cause) {
+      throw new Error(authMessage(cause));
+    }
+  }, []);
+
+  const requestPasswordReset = useCallback(async (email: string) => {
+    const normalized = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) throw new Error("Enter your email address first.");
+    try {
+      const { error: resetError } = await getSupabaseClient().auth.resetPasswordForEmail(normalized, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+      if (resetError) throw resetError;
     } catch (cause) {
       throw new Error(authMessage(cause));
     }
   }, []);
 
   const linkGoogle = useCallback(async () => {
-    const user = getFirebaseAuth().currentUser;
-    if (!user) throw new Error("Sign in before linking Google.");
     try {
-      await linkWithPopup(user, new GoogleAuthProvider());
+      const { data: { user }, error: userError } = await getSupabaseClient().auth.getUser();
+      if (userError || !user) throw new Error("Sign in before linking Google.");
+      const { error: linkError } = await getSupabaseClient().auth.linkIdentity({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/profile` },
+      });
+      if (linkError) throw linkError;
       setError(null);
     } catch (cause) {
       throw new Error(authMessage(cause));
@@ -238,11 +254,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updatePlayerProfile = useCallback(async (input: ProfileInput) => {
-    const user = getFirebaseAuth().currentUser;
-    if (!user) throw new Error("Sign in before editing your profile.");
     try {
-      const profile = await savePlayerProfile(user.uid, input);
-      await updateProfile(user, { displayName: profile.handlerName });
+      const { data: { user }, error: userError } = await getSupabaseClient().auth.getUser();
+      if (userError || !user) throw new Error("Sign in before editing your profile.");
+      const profile = await savePlayerProfile(user.id, input);
+      const { error: updateError } = await getSupabaseClient().auth.updateUser({ data: { display_name: profile.handlerName, handler_name: profile.handlerName } });
+      if (updateError) throw updateError;
       commit((draft) => {
         draft.profile = profile;
         if (draft.account) draft.account.username = profile.handlerName;
@@ -252,7 +269,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   }, [commit]);
 
-  const logout = useCallback(async () => { await signOut(getFirebaseAuth()); localStorage.removeItem(CURRENT_KEY); setState(initialState); router.push("/"); }, [router]);
+  const logout = useCallback(async () => { await getSupabaseClient().auth.signOut(); localStorage.removeItem(CURRENT_KEY); setState(initialState); router.push("/"); }, [router]);
 
   const saveComicProgress = useCallback((volumeId: string, pageIndex: number, completed = false) => commit((draft) => {
     draft.comicProgress ??= {};
@@ -347,7 +364,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     finalize(draft);
   }, "AI_TURN"), [commit]);
 
-  const value = useMemo<GameContextValue>(() => ({ state, ready, error, signup, login, loginWithGoogle, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn }), [state, ready, error, signup, login, loginWithGoogle, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn]);
+  const value = useMemo<GameContextValue>(() => ({ state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn }), [state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn]);
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }
 

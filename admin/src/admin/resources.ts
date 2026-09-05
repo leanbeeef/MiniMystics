@@ -183,7 +183,7 @@ const imageProperty = () => ({
 });
 
 const specs: ResourceSpec[] = [
-  { model: 'User', section: 'Players', options: { actions: accessActions(undefined), properties: { passwordHash: { isVisible: false }, ...immutableProperties(['firebaseUid', 'email', 'username']) }, listProperties: ['id', 'firebaseUid', 'email', 'username', 'createdAt'] } },
+  { model: 'User', section: 'Players', options: { actions: accessActions(undefined), properties: { passwordHash: { isVisible: false }, ...immutableProperties(['supabaseAuthId', 'firebaseUid', 'email', 'username']) }, listProperties: ['id', 'supabaseAuthId', 'email', 'username', 'createdAt'] } },
   { model: 'PlayerProfile', section: 'Players', writeRoles: MODERATORS, options: { actions: { ...accessActions(MODERATORS), adjustBalance }, editProperties: ['tagline', 'region', 'allegiance', 'avatarPath', 'favoriteMysticId'], properties: { ...immutableProperties(['level', 'xp', 'coins', 'premiumCurrency', 'rankedRating', 'wins', 'losses', 'starterGranted']), avatarPath: imageProperty() } } },
   { model: 'HandlerName', section: 'Players', writeRoles: MODERATORS, options: { actions: { ...accessActions(MODERATORS), edit: { isAccessible: allowed(MODERATORS), before: stampHandlerModeration, after: auditAfter('edit') } }, editProperties: ['forcedRename'], listProperties: ['displayName', 'normalizedName', 'forcedRename', 'prohibitedAt', 'updatedAt'] } },
   { model: 'AuthAccount', section: 'Players', options: { actions: accessActions(undefined), listProperties: ['userId', 'provider', 'providerAccountId', 'emailVerified', 'createdAt'] } },

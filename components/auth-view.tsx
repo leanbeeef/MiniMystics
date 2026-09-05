@@ -41,7 +41,7 @@ function validate(mode: AuthMode, email: string, username: string, password: str
 }
 
 function AuthPanel() {
-  const { signup, login, loginWithGoogle } = useGame();
+  const { signup, login, loginWithGoogle, requestPasswordReset } = useGame();
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
@@ -64,8 +64,14 @@ function AuthPanel() {
     if (Object.keys(nextErrors).length) return;
     setBusy(true);
     try {
-      if (mode === "signup") await signup(email, username, password);
-      else await login(email, password);
+      if (mode === "signup") {
+        const signedIn = await signup(email, username, password);
+        if (!signedIn) {
+          setMessage("Account created. Check your email to confirm it, then return here to sign in.");
+          setBusy(false);
+          return;
+        }
+      } else await login(email, password);
       setSuccess(true);
       await new Promise((resolve) => window.setTimeout(resolve, 380));
       router.push(mode === "signup" ? "/open" : "/game");
@@ -80,12 +86,23 @@ function AuthPanel() {
     setBusy(true);
     setMessage("");
     try {
-      const isNew = await loginWithGoogle();
-      setSuccess(true);
-      await new Promise((resolve) => window.setTimeout(resolve, 300));
-      router.push(isNew ? "/profile" : "/game");
+      await loginWithGoogle();
     } catch (cause) {
       setMessage(cause instanceof Error ? cause.message : "Could not continue with Google.");
+      setBusy(false);
+    }
+  };
+
+  const forgotPassword = async () => {
+    if (busy) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      await requestPasswordReset(email);
+      setMessage("Password reset email sent. Check your inbox.");
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : "Could not send the reset email.");
+    } finally {
       setBusy(false);
     }
   };
@@ -97,6 +114,7 @@ function AuthPanel() {
       {mode === "signup" ? <FormField id="auth-username" label="Handler name" value={username} placeholder="Your public name" autoComplete="username" error={errors.username} onChange={(value) => { setUsername(value); clearError("username"); }} /> : null}
       <FormField id="auth-email" label="Email" type="email" value={email} placeholder="you@example.com" autoComplete="email" error={errors.email} onChange={(value) => { setEmail(value); clearError("email"); }} />
       <PasswordField value={password} mode={mode} error={errors.password} visible={showPassword} onChange={(value) => { setPassword(value); clearError("password"); }} onToggle={() => setShowPassword((current) => !current)} />
+      {mode === "login" ? <button className="auth-mode-switch" type="button" disabled={busy} onClick={forgotPassword}>Forgot your password?</button> : null}
       <AuthError message={message} />
       <AuthButton busy={busy} />
     </form>

@@ -9,7 +9,7 @@ import {
   type PlayerProfile,
   type ProfileInput,
 } from "@/lib/profile-model";
-import { requireFirebaseUser, type VerifiedFirebaseUser } from "@/lib/server/firebase-auth";
+import { requireSupabaseUser, type VerifiedSupabaseUser } from "@/lib/server/supabase-auth";
 import { getPrisma } from "@/lib/server/prisma";
 
 export const runtime = "nodejs";
@@ -20,7 +20,7 @@ type ProfileRecord = Prisma.UserGetPayload<{ include: { profile: true; handlerNa
 function toProfile(user: ProfileRecord): PlayerProfile | null {
   if (!user.profile || !user.handlerName) return null;
   return {
-    uid: user.firebaseUid ?? user.id,
+    uid: user.supabaseAuthId ?? user.firebaseUid ?? user.id,
     handlerName: user.handlerName.displayName,
     handleNormalized: user.handlerName.normalizedName,
     avatarPath: user.profile.avatarPath ?? PROFILE_AVATARS[0].path,
@@ -55,11 +55,16 @@ async function prohibitedHandler(normalizedName: string) {
     : normalizedName === entry.normalizedName);
 }
 
-async function findIdentityUser(identity: VerifiedFirebaseUser) {
-  return getPrisma().user.findFirst({
-    where: { OR: [{ firebaseUid: identity.uid }, { email: identity.email }] },
+async function findIdentityUser(identity: VerifiedSupabaseUser) {
+  const prisma = getPrisma();
+  const user = await prisma.user.findFirst({
+    where: { OR: [{ supabaseAuthId: identity.uid }, { email: identity.email }] },
     include: { profile: true, handlerName: true },
   });
+  if (user && user.supabaseAuthId !== identity.uid) {
+    return prisma.user.update({ where: { id: user.id }, data: { supabaseAuthId: identity.uid, email: identity.email }, include: { profile: true, handlerName: true } });
+  }
+  return user;
 }
 
 function safeUsername(value: string, uid: string) {
@@ -78,7 +83,7 @@ function apiError(cause: unknown) {
 
 export async function GET(request: Request) {
   try {
-    const identity = await requireFirebaseUser(request);
+    const identity = await requireSupabaseUser(request);
     const requestedHandler = new URL(request.url).searchParams.get("handler");
     if (requestedHandler !== null) {
       const validation = validateHandlerName(requestedHandler);
@@ -87,9 +92,9 @@ export async function GET(request: Request) {
       if (await prohibitedHandler(normalizedName)) return NextResponse.json({ available: false, error: "That Handler name is unavailable." });
       const owner = await getPrisma().handlerName.findUnique({
         where: { normalizedName },
-        select: { user: { select: { firebaseUid: true } } },
+        select: { user: { select: { supabaseAuthId: true, email: true } } },
       });
-      const available = !owner || owner.user.firebaseUid === identity.uid;
+      const available = !owner || owner.user.supabaseAuthId === identity.uid || owner.user.email === identity.email;
       return NextResponse.json({ available, error: available ? null : "That Handler name is already claimed." });
     }
 
@@ -104,7 +109,7 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const identity = await requireFirebaseUser(request);
+    const identity = await requireSupabaseUser(request);
     const raw = await request.text();
     if (raw.length > 20_000) return NextResponse.json({ error: "Profile data is too large." }, { status: 413 });
     const input = JSON.parse(raw) as ProfileInput;
@@ -117,13 +122,20 @@ export async function PUT(request: Request) {
 
     const prisma = getPrisma();
     const result = await prisma.$transaction(async (tx) => {
-      let user = await tx.user.findFirst({ where: { OR: [{ firebaseUid: identity.uid }, { email: identity.email }] } });
+      let user = await tx.user.findFirst({ where: { OR: [{ supabaseAuthId: identity.uid }, { email: identity.email }] } });
       if (!user) {
         let username = safeUsername(displayName, identity.uid);
         if (await tx.user.findUnique({ where: { username } })) username = `Handler${identity.uid.slice(0, 8)}`;
-        user = await tx.user.create({ data: { firebaseUid: identity.uid, email: identity.email, username } });
+        user = await tx.user.create({ data: { supabaseAuthId: identity.uid, email: identity.email, username } });
       } else {
-        user = await tx.user.update({ where: { id: user.id }, data: { firebaseUid: identity.uid, email: identity.email } });
+        user = await tx.user.update({ where: { id: user.id }, data: { supabaseAuthId: identity.uid, email: identity.email } });
+      }
+      for (const account of identity.accounts) {
+        await tx.authAccount.upsert({
+          where: { userId_provider: { userId: user.id, provider: account.provider } },
+          create: { userId: user.id, provider: account.provider, providerAccountId: account.providerAccountId, emailVerified: identity.emailVerified },
+          update: { providerAccountId: account.providerAccountId, emailVerified: identity.emailVerified },
+        });
       }
 
       const owner = await tx.handlerName.findUnique({ where: { normalizedName } });

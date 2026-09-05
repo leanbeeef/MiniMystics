@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, Search, UserMinus, UserPlus, UsersRound, X } from "lucide-react";
 import { useGame } from "./game-provider";
-import { getFirebaseAuth } from "@/lib/firebase";
+import { getSupabaseClient } from "@/lib/supabase";
 import { acceptFriendRequest, findProfileByHandler, removeFriendship, sendFriendRequest, subscribeToFriends, type FriendEntry } from "@/lib/social";
 import type { PlayerProfile } from "@/lib/player-profile";
 import { optimizedAsset } from "@/lib/asset-url";
@@ -20,7 +20,15 @@ export function FriendsView() {
   const [result, setResult] = useState<PlayerProfile | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  const uid = getFirebaseAuth().currentUser?.uid;
+  const [uid, setUid] = useState<string>();
+
+  useEffect(() => {
+    let active = true;
+    void getSupabaseClient().auth.getUser().then(({ data }) => {
+      if (active) setUid(data.user?.id);
+    });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (!uid) return;

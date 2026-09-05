@@ -1,5 +1,5 @@
 import type { PlayerState } from "./client-state";
-import { getFirebaseAuth } from "./firebase";
+import { getSupabaseAccessToken } from "./supabase";
 
 export type GameActivityType =
   | "SESSION_STARTED"
@@ -21,9 +21,8 @@ export type GameActivityType =
   | "AI_TURN";
 
 async function authorizationHeader() {
-  const user = getFirebaseAuth().currentUser;
-  if (!user) return null;
-  return { Authorization: `Bearer ${await user.getIdToken()}` };
+  const token = await getSupabaseAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : null;
 }
 
 export async function loadCloudGameState(): Promise<PlayerState | null> {

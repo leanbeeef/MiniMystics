@@ -1,4 +1,4 @@
-import { getFirebaseAuth } from "./firebase";
+import { getSupabaseAccessToken } from "./supabase";
 import { normalizeHandlerName, type PlayerProfile } from "./player-profile";
 
 export type FriendshipStatus = "pending" | "friends";
@@ -14,10 +14,10 @@ export type Friendship = {
 export type FriendEntry = Friendship & { profile: PlayerProfile | null; direction: "incoming" | "outgoing" | "friends" };
 
 async function authenticatedHeaders(json = false): Promise<Record<string, string>> {
-  const currentUser = getFirebaseAuth().currentUser;
-  if (!currentUser) throw new Error("Sign in to manage your friends.");
+  const token = await getSupabaseAccessToken();
+  if (!token) throw new Error("Sign in to manage your friends.");
   return {
-    Authorization: `Bearer ${await currentUser.getIdToken()}`,
+    Authorization: `Bearer ${token}`,
     ...(json ? { "Content-Type": "application/json" } : {}),
   };
 }

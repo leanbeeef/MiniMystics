@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { CardKind, CurrencyKind, MatchMode, MatchSide, MatchStatus, MatchTiming, Prisma, Rarity } from "@prisma/client";
 import type { PlayerState } from "@/lib/client-state";
-import { requireFirebaseUser } from "@/lib/server/firebase-auth";
+import { requireSupabaseUser } from "@/lib/server/supabase-auth";
 import { getPrisma } from "@/lib/server/prisma";
 
 export const runtime = "nodejs";
@@ -41,19 +41,27 @@ function safeUsername(value: string, uid: string) {
   return clean.length >= 3 ? clean : `Handler${uid.slice(0, 8)}`;
 }
 
-async function findOrCreateUser(identity: Awaited<ReturnType<typeof requireFirebaseUser>>, username: string) {
+async function findOrCreateUser(identity: Awaited<ReturnType<typeof requireSupabaseUser>>, username: string) {
   const prisma = getPrisma();
-  const existing = await prisma.user.findFirst({ where: { OR: [{ firebaseUid: identity.uid }, { email: identity.email }] } });
-  if (existing) {
-    return prisma.user.update({ where: { id: existing.id }, data: { firebaseUid: identity.uid, email: identity.email } });
+  const existing = await prisma.user.findFirst({ where: { OR: [{ supabaseAuthId: identity.uid }, { email: identity.email }] } });
+  let user;
+  if (existing) user = await prisma.user.update({ where: { id: existing.id }, data: { supabaseAuthId: identity.uid, email: identity.email } });
+  else {
+    let availableUsername = safeUsername(username || identity.name || "Handler", identity.uid);
+    if (await prisma.user.findUnique({ where: { username: availableUsername } })) availableUsername = `Handler${identity.uid.slice(0, 8)}`;
+    user = await prisma.user.create({ data: { supabaseAuthId: identity.uid, email: identity.email, username: availableUsername } });
   }
-
-  let availableUsername = safeUsername(username || identity.name || "Handler", identity.uid);
-  if (await prisma.user.findUnique({ where: { username: availableUsername } })) availableUsername = `Handler${identity.uid.slice(0, 8)}`;
-  return prisma.user.create({ data: { firebaseUid: identity.uid, email: identity.email, username: availableUsername } });
+  for (const account of identity.accounts) {
+    await prisma.authAccount.upsert({
+      where: { userId_provider: { userId: user.id, provider: account.provider } },
+      create: { userId: user.id, provider: account.provider, providerAccountId: account.providerAccountId, emailVerified: identity.emailVerified },
+      update: { providerAccountId: account.providerAccountId, emailVerified: identity.emailVerified },
+    });
+  }
+  return user;
 }
 
-async function synchronizeState(identity: Awaited<ReturnType<typeof requireFirebaseUser>>, state: PlayerState, activity: SyncBody["activity"]) {
+async function synchronizeState(identity: Awaited<ReturnType<typeof requireSupabaseUser>>, state: PlayerState, activity: SyncBody["activity"]) {
   const prisma = getPrisma();
   const user = await findOrCreateUser(identity, state.account?.username ?? "Handler");
   const profileInput = state.profile;
@@ -256,9 +264,9 @@ function errorResponse(cause: unknown) {
 
 export async function GET(request: Request) {
   try {
-    const identity = await requireFirebaseUser(request);
+    const identity = await requireSupabaseUser(request);
     const prisma = getPrisma();
-    const save = await prisma.playerGameState.findFirst({ where: { profile: { user: { firebaseUid: identity.uid } } } });
+    const save = await prisma.playerGameState.findFirst({ where: { profile: { user: { OR: [{ supabaseAuthId: identity.uid }, { email: identity.email }] } } } });
     if (!save) return NextResponse.json({ error: "No cloud save yet." }, { status: 404 });
     return NextResponse.json({ state: save.state, version: save.version, updatedAt: save.updatedAt }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (cause) {
@@ -268,7 +276,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const identity = await requireFirebaseUser(request);
+    const identity = await requireSupabaseUser(request);
     const raw = await request.text();
     if (raw.length > 2_000_000) return NextResponse.json({ error: "Game state is too large." }, { status: 413 });
     const body = JSON.parse(raw) as SyncBody;

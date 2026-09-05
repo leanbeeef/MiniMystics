@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, ImagePlus, Link2, LoaderCircle, MapPin, Pencil, ShieldCheck, Sparkles, Swords, Target, Trophy } from "lucide-react";
 import { useGame } from "./game-provider";
 import { ALLEGIANCE_ART, PROFILE_AVATARS, RANK_ART } from "@/lib/art";
 import { catalog } from "@/lib/client-state";
-import { getFirebaseAuth } from "@/lib/firebase";
+import { getSupabaseClient } from "@/lib/supabase";
 import { optimizedAsset } from "@/lib/asset-url";
 import { ALLEGIANCES, isHandlerAvailable, REGIONS, validateHandlerName, type ProfileInput } from "@/lib/player-profile";
 import { xpForLevel } from "@/lib/game/rewards";
@@ -27,7 +27,15 @@ export function ProfileView() {
   const [availability, setAvailability] = useState<Availability>("idle");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
-  const [googleLinked, setGoogleLinked] = useState(() => getFirebaseAuth().currentUser?.providerData.some((item) => item.providerId === "google.com") ?? false);
+  const [googleLinked, setGoogleLinked] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void getSupabaseClient().auth.getUser().then(({ data }) => {
+      if (active) setGoogleLinked(data.user?.identities?.some((identity) => identity.provider === "google") ?? false);
+    });
+    return () => { active = false; };
+  }, []);
 
   const ownedMystics = useMemo(() => {
     const ids = new Set(state.ownedCards.map((owned) => owned.definitionId));
@@ -43,7 +51,7 @@ export function ProfileView() {
     if (validation) { setMessage(validation); setAvailability("taken"); return false; }
     setAvailability("checking");
     try {
-      const result = await isHandlerAvailable(form.handlerName, getFirebaseAuth().currentUser?.uid);
+      const result = await isHandlerAvailable(form.handlerName);
       setAvailability(result.available ? "available" : "taken");
       setMessage(result.error ?? (result.available ? "Handler name available." : "That Handler name is unavailable."));
       return result.available;

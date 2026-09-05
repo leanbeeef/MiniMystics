@@ -1,12 +1,12 @@
 # Mini Mystics prototype
 
-A playable Next.js/TypeScript prototype for the first Mini Mystics loop: create a Firebase account, reveal a starter pack, build saved lineups, fight fixed AI opponents, earn rewards, activate boosts, buy packs, and grow a duplicate-aware collection.
+A playable Next.js/TypeScript prototype for the first Mini Mystics loop: create a Supabase account, reveal a starter pack, build saved lineups, fight fixed AI opponents, earn rewards, activate boosts, buy packs, and grow a duplicate-aware collection.
 
 ## Current milestone
 
 The playable local slice includes:
 
-- Firebase email/password account creation, login, session restoration, and logout.
+- Supabase email/password and Google account creation, login, session restoration, password recovery, and logout.
 - A 10-card Starter Pack with one Handler, five Mystics, and four reward cards.
 - Click-by-click pack reveals, `Reveal all`, immediate XP/Coin redemption, and boost inventory.
 - Individual owned-card instances, duplicate counts, and duplicate sales.
@@ -16,20 +16,22 @@ The playable local slice includes:
 - Match-count XP/Coin boosts, fixed Standard odds, and Standard Alpha pity.
 - Custom named binders, profile statistics, and honest Coming Soon pages for Marketplace and Trading.
 
-Firebase Authentication provides identity and sessions. Game progress is still stored in browser storage on the current device; it does not yet sync between devices and is not a secure production game-state backend. The normalized PostgreSQL schema is in `prisma/schema.prisma`; economy and battle mutations must be moved behind authenticated server endpoints before deployment. OAuth buttons remain disabled until their Firebase providers are configured—no fake provider success is shown.
+Supabase Authentication provides identity and sessions. Game progress renders immediately from browser storage and synchronizes to the PostgreSQL-backed authenticated APIs. The normalized PostgreSQL schema is in `prisma/schema.prisma`; sensitive economy and battle mutations should continue moving toward fully server-authoritative resolution.
 
 ## Setup
 
-Requirements: Node.js 20+, npm, a Firebase project, and PostgreSQL 15+ for the future production persistence path.
+Requirements: Node.js 20+, npm, a Supabase project, and PostgreSQL 15+.
 
 1. Install dependencies with `npm install`.
 2. Import the supplied CSVs and card images with `npm run data:import`.
-3. Copy `.env.example` to `.env.local` and add the Firebase Web App configuration values.
-4. In Firebase Console, enable **Authentication → Sign-in method → Email/Password**.
-5. Add the production hostname to Firebase Authentication's authorized domains before deployment. Localhost is normally present for development.
+3. Copy `.env.example` to `.env.local` and add the Supabase project URL and publishable key.
+4. In Supabase, enable **Authentication → Providers → Email** and configure Google if desired.
+5. Set the production Site URL and allow the local and production callback URLs in Supabase Authentication.
 6. Start the prototype with `npm run dev` and open the printed local URL.
 
-Prisma generation, migration, and seeding are only needed when connecting the future server-authoritative PostgreSQL persistence layer. Google and Apple sign-in remain intentionally disabled until those Firebase providers and their callback domains are configured.
+Apply Prisma migrations before deploying server changes. Google sign-in requires the Google OAuth callback displayed by the Supabase provider settings.
+
+Existing PostgreSQL player records are linked to Supabase identities by normalized email on the first authenticated request. The legacy Firebase UID column is retained temporarily for relationship compatibility and rollback. Existing Google users can sign in through Supabase with the same email; existing email/password users must either be imported into Supabase Auth or create/confirm a Supabase account with the same email before Firebase is retired.
 
 ## Cloudflare deployment
 
@@ -40,7 +42,7 @@ The committed `wrangler.jsonc` and `open-next.config.ts` configure the existing 
 - Version command: `npx opennextjs-cloudflare upload`
 - Root directory: `/`
 
-Add every `NEXT_PUBLIC_FIREBASE_*` value as a Cloudflare build variable for both production and preview builds. Do not commit `.env.local` or `.dev.vars`.
+Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` as Cloudflare build variables for both production and preview builds. Do not commit `.env.local` or `.dev.vars`.
 
 ## Verification
 
@@ -66,12 +68,13 @@ The engine stores `cooldown + 1` when a Special is attempted, regardless of succ
 
 ## Architecture
 
-- `lib/firebase.ts` — Firebase app and Authentication client initialization.
+- `lib/supabase.ts` — Supabase Authentication browser client and session token access.
+- `lib/server/supabase-auth.ts` — verified Supabase JWT claims for authenticated APIs.
 - `lib/game/engine.ts` — presentation-independent battle rules and shared dice abstraction.
 - `lib/game/move-parser.ts` — isolated move parsing with review flags.
 - `lib/game/packs.ts`, `boosts.ts`, `rewards.ts` — centralized economy/progression rules.
 - `scripts/import-cards.ts` — validated CSV and asset importer.
-- `components/` — responsive presentation and Firebase-aware local prototype state adapter.
+- `components/` — responsive presentation and Supabase-aware local/cloud state adapter.
 - `prisma/schema.prisma` — normalized PostgreSQL ownership, packs, matches, events, rewards, campaign, custom collections, and future market history.
 
 For a production server-authoritative release, replace `components/game-provider.tsx` with authenticated route calls backed by Prisma transactions and idempotency keys. Never accept client-supplied rolls, damage, rewards, balances, ownership, or pack results.

@@ -1,6 +1,6 @@
-import type { User } from "firebase/auth";
+import type { User } from "@supabase/supabase-js";
 import { PROFILE_AVATARS } from "./art";
-import { getFirebaseAuth } from "./firebase";
+import { getSupabaseAccessToken } from "./supabase";
 import {
   ALLEGIANCES,
   REGIONS,
@@ -17,10 +17,10 @@ function profileError(code: string, message: string) {
 }
 
 async function authenticatedHeaders(json = false): Promise<Record<string, string>> {
-  const currentUser = getFirebaseAuth().currentUser;
-  if (!currentUser) throw profileError("auth/unauthenticated", "Sign in to manage your Handler profile.");
+  const token = await getSupabaseAccessToken();
+  if (!token) throw profileError("auth/unauthenticated", "Sign in to manage your Handler profile.");
   return {
-    Authorization: `Bearer ${await currentUser.getIdToken()}`,
+    Authorization: `Bearer ${token}`,
     ...(json ? { "Content-Type": "application/json" } : {}),
   };
 }
@@ -66,21 +66,22 @@ export async function savePlayerProfile(_uid: string, input: ProfileInput): Prom
 }
 
 function safeBaseName(user: User, preferredName?: string) {
-  const source = preferredName?.trim() || user.displayName?.trim() || user.email?.split("@")[0] || "Handler";
+  const metadataName = user.user_metadata?.display_name ?? user.user_metadata?.full_name ?? user.user_metadata?.name;
+  const source = preferredName?.trim() || (typeof metadataName === "string" ? metadataName.trim() : "") || user.email?.split("@")[0] || "Handler";
   const clean = source.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 14);
   return clean.length >= 3 && !validateHandlerName(clean) ? clean : "Handler";
 }
 
 export async function ensurePlayerProfile(user: User, preferredName?: string) {
-  const existing = await getPlayerProfile(user.uid);
+  const existing = await getPlayerProfile(user.id);
   if (existing) return existing;
   const base = safeBaseName(user, preferredName);
-  const candidates = [base, `${base}${user.uid.slice(0, 4)}`, `Handler${user.uid.slice(0, 6)}`];
+  const candidates = [base, `${base}${user.id.slice(0, 4)}`, `Handler${user.id.slice(0, 6)}`];
   for (const candidate of candidates) {
-    const availability = await isHandlerAvailable(candidate, user.uid);
+    const availability = await isHandlerAvailable(candidate, user.id);
     if (!availability.available) continue;
     try {
-      return await savePlayerProfile(user.uid, {
+      return await savePlayerProfile(user.id, {
         handlerName: candidate,
         avatarPath: PROFILE_AVATARS[0].path,
         tagline: "",
