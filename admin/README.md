@@ -26,6 +26,8 @@ Set `DATABASE_URL` and `COOKIE_SECRET` as Worker Secrets on `minimystics-admin`.
 
 Use a Supabase Session Pooler URL on port 5432 for Prisma and the long-running AdminJS container. Run `npm run admin:cloudflare:check` from the repository root to validate the Worker bundle without building the image, and `npm run admin:cloudflare:deploy` to deploy through Wrangler. Cloudflare Workers Builds can build the Dockerfile when local Docker is unavailable.
 
+For the `minimystics-admin` Workers Build, use `npm run admin:cloudflare:check` as the build command and `npm run admin:cloudflare:deploy` as the deploy command. Disable non-production branch builds because `wrangler versions upload` does not publish updated container images. The selected build token needs Workers Scripts Edit, Containers Edit, Account Settings Read, and Workers Routes Edit for `minimystics.com`.
+
 ## Roles
 
 - `SUPER_ADMIN`: all resources, staff accounts, and audit records.

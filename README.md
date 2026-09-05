@@ -38,11 +38,11 @@ Existing PostgreSQL player records are linked to Supabase identities by normaliz
 The committed `wrangler.jsonc` and `open-next.config.ts` configure the existing `minimystics` Worker, custom domain, and OpenNext cache bindings. In Cloudflare Workers Builds use:
 
 - Build command: `npm run build:cloudflare`
-- Deploy command: `npx opennextjs-cloudflare deploy`
-- Version command: `npx opennextjs-cloudflare upload`
+- Deploy command: `npm run cloudflare:release`
+- Version command: `npm run cloudflare:upload`
 - Root directory: `/`
 
-Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` as Cloudflare build variables for both production and preview builds. Do not commit `.env.local` or `.dev.vars`.
+Add `DATABASE_URL` as a Cloudflare build secret. The release wrapper safely reuses it as the local Hyperdrive connection string required while OpenNext populates its remote cache. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` as Cloudflare build variables for both production and preview builds. Do not commit `.env.local` or `.dev.vars`.
 
 ## Verification
 
