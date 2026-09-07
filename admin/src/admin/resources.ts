@@ -198,14 +198,17 @@ const specs: ResourceSpec[] = [
 
   { model: 'CardDefinition', section: 'Game Content', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS), listProperties: ['id', 'kind', 'name', 'order', 'allegiance', 'rarity', 'active', 'imageFilename'], properties: { imageFilename: imageProperty() } } },
   { model: 'MysticDefinition', section: 'Game Content', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS), listProperties: ['id', 'power', 'defense', 'baseAttack', 'needsReview'] } },
-  { model: 'HandlerDefinition', section: 'Game Content', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS), listProperties: ['id', 'activationRoll', 'activationDice', 'effectType', 'maxUses', 'target'] } },
+  { model: 'HandlerDefinition', section: 'Game Content', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS), listProperties: ['id', 'allegiancePassiveName', 'allegiancePassiveTarget', 'orderPassiveName', 'orderPassiveTarget'] } },
   { model: 'CampaignOpponent', section: 'Game Content', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS) } },
   { model: 'BoostDefinition', section: 'Game Content', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS) } },
+  { model: 'RarityCardValue', section: 'Game Content', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS) } },
+  { model: 'MysticLevelCost', section: 'Game Content', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS) } },
 
   { model: 'PackDefinition', section: 'Packs & Economy', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS), listProperties: ['id', 'name', 'cardCount', 'coinPrice', 'premiumPrice', 'active', 'startsAt', 'endsAt'], properties: { artwork: imageProperty() } } },
   { model: 'PackOpening', section: 'Packs & Economy', options: { actions: accessActions(undefined, true, OPERATIONS_READERS) } },
   { model: 'PackOpeningResult', section: 'Packs & Economy', options: { actions: accessActions(undefined, true, OPERATIONS_READERS) } },
   { model: 'PityCounter', section: 'Packs & Economy', options: { actions: accessActions(undefined, true, OPERATIONS_READERS) } },
+  { model: 'OrderEssence', section: 'Packs & Economy', options: { actions: accessActions(undefined, true, OPERATIONS_READERS) } },
   { model: 'InventoryItem', section: 'Packs & Economy', options: { actions: accessActions(undefined, true, OPERATIONS_READERS) } },
   { model: 'ActiveBoost', section: 'Packs & Economy', options: { actions: accessActions(undefined, true, OPERATIONS_READERS) } },
   { model: 'OwnedCard', section: 'Packs & Economy', options: { actions: accessActions(undefined, true, OPERATIONS_READERS) } },

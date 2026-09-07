@@ -192,6 +192,7 @@ model PlayerProfile {
   loadouts               SavedLoadout[]
   collections            CustomCollection[]
   pityCounters           PityCounter[]
+  orderEssence           OrderEssence[]
   packOpenings           PackOpening[]
   campaign               CampaignProgress[]
   rewards                RewardTransaction[]
@@ -355,18 +356,15 @@ model MysticDefinition {
 }
 
 model HandlerDefinition {
-  id             String         @id
-  activationRoll String
-  activationDice Int
-  effect         String
-  effectType     String
-  effectValue    String
-  duration       String
-  usageLimit     String
-  maxUses        Int
-  target         String
-  notes          String
-  card           CardDefinition @relation(fields: [id], references: [id], onDelete: Cascade)
+  id                      String         @id
+  allegiancePassiveName   String
+  allegiancePassiveTarget String
+  allegiancePassiveEffect String
+  orderPassiveName        String
+  orderPassiveTarget      String
+  orderPassiveEffect      String
+  notes                   String
+  card                    CardDefinition @relation(fields: [id], references: [id], onDelete: Cascade)
 }
 
 model OwnedCard {
@@ -379,6 +377,7 @@ model OwnedCard {
   variant             String                 @default("standard")
   finish              String                 @default("normal")
   artworkVariant      String                 @default("default")
+  level               Int                    @default(1)
   soldAt              DateTime?
   profile             PlayerProfile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
   definition          CardDefinition         @relation(fields: [definitionId], references: [id])
@@ -481,6 +480,32 @@ model PityCounter {
   profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([profileId, packId])
+}
+
+model OrderEssence {
+  id        String        @id @default(cuid())
+  profileId String
+  order     String
+  amount    Int           @default(0)
+  profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, order])
+}
+
+/// Admin-editable reference for the dismantle-essence-yield / quick-sell-coin curve by rarity.
+/// Mirrors how PackDefinition/BoostDefinition already relate to this app's runtime: the live
+/// numbers the game uses are the matching TS constants in lib/game/economy.ts, not this table.
+model RarityCardValue {
+  rarity           Rarity @id
+  dismantleEssence Int
+  sellCoins        Int
+}
+
+/// Admin-editable reference for the Order Essence cost to reach a given Mystic level (2..10).
+/// Same relationship to lib/game/economy.ts's LEVEL_UP_ESSENCE_COST as RarityCardValue above.
+model MysticLevelCost {
+  level       Int @id
+  essenceCost Int
 }
 
 model SavedLoadout {

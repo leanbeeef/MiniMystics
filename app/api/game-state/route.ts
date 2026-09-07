@@ -150,8 +150,8 @@ async function synchronizeState(identity: Awaited<ReturnType<typeof requireSupab
       for (const owned of state.ownedCards) {
         await tx.ownedCard.upsert({
           where: { id: owned.id },
-          create: { id: owned.id, profileId: profile.id, definitionId: owned.definitionId, acquiredAt: date(owned.acquiredAt), acquisition: "GAMEPLAY" },
-          update: { profileId: profile.id, definitionId: owned.definitionId, soldAt: null },
+          create: { id: owned.id, profileId: profile.id, definitionId: owned.definitionId, acquiredAt: date(owned.acquiredAt), acquisition: "GAMEPLAY", level: owned.level ?? 1 },
+          update: { profileId: profile.id, definitionId: owned.definitionId, level: owned.level ?? 1, soldAt: null },
         });
       }
       await tx.ownedCard.updateMany({ where: { profileId: profile.id, id: { notIn: currentCardIds }, soldAt: null }, data: { soldAt: new Date() } });
@@ -180,6 +180,14 @@ async function synchronizeState(identity: Awaited<ReturnType<typeof requireSupab
       create: { profileId: profile.id, packId: "standard", counter: state.pity },
       update: { counter: state.pity },
     });
+
+    for (const [order, amount] of Object.entries(state.essence ?? {})) {
+      await tx.orderEssence.upsert({
+        where: { profileId_order: { profileId: profile.id, order } },
+        create: { profileId: profile.id, order, amount },
+        update: { amount },
+      });
+    }
 
     const knownPacks = new Set((await tx.packDefinition.findMany({ where: { id: { in: state.openings.map((opening) => opening.packId) } }, select: { id: true } })).map((pack) => pack.id));
     for (const opening of state.openings.filter((item) => knownPacks.has(item.packId))) {

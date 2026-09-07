@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import Papa from "papaparse";
-import { parseMoves } from "../lib/game/move-parser";
+import { parseMove } from "../lib/game/move-parser";
+import { parsePassiveEffect } from "../lib/game/passive-parser";
 import type { CardCatalog, HandlerDefinition, MysticDefinition, Rarity } from "../lib/game/types";
 
 const root = process.cwd();
@@ -50,15 +51,27 @@ const findImage = (name: string, filename?: string) => {
   return `/cards/${relative.split("/").map(encodeURIComponent).join("/")}`;
 };
 
-type MysticRow = { "MM #": string; Name: string; Order: string; Allegiance: string; Rarity: string; Power: string; Def: string; "Base Attack": string; Moves: string };
-type HandlerRow = { "Handler #": string; Name: string; Allegiance: string; Order: string; Rarity: string; "Activation Roll": string; "Activation Dice": string; Effect: string; "Effect Type": string; "Effect Value": string; Duration: string; "Max Uses": string; Target: string; "Image Filename": string; Notes: string };
+type MysticRow = {
+  "MM #": string; Name: string; Order: string; Allegiance: string; Rarity: string; Power: string; Def: string; "Base Attack": string;
+  "Move 1 Name": string; "Move 1 Roll": string; "Move 1 Cooldown": string; "Move 1 Effect": string;
+  "Move 2 Name": string; "Move 2 Roll": string; "Move 2 Cooldown": string; "Move 2 Effect": string;
+};
+type HandlerRow = {
+  "Handler #": string; Name: string; Allegiance: string; Rarity: string;
+  "Allegiance Passive Name": string; "Allegiance Passive Target": string; "Allegiance Passive Effect": string;
+  "Order Passive Name": string; "Order Passive Target": string; "Order Passive Effect": string;
+  "Image Filename": string; Notes: string;
+};
 
 const warnings: string[] = [];
 const mystics: MysticDefinition[] = readCsv<MysticRow>("mini_mystics.csv").map((row, rowIndex) => {
-  const required = [row["MM #"], row.Name, row.Order, row.Rarity, row.Power, row.Def, row["Base Attack"], row.Moves];
+  const required = [row["MM #"], row.Name, row.Order, row.Rarity, row.Power, row.Def, row["Base Attack"], row["Move 1 Name"], row["Move 2 Name"]];
   if (required.some((value) => !value)) throw new Error(`mini_mystics.csv row ${rowIndex + 2}: missing required value`);
   if (!rarities.has(row.Rarity)) throw new Error(`mini_mystics.csv row ${rowIndex + 2}: unknown rarity '${row.Rarity}'`);
-  const moves = parseMoves(row.Moves);
+  const moves = [
+    parseMove(row["Move 1 Name"], row["Move 1 Roll"], row["Move 1 Cooldown"], row["Move 1 Effect"]),
+    parseMove(row["Move 2 Name"], row["Move 2 Roll"], row["Move 2 Cooldown"], row["Move 2 Effect"]),
+  ];
   moves.filter((move) => move.needsReview).forEach((move) => warnings.push(`${row["MM #"]} ${row.Name} — ${move.rawText}: ${move.reviewReason}`));
   const image = findImage(row.Name);
   if (!image) warnings.push(`${row["MM #"]} ${row.Name} — image not found`);
@@ -66,14 +79,17 @@ const mystics: MysticDefinition[] = readCsv<MysticRow>("mini_mystics.csv").map((
 });
 
 const handlers: HandlerDefinition[] = readCsv<HandlerRow>("handlers.csv").map((row, rowIndex) => {
-  if (!row["Handler #"] || !row.Name || !row.Effect) throw new Error(`handlers.csv row ${rowIndex + 2}: missing required value`);
+  if (!row["Handler #"] || !row.Name || !row["Allegiance Passive Effect"] || !row["Order Passive Effect"]) throw new Error(`handlers.csv row ${rowIndex + 2}: missing required value`);
   const sourceRarity = row.Rarity;
   const rarity = rarities.has(sourceRarity) ? sourceRarity as Rarity : "Unassigned";
   if (rarity === "Unassigned") warnings.push(`${row["Handler #"]} ${row.Name} — rarity '${sourceRarity}' imported as Unassigned`);
   const image = findImage(row.Name, row["Image Filename"]);
   if (!image) warnings.push(`${row["Handler #"]} ${row.Name} — image '${row["Image Filename"]}' not found`);
-  const rollValue = Number(row["Activation Roll"].match(/\d/)?.[0] ?? 6);
-  return { id: row["Handler #"], name: row.Name, allegiance: row.Allegiance, order: row.Order, rarity, originalRarity: sourceRarity, activationRoll: rollValue, exactRoll: !row["Activation Roll"].includes("+"), activationDice: Number(row["Activation Dice"]), effect: row.Effect, effectType: row["Effect Type"], effectValue: row["Effect Value"], duration: row.Duration, maxUses: Number(row["Max Uses"]), target: row.Target.includes("enemy") ? "enemy" : "ally", image, notes: row.Notes };
+  const allegiancePassive = parsePassiveEffect(row["Allegiance Passive Name"], row["Allegiance Passive Target"], row["Allegiance Passive Effect"]);
+  const orderPassive = parsePassiveEffect(row["Order Passive Name"], row["Order Passive Target"], row["Order Passive Effect"]);
+  if (!allegiancePassive.effects.length) warnings.push(`${row["Handler #"]} ${row.Name} — Allegiance Passive effect not parsed: '${row["Allegiance Passive Effect"]}'`);
+  if (!orderPassive.effects.length) warnings.push(`${row["Handler #"]} ${row.Name} — Order Passive effect not parsed: '${row["Order Passive Effect"]}'`);
+  return { id: row["Handler #"], name: row.Name, allegiance: row.Allegiance, order: row["Order Passive Target"], rarity, originalRarity: sourceRarity, image, notes: row.Notes, allegiancePassive, orderPassive };
 });
 
 fs.mkdirSync(outputDir, { recursive: true });

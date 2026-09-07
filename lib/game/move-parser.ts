@@ -1,58 +1,204 @@
-import type { ParsedMove } from "./types";
+import type { EffectDuration, EffectSpec, ParsedMove } from "./types";
 
-const numberAfter = (text: string, pattern: RegExp) => {
-  const match = text.match(pattern);
-  return match ? Number(match[1]) : undefined;
-};
+const num = (text: string) => Number(text);
 
-export function parseMove(input: string, index = 0): ParsedMove {
-  const rawText = input.trim();
-  const [namePart, rulesPart = ""] = rawText.split(/:\s*/, 2);
-  const rollText = rulesPart.split("=")[0]?.trim() ?? "";
-  const effect = rulesPart.split("=").slice(1).join("=").trim();
-  const roll = Number(rollText.match(/\d/)?.[0] ?? 6);
-  const exactRoll = !rollText.includes("+");
-  const lower = effect.toLowerCase();
-  const review: string[] = [];
-
-  const move: ParsedMove = {
-    name: namePart.trim(),
-    requiredRoll: roll,
-    ...(exactRoll ? { exactRoll: roll } : { minimumRoll: roll }),
-    cooldown: index === 0 ? 1 : 2,
-    targetType: /enemy|attack|strike|bite|slam|shot|slash|jab|crush|fist|ram|blow|rend|claw|whip|bolt|beam|lance|lash|spear/i.test(`${namePart} ${effect}`) ? "enemy" : "self",
-    rawText,
-    needsReview: false,
-  };
-
-  if (/\+\d+\s*atk/i.test(effect)) move.attackModifier = numberAfter(effect, /\+(\d+)\s*ATK/i);
-  if (/\+\d+\s*def/i.test(effect)) move.defenseModifier = numberAfter(effect, /\+(\d+)\s*DEF/i);
-  if (/enemy\s*-\d+\s*atk/i.test(effect)) move.enemyAttackModifier = -(numberAfter(effect, /enemy\s*-(\d+)\s*ATK/i) ?? 0);
-  if (/enemy\s*-\d+\s*def/i.test(effect)) move.enemyDefenseModifier = -(numberAfter(effect, /enemy\s*-(\d+)\s*DEF/i) ?? 0);
-  if (/recover|heal|restore/i.test(effect)) move.healing = numberAfter(effect, /(?:recover|heal|restore)\s+(\d+)\s*(?:Power)?/i);
-  if (/attack twice/i.test(effect)) move.multiHitCount = 2;
-  if (/base attack x2/i.test(effect)) move.attackMultiplier = 2;
-  if (/ignore(?:s)? DEF|DEF becomes 0/i.test(effect)) move.ignoreDefense = true;
-  if (/evade/i.test(effect)) move.evade = true;
-  if (/return|counter|reflect/i.test(effect)) move.counter = numberAfter(effect, /(?:return|reflect)\s+(\d+)/i) ?? "base";
-  if (/skip|loses attack|loses next move|cannot use special|loses special/i.test(lower)) move.skipTurn = true;
-  if (/lose \d+ power/i.test(lower)) move.selfDamage = numberAfter(effect, /lose\s+(\d+)\s+Power/i);
-
-  const supported = [
-    /\+\d+\s*ATK/i, /\+\d+\s*DEF/i, /enemy\s*-\d+\s*(ATK|DEF)/i,
-    /(recover|heal|restore)\s+\d+/i, /attack twice/i, /Base Attack x2/i,
-    /ignore(?:s)? DEF|DEF becomes 0/i, /evade/i, /return|counter|reflect/i,
-    /block|reduce damage|halve next hit/i, /misses|skip|loses attack|loses next move|cannot use special|loses special/i,
-  ];
-  if (!supported.some((p) => p.test(effect))) review.push("effect pattern is not deterministic");
-  if (/half-power|swap ATK|attack before opponent|next attack x2|heal half damage/i.test(effect)) review.push("timing or calculation needs rules confirmation");
-  if (/block|reduce damage|halve next hit|misses|loses attack|skips|counter|return|reflect|enemy\s*-\d+\s*ATK|next attack \+\d+/i.test(effect)) review.push("parsed but not enabled in the v1 battle executor");
-  if (/and/.test(lower) && !(/heal|recover|evade|ignore|special/i.test(lower))) review.push("compound effect needs review");
-  move.needsReview = review.length > 0;
-  if (review.length) move.reviewReason = [...new Set(review)].join("; ");
-  return move;
+function parseDuration(text: string): EffectDuration {
+  if (/until (?:the start of )?your next turn/i.test(text)) return { unit: "untilOwnerNextTurn" };
+  if (/for this attack/i.test(text)) return { unit: "thisAttackOnly" };
+  const turns = text.match(/for (\d+) turns?/i);
+  if (turns) return { unit: "turns", count: num(turns[1]) };
+  return { unit: "turns", count: 1 };
 }
 
-export function parseMoves(value: string): ParsedMove[] {
-  return value.split(";").map((move, index) => parseMove(move, index));
+type Rule = { pattern: RegExp; build: (match: RegExpMatchArray) => EffectSpec[] };
+
+// Each rule matches one self-contained sentence/clause. Parameterized purely over the
+// numbers/words the CSV varies (percentages, turn counts) — never over a Mystic's identity.
+const RULES: Rule[] = [
+  // "Gain +X% ATK and +X% DEF for N turns." (combined ATK+DEF, must come before the single-stat rule)
+  {
+    pattern: /^Gain \+(\d+)% ATK and \+(\d+)% DEF for (\d+) turns?\.?$/i,
+    build: (m) => [
+      { kind: "statModifier", stat: "atk", subject: "self", percent: num(m[1]), duration: { unit: "turns", count: num(m[3]) } },
+      { kind: "statModifier", stat: "def", subject: "self", percent: num(m[2]), duration: { unit: "turns", count: num(m[3]) } },
+    ],
+  },
+  // "Gain +X% ATK/DEF for N turn(s)." / "until your next turn"
+  {
+    pattern: /^Gain \+(\d+)% (ATK|DEF) (?:for \d+ turns?|until (?:the start of )?your next turn)\.?/i,
+    build: (m) => [{ kind: "statModifier", stat: m[2].toLowerCase() as "atk" | "def", subject: "self", percent: num(m[1]), duration: parseDuration(m[0]) }],
+  },
+  // "Recover X% of maximum Power Score" / "Recover X% of this Mystic's maximum Power Score"
+  {
+    pattern: /Recover (\d+)% of (?:this Mystic's )?maximum Power Score/i,
+    build: (m) => [{ kind: "heal", subject: "self", percent: num(m[1]) }],
+  },
+  // "this Mystic recovers X% of its/maximum Power Score"
+  {
+    pattern: /this Mystic recovers (\d+)% of (?:its )?maximum Power Score/i,
+    build: (m) => [{ kind: "heal", subject: "self", percent: num(m[1]) }],
+  },
+  // "lose X% of maximum Power Score" / "this Mystic loses X% of maximum Power Score"
+  {
+    pattern: /lose[s]? (\d+)% of (?:this Mystic's |its )?maximum Power Score/i,
+    build: (m) => [{ kind: "recoil", subject: "self", percent: num(m[1]) }],
+  },
+  // "and reduce one allied Mystic's active Special Move recovery by N turn" / "reduce one active Special Move recovery by N turn"
+  {
+    pattern: /reduce (?:one allied Mystic's|one) active Special Move recovery by (\d+) turns?/i,
+    build: (m) => [{ kind: "cooldownDelta", subject: "self", scope: "longestActive", amount: -num(m[1]) }],
+  },
+  // "reduce both of this Mystic's active Special Move recoveries by N turn" / "reduce both of its active Special Move recoveries by N turn"
+  {
+    pattern: /reduce both of (?:this Mystic's|its) active Special Move recoveries by (\d+) turns?/i,
+    build: (m) => [{ kind: "cooldownDelta", subject: "self", scope: "bothMoves", amount: -num(m[1]) }],
+  },
+  // "reduce this Mystic's other Special Move recovery by N turn"
+  {
+    pattern: /reduce this Mystic's other Special Move recovery by (\d+) turns?/i,
+    build: (m) => [{ kind: "cooldownDelta", subject: "self", scope: "otherMove", amount: -num(m[1]) }],
+  },
+  // "increase target's/its/the attacker's/the target Mystic's longest active Special Move recovery by N turn"
+  {
+    pattern: /increase (?:the )?(?:target's|target Mystic's|its|the attacker's) (?:longest active )?Special Move recovery by (\d+) turns?/i,
+    build: (m) => [{ kind: "cooldownDelta", subject: "target", scope: "longestActive", amount: num(m[1]) }],
+  },
+  // "All allied Mystics gain +X% ATK/DEF for N turn(s)"
+  {
+    pattern: /All allied Mystics gain \+(\d+)% (ATK|DEF) for (\d+) turns?/i,
+    build: (m) => [{ kind: "statModifier", stat: m[2].toLowerCase() as "atk" | "def", subject: "allTeam", percent: num(m[1]), duration: { unit: "turns", count: num(m[3]) } }],
+  },
+  // "Gain +X% ATK for this attack and +Y% ATK on your next attack."
+  {
+    pattern: /Gain \+(\d+)% ATK for this attack and \+(\d+)% ATK on your next attack\.?/i,
+    build: (m) => [
+      { kind: "statModifier", stat: "atk", subject: "self", percent: num(m[1]), duration: { unit: "thisAttackOnly" } },
+      { kind: "statModifier", stat: "atk", subject: "self", percent: num(m[2]), duration: { unit: "turns", count: 1 } },
+    ],
+  },
+  // "The attacking enemy gets -X% ATK on its next attack." (reactive, phrased without "If hit,")
+  {
+    pattern: /The attacking enemy gets -(\d+)% ATK on its next attack/i,
+    build: (m) => [{ kind: "retaliateAtkDebuff", subject: "self", percent: num(m[1]) }],
+  },
+  // "increase both of its Special Move recoveries by N turn"
+  {
+    pattern: /increase both of its Special Move recoveries by (\d+) turns?/i,
+    build: (m) => [{ kind: "cooldownDelta", subject: "target", scope: "bothMoves", amount: num(m[1]) }],
+  },
+  // "reduce the target's ATK and DEF by X% for N turns" (combined)
+  {
+    pattern: /Reduce the target's ATK and DEF by (\d+)% for (\d+) turns?\.?/i,
+    build: (m) => [
+      { kind: "statModifier", stat: "atk", subject: "target", percent: -num(m[1]), duration: { unit: "turns", count: num(m[2]) } },
+      { kind: "statModifier", stat: "def", subject: "target", percent: -num(m[1]), duration: { unit: "turns", count: num(m[2]) } },
+    ],
+  },
+  // "Reduce the target's ATK/DEF by X% for N turns" / "for this attack"
+  {
+    pattern: /Reduce the target's (ATK|DEF) by (\d+)% (for \d+ turns?|for this attack)\.?/i,
+    build: (m) => [{ kind: "statModifier", stat: m[1].toLowerCase() as "atk" | "def", subject: "target", percent: -num(m[2]), duration: parseDuration(m[0]) }],
+  },
+  // "reduce target ATK/DEF by X% for 1 turn" / "for this attack" (attached to an attack move)
+  {
+    pattern: /reduce target (ATK|DEF) by (\d+)% (for \d+ turns?|for this attack)/i,
+    build: (m) => [{ kind: "statModifier", stat: m[1].toLowerCase() as "atk" | "def", subject: "target", percent: -num(m[2]), duration: parseDuration(m[0]) }],
+  },
+  // "the target gets -X% ATK for 1 turn"
+  {
+    pattern: /the target gets -(\d+)% ATK for (\d+) turns?/i,
+    build: (m) => [{ kind: "statModifier", stat: "atk", subject: "target", percent: -num(m[1]), duration: { unit: "turns", count: num(m[2]) } }],
+  },
+  // "mark the target with -X% DEF for your next attack"
+  {
+    pattern: /mark the target with -(\d+)% DEF for your next attack/i,
+    build: (m) => [{ kind: "markDefenseOnNextHit", subject: "target", percent: num(m[1]) }],
+  },
+  // "The target loses X% DEF until the start of your next turn"
+  {
+    pattern: /The target loses (\d+)% DEF until (?:the start of )?your next turn/i,
+    build: (m) => [{ kind: "statModifier", stat: "def", subject: "target", percent: -num(m[1]), duration: { unit: "untilOwnerNextTurn" } }],
+  },
+  // "Reduce the target's DEF by X% for this attack and gain +Y% DEF until your next turn." handled by separate clauses already (DEF-for-this-attack rule above + self-gain rule above)
+  // "the attacker gets -X% ATK for its next turn" (reactive, "If hit, ...")
+  {
+    pattern: /If hit, the attacker gets -(\d+)% ATK for its next turn/i,
+    build: (m) => [{ kind: "retaliateAtkDebuff", subject: "self", percent: num(m[1]) }],
+  },
+  // "reduce the next attacker's ATK by X% for that attack" (reactive)
+  {
+    pattern: /reduce the next attacker's ATK by (\d+)% for that attack/i,
+    build: (m) => [{ kind: "retaliateAtkDebuff", subject: "self", percent: num(m[1]) }],
+  },
+  // "increase the attacker's longest active Special Move recovery by N turn if you are hit" (reactive) — matched by the generic cooldown-increase rule above via "the attacker's"; keep as-is.
+  // "Afterward, this Mystic gets -X% DEF until your next turn."
+  {
+    pattern: /this Mystic gets -(\d+)% DEF until (?:the start of )?your next turn/i,
+    build: (m) => [{ kind: "statModifier", stat: "def", subject: "self", percent: -num(m[1]), duration: { unit: "untilOwnerNextTurn" } }],
+  },
+  // "one allied Mystic gains +X% DEF for 1 turn" / "one other allied Mystic gains +X% DEF for 1 turn"
+  {
+    pattern: /one (?:other )?allied Mystic gains \+(\d+)% DEF for (\d+) turns?/i,
+    build: (m) => [{ kind: "statModifier", stat: "def", subject: "allyAuto", percent: num(m[1]), duration: { unit: "turns", count: num(m[2]) } }],
+  },
+  // "there is a 25% chance that one random allied Mystic loses 25% of the damage dealt from its current Power Score"
+  {
+    pattern: /there is a (\d+)% chance that one random allied Mystic loses (\d+)% of the damage dealt/i,
+    build: (m) => [{ kind: "chanceRecoilSplash", chancePercent: num(m[1]), percentOfDamageDealt: num(m[2]) }],
+  },
+];
+
+function parseClauses(text: string): { effects: EffectSpec[]; unmatched: string[] } {
+  const effects: EffectSpec[] = [];
+  const unmatched: string[] = [];
+  // Split on sentence boundaries first, then on "; ", keeping each fragment intact (rules match "and"-joined clauses as whole sentences).
+  const sentences = text.split(/(?<=\.)\s+|;\s+/).map((s) => s.trim()).filter(Boolean);
+  for (const sentence of sentences) {
+    let matchedAny = false;
+    for (const rule of RULES) {
+      const match = sentence.match(rule.pattern);
+      if (match) { effects.push(...rule.build(match)); matchedAny = true; }
+    }
+    if (!matchedAny) unmatched.push(sentence);
+  }
+  return { effects, unmatched };
+}
+
+export function parseMove(name: string, rollText: string, cooldownText: string, effectText: string): ParsedMove {
+  const rawText = `${name}: ${rollText} | CD ${cooldownText} | ${effectText}`.trim();
+  const requiredRoll = Number(rollText.match(/\d+/)?.[0] ?? 8);
+  const cooldown = Number(cooldownText.match(/\d+/)?.[0] ?? 1);
+  let text = effectText.trim();
+
+  let damageModifierPercent: number | undefined;
+  const leadingModifier = text.match(/^This attack (?:gains|deals) \+(\d+)% ATK\.?\s*/i);
+  if (leadingModifier) {
+    damageModifierPercent = num(leadingModifier[1]);
+    text = text.slice(leadingModifier[0].length).trim();
+  }
+
+  const { effects, unmatched } = parseClauses(text);
+
+  // A move that carries its own damage modifier (or otherwise references "the target"/"the
+  // attacker") is always played against the chosen enemy, regardless of any secondary
+  // ally-buff clause riding along with it — e.g. "This attack gains +8% ATK and one allied
+  // Mystic gains +8% DEF for 1 turn." targets the enemy; the ally buff is a side effect
+  // auto-resolved per Part B2 (lowest-Power surviving ally). In the current data, a bare "one
+  // (other) allied Mystic" reference with no enemy involvement always rides on an otherwise
+  // self-targeted buff move, so it never produces a standalone "ally" targetType — the type
+  // still supports one for a future CSV move whose sole purpose is buffing a chosen ally.
+  const externalTarget = damageModifierPercent !== undefined || /\btarget\b|attacker's/i.test(effectText);
+  const targetType: ParsedMove["targetType"] = externalTarget ? "enemy" : "self";
+
+  return {
+    name: name.trim(),
+    requiredRoll,
+    cooldown,
+    targetType,
+    damageModifierPercent,
+    effects,
+    rawText,
+    needsReview: unmatched.length > 0,
+    reviewReason: unmatched.length ? unmatched.join("; ") : undefined,
+  };
 }

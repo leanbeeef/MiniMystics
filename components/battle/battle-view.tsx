@@ -3,28 +3,20 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Activity, ArrowRight, Check, CircleOff, Clock3, Dices, Eye, GripHorizontal, Heart, Info, Maximize2, Minus, RotateCcw, ScrollText, Shield, Sparkles, Swords, Target, Trophy, WandSparkles, X, Zap } from "lucide-react";
+import { Activity, ArrowRight, Check, CircleOff, Clock3, Dices, Eye, GripHorizontal, Heart, Info, Maximize2, Minus, ScrollText, Shield, Sparkles, Swords, Target, TrendingUp, Trophy, WandSparkles, X, Zap } from "lucide-react";
 import { useGame } from "../game-provider";
 import { VFXManager, useVFX } from "../vfx/vfx-manager";
 import { BATTLE_ART, OPPONENT_ART, ORDER_ART, ORDER_COLORS } from "@/lib/art";
 import { catalog } from "@/lib/client-state";
-import type { BattleEvent, BattleSide, Combatant, HandlerDefinition, ParsedMove, StatusEffect } from "@/lib/game/types";
+import type { BattleEvent, BattleSide, Combatant, HandlerDefinition, ParsedMove } from "@/lib/game/types";
+import { effectiveDefense, previewDamage } from "@/lib/game/engine";
+import { orderAdvantagePercent } from "@/lib/game/order-matchups";
 import { ORDER_BATTLE_EFFECT } from "@/lib/vfx/presets";
 import { BattleSetup } from "./battle-setup";
 
 type BattleUiPhase = "INTRO" | "PLAYER_SELECT_ACTOR" | "PLAYER_SELECT_ACTION" | "PLAYER_SELECT_TARGET" | "PLAYER_ROLLING" | "PLAYER_RESOLVING" | "ENEMY_THINKING" | "ENEMY_ACTION" | "TURN_TRANSITION" | "VICTORY" | "DEFEAT";
-type ActionSelection = { kind: "basic" } | { kind: "special"; moveIndex: number } | { kind: "handler"; handlerIndex: number };
+type ActionSelection = { kind: "basic" } | { kind: "special"; moveIndex: number };
 type DamageFx = Record<string, { amount: number; key: number }>;
-
-const statusLabels: Record<StatusEffect["kind"], string> = {
-  attack: "Attack modified",
-  defense: "Defense modified",
-  marked: "Marked for bonus damage",
-  evade: "Evades the next attack",
-  specialLock: "Special moves disabled",
-  counter: "Counter readied",
-  reroll: "One failed special may be rerolled",
-};
 
 const stateCopy: Record<BattleUiPhase, string> = {
   INTRO: "The starting roll decides who acts first.",
@@ -40,20 +32,13 @@ const stateCopy: Record<BattleUiPhase, string> = {
   DEFEAT: "Battle complete.",
 };
 
-function effectiveDefense(mystic: Combatant) {
-  return Math.max(0, mystic.defense + mystic.effects.filter((effect) => effect.kind === "defense").reduce((sum, effect) => sum + effect.value, 0));
-}
-
-function actionDamage(actor: Combatant | undefined, target: Combatant | undefined, move?: ParsedMove) {
+function actionDamagePreview(actor: Combatant | undefined, target: Combatant | undefined, synergies: Record<string, number>, move: ParsedMove | null) {
   if (!actor || !target) return null;
-  const attackBuff = actor.effects.filter((effect) => effect.kind === "attack").reduce((sum, effect) => sum + effect.value, 0);
-  const attack = (actor.baseAttack * (move?.attackMultiplier ?? 1)) + (move?.attackModifier ?? 0) + attackBuff;
-  const defense = move?.ignoreDefense ? 0 : effectiveDefense(target);
-  return Math.max(1, attack - defense) * (move?.multiHitCount ?? 1) + (target.effects.find((effect) => effect.kind === "marked")?.value ?? 0);
+  return previewDamage(actor, target, move, synergies).finalDamage;
 }
 
 function startingRolls(message?: string) {
-  const rolls = message?.match(/rolled (\d).* rolled (\d)/i);
+  const rolls = message?.match(/rolled (\d+).* rolled (\d+)/i);
   return { player: Number(rolls?.[1] ?? 0), opponent: Number(rolls?.[2] ?? 0) };
 }
 
@@ -64,7 +49,7 @@ export function BattleView() {
 }
 
 function BattleExperience() {
-  const { state, basicAttack, specialAttack, useHandler, aiTurn } = useGame();
+  const { state, basicAttack, specialAttack, aiTurn } = useGame();
   const { playBattleEffect, emitAudioHook } = useVFX();
   const battle = state.battle;
   const [phase, setPhase] = useState<BattleUiPhase>("INTRO");
@@ -85,9 +70,8 @@ function BattleExperience() {
   const actor = battle?.player.mystics.find((mystic) => mystic.instanceId === actorId);
   const target = battle?.ai.mystics.find((mystic) => mystic.instanceId === targetId) ?? battle?.player.mystics.find((mystic) => mystic.instanceId === targetId);
   const selectedMove = selection?.kind === "special" ? actor?.moves[selection.moveIndex] : undefined;
-  const selectedHandler = selection?.kind === "handler" && battle ? catalog.handlers.find((handler) => handler.id === battle.player.handlers[selection.handlerIndex]?.definitionId) : undefined;
   const isTargeting = phase === "PLAYER_SELECT_TARGET";
-  const targetSide = selectedHandler?.target === "ally" ? "player" : "ai";
+  const targetSide = selection?.kind === "special" && selectedMove?.targetType === "self" ? "player" : "ai";
 
   useEffect(() => {
     if (!battle) return;
@@ -158,8 +142,7 @@ function BattleExperience() {
     if (!battle?.lastRoll || phase === "INTRO") return;
     const recent = battle.events.slice(-5);
     const specialResult = [...recent].reverse().find((event) => event.type === "special" && typeof event.data?.success === "boolean");
-    const handlerResult = [...recent].reverse().find((event) => event.type === "handler");
-    const success = specialResult ? Boolean(specialResult.data?.success) : handlerResult ? !handlerResult.message.toLowerCase().includes("failed") : true;
+    const success = specialResult ? Boolean(specialResult.data?.success) : true;
     setRollOutcome({ roll: battle.lastRoll, success });
     const timer = window.setTimeout(() => setRollOutcome(null), 920);
     return () => window.clearTimeout(timer);
@@ -197,29 +180,25 @@ function BattleExperience() {
   }, [isTargeting, resolveTarget, battle, actorId, emitAudioHook]);
 
   const rollAction = useCallback(() => {
-    if (!battle || !selection || !target || !actor || rolling) return;
+    if (!battle || !selection || selection.kind !== "special" || !target || !actor || rolling) return;
     emitAudioHook("dice_roll");
     setRolling(true);
     setHoldingRoll(false);
-    const resolvedFace = Math.floor(Math.random() * 6) + 1;
+    const resolvedFace = Math.floor(Math.random() * 8) + 1;
     let face = 1;
-    const cycle = window.setInterval(() => { face = face % 6 + 1; setDieFace(face); }, 80);
+    const cycle = window.setInterval(() => { face = face % 8 + 1; setDieFace(face); }, 80);
     window.setTimeout(() => {
       window.clearInterval(cycle);
       setDieFace(resolvedFace);
       setHoldingRoll(true);
       window.setTimeout(() => {
-        if (selection.kind === "special") specialAttack(actor.instanceId, target.instanceId, selection.moveIndex, resolvedFace);
-        if (selection.kind === "handler") {
-          useHandler(selection.handlerIndex, target.instanceId, resolvedFace);
-          playBattleEffect(selectedHandler?.target === "ally" ? "buff" : "debuff", { targetId: target.instanceId, intensity: "medium", audioHook: "handler" });
-        }
+        specialAttack(actor.instanceId, target.instanceId, selection.moveIndex, resolvedFace);
         setHoldingRoll(false);
         setRolling(false);
         setPhase("PLAYER_RESOLVING");
       }, 1000);
     }, 620);
-  }, [battle, selection, target, actor, rolling, specialAttack, useHandler, playBattleEffect, selectedHandler, emitAudioHook]);
+  }, [battle, selection, target, actor, rolling, specialAttack, emitAudioHook]);
 
   if (!battle) return <div className="page battle-empty"><div><Swords /><span>BATTLEFIELD</span><h1>No active battle</h1><p>Choose a campaign opponent to enter the arena.</p><Link href="/campaign" className="button primary">View campaign <ArrowRight /></Link></div></div>;
 
@@ -234,7 +213,7 @@ function BattleExperience() {
       <div className="battle-board-column">
         <BattleTurnBar battle={battle} phase={phase} />
         <main className="battle-arena">
-          <BattleMysticRow side="ai" team={battle.ai} format={battle.size} opponentId={battle.ai.name} selectedId={targetId} targeting={isTargeting && targetSide === "ai"} damageFx={damageFx} onSelect={(mystic) => selectMystic(mystic, "ai")} />
+          <BattleMysticRow side="ai" team={battle.ai} format={battle.size} opponentId={battle.ai.name} selectedId={targetId} targeting={isTargeting && targetSide === "ai"} actorOrder={actor?.order} damageFx={damageFx} onSelect={(mystic) => selectMystic(mystic, "ai")} />
           <div className="battle-center"><i /><span>VS</span><i /></div>
           <BattleMysticRow side="player" team={battle.player} format={battle.size} selectedId={battle.currentTurn === "player" ? actorId : ""} targetId={targetId} targeting={isTargeting && targetSide === "player"} damageFx={damageFx} onSelect={(mystic) => selectMystic(mystic, "player")} />
         </main>
@@ -246,12 +225,22 @@ function BattleExperience() {
         target={target}
         selection={selection}
         playerCanAct={playerCanAct}
-        onAction={(next) => { setSelection(next); setTargetId(""); setFeedback(""); setPhase("PLAYER_SELECT_TARGET"); }}
+        onAction={(next) => {
+          setSelection(next);
+          setFeedback("");
+          if (next.kind === "special" && actor?.moves[next.moveIndex]?.targetType === "self") {
+            setTargetId(actor.instanceId);
+            setPhase("PLAYER_ROLLING");
+          } else {
+            setTargetId("");
+            setPhase("PLAYER_SELECT_TARGET");
+          }
+        }}
         onInspect={() => actor && setInspect(actor)}
       />
     </div>
     <BattleLog events={battle.events} />
-    {phase === "PLAYER_ROLLING" && (selectedMove || selectedHandler) ? <div className="battle-dice-overlay" role="dialog" aria-modal="true" aria-label="Dice roll required" onMouseDown={(event) => event.target === event.currentTarget && !rolling && cancelSelection()}><BattleDiceTray requirement={selectedMove ? (selectedMove.minimumRoll ? `${selectedMove.minimumRoll}+` : String(selectedMove.exactRoll ?? selectedMove.requiredRoll)) : selectedHandler?.exactRoll ? String(selectedHandler.activationRoll) : `${selectedHandler?.activationRoll}+`} diceCount={selectedHandler?.activationDice ?? 1} rolling={rolling} holding={holdingRoll} face={dieFace} onRoll={rollAction} onCancel={cancelSelection} /></div> : null}
+    {phase === "PLAYER_ROLLING" && selectedMove ? <div className="battle-dice-overlay" role="dialog" aria-modal="true" aria-label="Dice roll required" onMouseDown={(event) => event.target === event.currentTarget && !rolling && cancelSelection()}><BattleDiceTray requirement={`${selectedMove.requiredRoll}+`} rolling={rolling} holding={holdingRoll} face={dieFace} onRoll={rollAction} onCancel={cancelSelection} /></div> : null}
     {phase === "INTRO" ? <BattleIntroOverlay battle={battle} rolls={rolls} /> : null}
     {aiBanner ? <div className="ai-action-banner" role="status"><span>{battle.ai.name.toUpperCase()}</span><strong>Choosing a Mystic action</strong></div> : null}
     {rollOutcome ? <div className={`battle-roll-result ${rollOutcome.success ? "success" : "failure"}`} role="status"><span>ROLLED {rollOutcome.roll}</span><strong>{rollOutcome.success ? "SUCCESS" : "FAILED"}</strong></div> : null}
@@ -270,12 +259,12 @@ function BattleTurnBar({ battle, phase }: { battle: NonNullable<ReturnType<typeo
   </header>;
 }
 
-function BattleMysticRow({ side, team, format, opponentId, selectedId, targetId, targeting, damageFx, onSelect }: { side: "player" | "ai"; team: BattleSide; format: 3 | 5 | 8; opponentId?: string; selectedId: string; targetId?: string; targeting: boolean; damageFx: DamageFx; onSelect: (mystic: Combatant) => void }) {
+function BattleMysticRow({ side, team, format, opponentId, selectedId, targetId, targeting, actorOrder, damageFx, onSelect }: { side: "player" | "ai"; team: BattleSide; format: 3 | 5 | 8; opponentId?: string; selectedId: string; targetId?: string; targeting: boolean; actorOrder?: string; damageFx: DamageFx; onSelect: (mystic: Combatant) => void }) {
   const portrait = side === "ai" ? Object.entries(OPPONENT_ART).find(([id]) => opponentId?.toLowerCase().includes(id === "forge" ? "mara" : id === "rookie" ? "lio" : id === "gale" ? "aster" : id === "veil" ? "nox" : id === "regent" ? "regent" : "arch"))?.[1] : undefined;
   return <section className={`battle-side battle-side-${side}`}>
     <BattleSideLabel side={side} name={team.name} portrait={portrait} />
     <div className="battle-mystic-row" role="list" aria-label={`${team.name} lineup`}>
-      {team.mystics.map((mystic) => <BattleMysticCard key={mystic.instanceId} mystic={mystic} side={side} format={format} selected={selectedId === mystic.instanceId} targetSelected={targetId === mystic.instanceId} validTarget={targeting && !mystic.defeated} damage={damageFx[mystic.instanceId]} onSelect={() => onSelect(mystic)} />)}
+      {team.mystics.map((mystic) => <BattleMysticCard key={mystic.instanceId} mystic={mystic} side={side} format={format} selected={selectedId === mystic.instanceId} targetSelected={targetId === mystic.instanceId} validTarget={targeting && !mystic.defeated} synergyPercent={team.synergies[mystic.order]} advantage={side === "ai" && actorOrder ? orderAdvantagePercent(actorOrder, mystic.order) : 0} damage={damageFx[mystic.instanceId]} onSelect={() => onSelect(mystic)} />)}
     </div>
   </section>;
 }
@@ -284,16 +273,17 @@ function BattleSideLabel({ side, name, portrait }: { side: "player" | "ai"; name
   return <div className="battle-side-label">{portrait ? <img src={portrait} alt="" /> : null}<div><span>{side === "ai" ? "OPPONENT" : "YOUR LINEUP"}</span><strong>{name}</strong><small>{side === "ai" ? "RIVAL HANDLER" : "ACTIVE FORMATION"}</small></div></div>;
 }
 
-function BattleMysticCard({ mystic, side, format, selected, targetSelected, validTarget, damage, onSelect }: { mystic: Combatant; side: "player" | "ai"; format: 3 | 5 | 8; selected: boolean; targetSelected?: boolean; validTarget: boolean; damage?: { amount: number; key: number }; onSelect: () => void }) {
+function BattleMysticCard({ mystic, side, format, selected, targetSelected, validTarget, synergyPercent, advantage, damage, onSelect }: { mystic: Combatant; side: "player" | "ai"; format: 3 | 5 | 8; selected: boolean; targetSelected?: boolean; validTarget: boolean; synergyPercent?: number; advantage?: number; damage?: { amount: number; key: number }; onSelect: () => void }) {
   const power = Math.max(0, Math.round(mystic.currentPower / mystic.maxPower * 100));
   const color = ORDER_COLORS[mystic.order] ?? "#D7A93B";
   return <button role="listitem" data-vfx-id={mystic.instanceId} className={`battle-mystic-card side-${side} size-${format} ${selected ? "actor-selected" : ""} ${targetSelected ? "target-selected" : ""} ${validTarget ? "valid-target" : ""} ${damage ? "taking-damage" : ""} ${mystic.defeated ? "is-defeated" : ""}`} style={{ "--order-color": color } as React.CSSProperties} onClick={onSelect} disabled={mystic.defeated && !selected} aria-label={`${mystic.name}, ${mystic.currentPower} Power`}>
     {validTarget ? <span className="target-indicator"><Target />TARGET</span> : null}
     {selected && side === "player" ? <span className="acting-indicator"><Swords />ACTING</span> : null}
+    {advantage ? <span className="advantage-indicator" title={`Order Advantage: +${advantage}% ATK`}><TrendingUp />+{advantage}%</span> : null}
     {damage ? <FloatingDamage key={damage.key} amount={damage.amount} /> : null}
-    <span className="battle-card-frame"><img src={mystic.image ?? ""} alt={`${mystic.name} card`} />{mystic.effects.length || Object.values(mystic.cooldowns).some(Boolean) ? <span className="battle-card-effects"><BattleStatusIcons mystic={mystic} /></span> : null}</span>
-    <span className="battle-card-hud"><strong>{mystic.name}</strong><BattlePowerBar percent={power} /><span><b title="Current Power"><Heart />{mystic.currentPower}</b><b title="Effective Defense"><Shield />{effectiveDefense(mystic)}</b><b title="Base Attack"><Swords />{mystic.baseAttack}</b></span></span>
-    <span className="battle-card-order">{ORDER_ART[mystic.order] ? <img src={ORDER_ART[mystic.order]} alt="" /> : null}{mystic.order}</span>
+    <span className="battle-card-frame"><img src={mystic.image ?? ""} alt={`${mystic.name} card`} />{mystic.activeEffects.length || Object.values(mystic.cooldowns).some(Boolean) ? <span className="battle-card-effects"><BattleStatusIcons mystic={mystic} /></span> : null}</span>
+    <span className="battle-card-hud"><strong>{mystic.name}<small className="battle-card-level">Lv.{mystic.level}</small></strong><BattlePowerBar percent={power} /><span><b title="Current / Max Power"><Heart />{mystic.currentPower}/{mystic.maxPower}</b><b title="Effective Defense"><Shield />{effectiveDefense(mystic)}</b><b title="Base Attack"><Swords />{mystic.baseAttack}</b></span></span>
+    <span className="battle-card-order">{ORDER_ART[mystic.order] ? <img src={ORDER_ART[mystic.order]} alt="" /> : null}{mystic.order}{synergyPercent ? <em className="synergy-tag" title={`${mystic.order} Order Synergy: +${synergyPercent}% ATK`}>+{synergyPercent}%</em> : null}{mystic.handlerBonuses.sources.length ? <em className="handler-tag" title={`Handler passive: ${mystic.handlerBonuses.sources.join(", ")}`}><WandSparkles /></em> : null}</span>
     {mystic.defeated ? <span className="defeated-mark"><CircleOff />DEFEATED</span> : null}
   </button>;
 }
@@ -304,58 +294,52 @@ function BattlePowerBar({ percent }: { percent: number }) {
 }
 
 function BattleStatusIcons({ mystic }: { mystic: Combatant }) {
-  return <>{mystic.effects.map((effect) => <span key={effect.id} title={`${statusLabels[effect.kind]}${effect.value ? ` (${effect.value > 0 ? "+" : ""}${effect.value})` : ""}`}><Activity /></span>)}{Object.entries(mystic.cooldowns).filter(([, turns]) => turns > 0).map(([name, turns]) => <span className="cooldown-status" key={`${name}-${turns}`} title={`${name}: ${turns} turn${turns === 1 ? "" : "s"} remaining`}><Clock3 />{turns}</span>)}</>;
+  return <>{mystic.activeEffects.map((effect) => <span key={effect.id} title={`${effect.label}${effect.duration.unit === "turns" ? ` (${effect.remainingTurns} turn${effect.remainingTurns === 1 ? "" : "s"} left)` : ""}`}><Activity /></span>)}{Object.entries(mystic.cooldowns).filter(([, turns]) => turns > 0).map(([name, turns]) => <span className="cooldown-status" key={`${name}-${turns}`} title={`${name}: ${turns} turn${turns === 1 ? "" : "s"} remaining`}><Clock3 />{turns}</span>)}</>;
 }
 
 function FloatingDamage({ amount }: { amount: number }) { return <span className="floating-damage" aria-live="assertive">−{amount}</span>; }
 
 function BattleControlDeck({ battle, actor, target, selection, playerCanAct, onAction, onInspect }: { battle: NonNullable<ReturnType<typeof useGame>["state"]["battle"]>; actor?: Combatant; target?: Combatant; selection: ActionSelection | null; playerCanAct: boolean; onAction: (action: ActionSelection) => void; onInspect: () => void }) {
-  const handlers = battle.player.handlers;
-  const [featuredHandlerIndex, setFeaturedHandlerIndex] = useState(0);
-
-  useEffect(() => {
-    if (selection?.kind === "handler") setFeaturedHandlerIndex(selection.handlerIndex);
-  }, [selection]);
-  useEffect(() => {
-    setFeaturedHandlerIndex((current) => Math.min(current, Math.max(0, handlers.length - 1)));
-  }, [handlers.length]);
-
-  const featuredOwned = handlers[featuredHandlerIndex];
-  const featuredHandler = featuredOwned ? catalog.handlers.find((item) => item.id === featuredOwned.definitionId) : undefined;
+  const equippedHandlers = battle.player.handlers.map((id) => catalog.handlers.find((item) => item.id === id)).filter((item): item is HandlerDefinition => Boolean(item));
   return <section className={`battle-control-deck ${playerCanAct ? "active" : "disabled"}`}>
     <div className="battle-controls-main">
       <BattleActorPanel actor={actor} target={target} onInspect={onInspect} />
       <div className="battle-actions">
         <div className="battle-action-grid">
-          <BattleActionCard kind="basic" title="Basic Attack" icon={<Swords />} value={actionDamage(actor, target) ?? actor?.baseAttack ?? "—"} detail={target ? "Calculated damage" : "Always hits · choose target"} available={playerCanAct} selected={selection?.kind === "basic"} onClick={() => onAction({ kind: "basic" })} />
-          {actor?.moves.map((move, index) => { const cooldown = actor.cooldowns[move.name] ?? 0; const blocked = move.needsReview || cooldown > 0 || actor.effects.some((effect) => effect.kind === "specialLock"); return <BattleActionCard key={move.name} kind="special" title={move.name} icon={<Sparkles />} value={cooldown ? `CD ${cooldown}` : move.minimumRoll ? `${move.minimumRoll}+` : move.exactRoll ?? move.requiredRoll} detail={move.needsReview ? "Needs rules review" : `${move.rawText.split("=").at(-1)?.trim() ?? "Special effect"} · D6`} available={playerCanAct && !blocked} selected={selection?.kind === "special" && selection.moveIndex === index} tooltip={move.needsReview ? move.reviewReason : cooldown ? `This move is on cooldown for ${cooldown} more turn${cooldown === 1 ? "" : "s"}.` : `Roll ${move.minimumRoll ? `${move.minimumRoll}+` : move.exactRoll ?? move.requiredRoll} on one D6.`} onClick={() => onAction({ kind: "special", moveIndex: index })} />; })}
+          <BattleActionCard kind="basic" title="Basic Attack" icon={<Swords />} value={target && actor ? actionDamagePreview(actor, target, battle.player.synergies, null) ?? actor.baseAttack : actor?.baseAttack ?? "—"} detail={target ? "Calculated damage" : "Always hits · choose target"} available={playerCanAct} selected={selection?.kind === "basic"} onClick={() => onAction({ kind: "basic" })} />
+          {actor?.moves.map((move, index) => {
+            const cooldown = actor.cooldowns[move.name] ?? 0;
+            const silenced = actor.activeEffects.some((effect) => effect.kind === "silence");
+            const blocked = move.needsReview || cooldown > 0 || silenced;
+            const previewTarget = move.targetType === "self" ? actor : target;
+            const value = cooldown ? `CD ${cooldown}` : move.targetType !== "self" && previewTarget && actor ? actionDamagePreview(actor, previewTarget, battle.player.synergies, move) ?? `${move.requiredRoll}+` : `${move.requiredRoll}+`;
+            return <BattleActionCard key={move.name} kind="special" title={move.name} icon={<Sparkles />} value={value} detail={move.needsReview ? "Needs rules review" : `${move.rawText.split("|").pop()?.trim() ?? "Special effect"} · D8`} available={playerCanAct && !blocked} selected={selection?.kind === "special" && selection.moveIndex === index} tooltip={move.needsReview ? move.reviewReason : silenced ? "This Mystic is Silenced." : cooldown ? `This move is on cooldown for ${cooldown} more turn${cooldown === 1 ? "" : "s"}.` : `Roll ${move.requiredRoll}+ on one D8.`} onClick={() => onAction({ kind: "special", moveIndex: index })} />;
+          })}
         </div>
       </div>
     </div>
-    <BattleHandlerShowcase
-      handler={featuredHandler}
-      usesRemaining={featuredOwned ? featuredOwned.maxUses - featuredOwned.uses : 0}
-      handlerIndex={featuredHandlerIndex}
-      handlerCount={handlers.length}
-      selected={selection?.kind === "handler" && selection.handlerIndex === featuredHandlerIndex}
-      disabled={!playerCanAct || !featuredOwned || featuredOwned.uses >= featuredOwned.maxUses}
-      onShowHandler={setFeaturedHandlerIndex}
-      onActivate={() => onAction({ kind: "handler", handlerIndex: featuredHandlerIndex })}
-    />
+    <BattleHandlerShowcase handlers={equippedHandlers} activeMystics={battle.player.mystics} />
   </section>;
 }
 
-function BattleHandlerShowcase({ handler, usesRemaining, handlerIndex, handlerCount, selected, disabled, onShowHandler, onActivate }: { handler?: HandlerDefinition; usesRemaining: number; handlerIndex: number; handlerCount: number; selected: boolean; disabled: boolean; onShowHandler: (index: number) => void; onActivate: () => void }) {
-  if (!handler) return <section className="battle-handler-showcase empty"><WandSparkles /><strong>No Handler equipped</strong></section>;
+function BattleHandlerShowcase({ handlers, activeMystics }: { handlers: HandlerDefinition[]; activeMystics: Combatant[] }) {
+  if (!handlers.length) return <section className="battle-handler-showcase empty"><WandSparkles /><strong>No Handlers equipped</strong></section>;
   return <section className="battle-handler-showcase">
-    <header><span>HANDLER CARD</span><small>{usesRemaining} use{usesRemaining === 1 ? "" : "s"} remaining</small></header>
-    {handlerCount > 1 ? <nav className="battle-handler-picker" aria-label="Equipped Handler cards">{Array.from({ length: handlerCount }, (_, index) => <button key={index} type="button" className={index === handlerIndex ? "active" : ""} onClick={() => onShowHandler(index)} aria-label={`Show Handler card ${index + 1}`} aria-current={index === handlerIndex ? "true" : undefined} />)}</nav> : null}
-    <div className="battle-handler-art">{handler.image ? <img src={handler.image} alt={`${handler.name} Handler card`} /> : <div className="artwork-needed">Artwork needed</div>}</div>
-    <button type="button" className={`battle-handler-move ${selected ? "selected" : ""}`} disabled={disabled} onClick={onActivate} title={disabled ? `${handler.name} cannot be used right now.` : handler.effect}>
-      <span className="handler-move-icon"><WandSparkles /></span>
-      <span><small>HANDLER MOVE</small><strong>{handler.effectType}</strong><em>{handler.effect}</em></span>
-      <b>ROLL {handler.exactRoll ? handler.activationRoll : `${handler.activationRoll}+`}</b>
-    </button>
+    <header><span>EQUIPPED HANDLERS</span><small>Passive · always active</small></header>
+    <div className="battle-handler-passive-list">
+      {handlers.map((handler) => {
+        const beneficiaries = activeMystics.filter((mystic) => !mystic.defeated && (mystic.allegiance === handler.allegiance || mystic.order === handler.order)).map((mystic) => mystic.name);
+        return <article key={handler.id} className="battle-handler-passive-card">
+          <div className="battle-handler-art">{handler.image ? <img src={handler.image} alt={`${handler.name} Handler card`} /> : <div className="artwork-needed">Artwork needed</div>}</div>
+          <div>
+            <strong>{handler.name}</strong>
+            <p><WandSparkles />{handler.allegiancePassive.name}<em>{handler.allegiancePassive.rawText}</em></p>
+            <p><WandSparkles />{handler.orderPassive.name}<em>{handler.orderPassive.rawText}</em></p>
+            <small>{beneficiaries.length ? `Active on ${beneficiaries.join(", ")}` : "No fielded Mystic currently benefits"}</small>
+          </div>
+        </article>;
+      })}
+    </div>
   </section>;
 }
 
@@ -367,8 +351,8 @@ function BattleActionCard({ kind, title, icon, value, detail, available, selecte
   return <button className={`battle-action-card ${kind} ${selected ? "selected" : ""}`} disabled={!available} title={!available ? tooltip : undefined} onClick={onClick}><span className="action-icon">{icon}</span><span><small>{kind === "basic" ? "ATTACK" : "SPECIAL MOVE"}</small><strong>{title}</strong><em>{detail}</em></span><b>{value}</b>{!available && tooltip ? <i><Info />{tooltip}</i> : null}</button>;
 }
 
-function BattleDiceTray({ requirement, diceCount, rolling, holding, face, onRoll, onCancel }: { requirement: string; diceCount: number; rolling: boolean; holding: boolean; face: number; onRoll: () => void; onCancel: () => void }) {
-  return <div className={`battle-dice-tray ${holding ? "holding" : ""}`} aria-live="polite"><div><small>{holding ? "ROLL RESULT" : `ROLL ${diceCount}D6`}</small><strong>{holding ? `Rolled ${face}` : `Need ${requirement} to succeed`}</strong></div><div className="battle-dice">{Array.from({ length: diceCount }, (_, index) => <BattleDie key={index} face={face} rolling={rolling && !holding} />)}</div><button className="button dice-roll-button" disabled={rolling} onClick={onRoll}><Dices />{holding ? "RESULT" : rolling ? "ROLLING…" : "ROLL"}</button><button className="dice-cancel" disabled={rolling} onClick={onCancel}>Cancel</button></div>;
+function BattleDiceTray({ requirement, rolling, holding, face, onRoll, onCancel }: { requirement: string; rolling: boolean; holding: boolean; face: number; onRoll: () => void; onCancel: () => void }) {
+  return <div className={`battle-dice-tray ${holding ? "holding" : ""}`} aria-live="polite"><div><small>{holding ? "ROLL RESULT" : "ROLL 1D8"}</small><strong>{holding ? `Rolled ${face}` : `Need ${requirement} to succeed`}</strong></div><div className="battle-dice"><BattleDie face={face} rolling={rolling && !holding} /></div><button className="button dice-roll-button" disabled={rolling} onClick={onRoll}><Dices />{holding ? "RESULT" : rolling ? "ROLLING…" : "ROLL"}</button><button className="dice-cancel" disabled={rolling} onClick={onCancel}>Cancel</button></div>;
 }
 
 function BattleDie({ face, rolling }: { face: number; rolling: boolean }) { return <span className={`battle-die ${rolling ? "rolling" : ""}`} aria-label={`Die showing ${face}`}>{face}</span>; }
@@ -508,7 +492,7 @@ function BattleIntroOverlay({ battle, rolls }: { battle: NonNullable<ReturnType<
 
 function BattleInspectOverlay({ mystic, onClose }: { mystic: Combatant; onClose: () => void }) {
   useEffect(() => { const escape = (event: KeyboardEvent) => event.key === "Escape" && onClose(); document.addEventListener("keydown", escape); return () => document.removeEventListener("keydown", escape); }, [onClose]);
-  return <div className="battle-inspect-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><section className="battle-inspect" role="dialog" aria-modal="true" aria-label={`${mystic.name} battle details`}><button className="icon-button" onClick={onClose} aria-label="Close inspection"><X /></button><img src={mystic.image ?? ""} alt={`${mystic.name} card`} /><div><span>{mystic.order} · {mystic.rarity}</span><h2>{mystic.name}</h2><div className="inspect-combat-stats"><b><Heart />{mystic.currentPower}/{mystic.maxPower}<small>POWER</small></b><b><Shield />{effectiveDefense(mystic)}<small>DEFENSE</small></b><b><Swords />{mystic.baseAttack}<small>ATTACK</small></b></div><h3>Moves</h3>{mystic.moves.map((move) => <article key={move.name}><strong>{move.name}</strong><span>{move.rawText}</span><small>{(mystic.cooldowns[move.name] ?? 0) ? `Cooldown: ${mystic.cooldowns[move.name]} turns` : "Ready"}</small></article>)}<h3>Status effects</h3>{mystic.effects.length ? mystic.effects.map((effect) => <p key={effect.id}>{statusLabels[effect.kind]} {effect.value ? `(${effect.value > 0 ? "+" : ""}${effect.value})` : ""}</p>) : <p>No active effects</p>}</div></section></div>;
+  return <div className="battle-inspect-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><section className="battle-inspect" role="dialog" aria-modal="true" aria-label={`${mystic.name} battle details`}><button className="icon-button" onClick={onClose} aria-label="Close inspection"><X /></button><img src={mystic.image ?? ""} alt={`${mystic.name} card`} /><div><span>{mystic.order} · {mystic.rarity}</span><h2>{mystic.name}</h2><div className="inspect-combat-stats"><b><Heart />{mystic.currentPower}/{mystic.maxPower}<small>POWER</small></b><b><Shield />{effectiveDefense(mystic)}<small>DEFENSE</small></b><b><Swords />{mystic.baseAttack}<small>ATTACK</small></b></div><h3>Moves</h3>{mystic.moves.map((move) => <article key={move.name}><strong>{move.name}</strong><span>{move.rawText}</span><small>{(mystic.cooldowns[move.name] ?? 0) ? `Cooldown: ${mystic.cooldowns[move.name]} turns` : "Ready"}</small></article>)}<h3>Status effects</h3>{mystic.activeEffects.length ? mystic.activeEffects.map((effect) => <p key={effect.id}>{effect.label}{effect.duration.unit === "turns" ? ` (${effect.remainingTurns} turn${effect.remainingTurns === 1 ? "" : "s"} left)` : ""}</p>) : <p>No active effects</p>}</div></section></div>;
 }
 
 function BattleEndModal({ battle, rewards, boosts, onSummary }: { battle: NonNullable<ReturnType<typeof useGame>["state"]["battle"]>; rewards: { xp: number; coins: number; won: boolean } | null; boosts: { xp: { matches: number; multiplier: 2 } | null; coins: { matches: number; multiplier: 2 } | null }; onSummary: () => void }) {

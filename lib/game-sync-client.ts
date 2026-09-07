@@ -14,10 +14,11 @@ export type GameActivityType =
   | "BINDER_RENAMED"
   | "BINDER_CARD_TOGGLED"
   | "CARD_SOLD"
+  | "CARD_DISMANTLED"
+  | "CARD_LEVELED_UP"
   | "BATTLE_STARTED"
   | "BASIC_ATTACK"
   | "SPECIAL_ATTACK"
-  | "HANDLER_USED"
   | "AI_TURN";
 
 async function authorizationHeader() {

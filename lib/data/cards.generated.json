@@ -12,23 +12,49 @@
       "moves": [
         {
           "name": "Quickstrike",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Quickstrike: 4+ = +8 ATK",
-          "needsReview": false,
-          "attackModifier": 8
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "allyAuto",
+              "percent": 8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Quickstrike: 3+ | CD 1 | This attack gains +8% ATK and one allied Mystic gains +8% DEF for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Tailwind Dash",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Tailwind Dash: 6 = attack twice",
-          "needsReview": false,
-          "multiHitCount": 2
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "allTeam",
+              "percent": 8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            },
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 5
+            }
+          ],
+          "rawText": "Tailwind Dash: 5+ | CD 2 | All allied Mystics gain +8% ATK for 1 turn; this Mystic recovers 5% of maximum Power Score.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/order%20of%20the%20star/swift.png"
@@ -45,24 +71,39 @@
       "moves": [
         {
           "name": "Sand Toss",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Sand Toss: 4+ = enemy -5 ATK",
-          "needsReview": true,
-          "enemyAttackModifier": -5,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Sand Toss: 3+ | CD 1 | This attack gains +8% ATK and the target gets -8% ATK for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Burrow",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Burrow: 6 = block next attack",
-          "needsReview": true,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 10
+            }
+          ],
+          "rawText": "Burrow: 5+ | CD 2 | Recover 10% of maximum Power Score and gain +12% DEF for 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Verdant/duney.png"
@@ -79,23 +120,39 @@
       "moves": [
         {
           "name": "Vine Snap",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Vine Snap: 4+ = +7 ATK",
-          "needsReview": false,
-          "attackModifier": 7
+          "targetType": "enemy",
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Vine Snap: 3+ | CD 1 | This attack gains +8% ATK and the target gets -8% ATK for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Regrow",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Regrow: 6 = recover 12 Power",
-          "needsReview": false,
-          "healing": 12
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 10
+            }
+          ],
+          "rawText": "Regrow: 5+ | CD 2 | Recover 10% of this Mystic's maximum Power Score and gain +8% DEF until your next turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Verdant/leafo.png"
@@ -112,23 +169,43 @@
       "moves": [
         {
           "name": "Spark Bite",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Spark Bite: 4+ = +6 ATK",
-          "needsReview": false,
-          "attackModifier": 6
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": -4,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Spark Bite: 3+ | CD 1 | This attack gains +12% ATK. Afterward, this Mystic gets -4% DEF until your next turn.",
+          "needsReview": false
         },
         {
           "name": "Flare Burst",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Flare Burst: 6 = +12 ATK",
-          "needsReview": false,
-          "attackModifier": 12
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 18,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Flare Burst: 5+ | CD 2 | Gain +18% ATK for 1 turn and reduce the other Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/first%20spark/ember.png"
@@ -145,23 +222,43 @@
       "moves": [
         {
           "name": "Metal Bash",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Metal Bash: 4+ = +6 ATK",
-          "needsReview": false,
-          "attackModifier": 6
+          "targetType": "enemy",
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Metal Bash: 3+ | CD 1 | This attack gains +8% ATK and reduce target DEF by 8% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Iron Guard",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Iron Guard: 6 = +12 DEF",
-          "needsReview": false,
-          "defenseModifier": 12
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 18,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Iron Guard: 5+ | CD 2 | Gain +18% DEF for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Worldforge/bella.png"
@@ -178,23 +275,50 @@
       "moves": [
         {
           "name": "Flash Pop",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Flash Pop: 4+ = enemy -5 DEF",
-          "needsReview": false,
-          "enemyDefenseModifier": -5
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Flash Pop: 3+ | CD 1 | This attack gains +8% ATK and reduce target DEF by 8% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Dazzle Spin",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Dazzle Spin: 6 = enemy misses",
-          "needsReview": true,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            },
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -12,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Dazzle Spin: 5+ | CD 2 | Reduce the target's ATK by 12% for 1 turn and increase its longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sunspire/disco.png"
@@ -211,23 +335,43 @@
       "moves": [
         {
           "name": "Stone Slam",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Stone Slam: 4+ = +8 ATK",
-          "needsReview": false,
-          "attackModifier": 8
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -10,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Stone Slam: 3+ | CD 1 | This attack gains +10% ATK and reduce target DEF by 10% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Rooted Stance",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Rooted Stance: 6 = reduce damage by 15",
-          "needsReview": true,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Rooted Stance: 5+ | CD 2 | Gain +20% DEF for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Worldforge/rocky.png"
@@ -244,23 +388,39 @@
       "moves": [
         {
           "name": "Coral Jab",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Coral Jab: 4+ = +7 ATK",
-          "needsReview": false,
-          "attackModifier": 7
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Coral Jab: 3+ | CD 1 | This attack gains +8% ATK and the target gets -8% ATK for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Current Curl",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Current Curl: 6 = half-power second attack",
-          "needsReview": true,
-          "reviewReason": "effect pattern is not deterministic; timing or calculation needs rules confirmation"
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 10
+            }
+          ],
+          "rawText": "Current Curl: 5+ | CD 2 | Recover 10% of maximum Power Score and gain +12% DEF for 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Verdant/coral.png"
@@ -277,24 +437,48 @@
       "moves": [
         {
           "name": "Rapid Jab",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Rapid Jab: 4+ = +9 ATK",
-          "needsReview": false,
-          "attackModifier": 9
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -10,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Rapid Jab: 3+ | CD 1 | This attack gains +10% ATK and reduce target ATK by 10% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Counter Form",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Counter Form: 6 = return 10 damage",
-          "needsReview": true,
-          "counter": 10,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 15,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            },
+            {
+              "kind": "retaliateAtkDebuff",
+              "subject": "self",
+              "percent": 10
+            }
+          ],
+          "rawText": "Counter Form: 5+ | CD 2 | Gain +15% DEF until your next turn. If hit, the attacker gets -10% ATK for its next turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sovereign/jitsuki.png"
@@ -311,23 +495,50 @@
       "moves": [
         {
           "name": "Void Claw",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Void Claw: 4+ = +10 ATK",
-          "needsReview": false,
-          "attackModifier": 10
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -10,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Void Claw: 3+ | CD 1 | This attack gains +10% ATK and reduce target ATK by 10% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Darkness Shroud",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
-          "targetType": "self",
-          "rawText": "Darkness Shroud: 6 = ignore DEF bonus",
-          "needsReview": false,
-          "ignoreDefense": true
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            },
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -15,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Darkness Shroud: 5+ | CD 2 | Reduce the target's ATK by 15% for 1 turn and increase its longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/moonveil/nox.png"
@@ -345,22 +556,59 @@
         {
           "name": "Grave Bite",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Grave Bite: 4+ = +12 ATK",
-          "needsReview": false,
-          "attackModifier": 12
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -12,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Grave Bite: 4+ | CD 1 | This attack gains +12% ATK and reduce target ATK by 12% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Consume",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
-          "targetType": "self",
-          "rawText": "Consume: 6 = heal half damage dealt",
-          "needsReview": true,
-          "reviewReason": "effect pattern is not deterministic; timing or calculation needs rules confirmation"
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            },
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            },
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Consume: 6+ | CD 2 | Reduce the target's ATK and DEF by 18% for 1 turn and increase its longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/moonveil/gravemaw.png"
@@ -377,23 +625,44 @@
       "moves": [
         {
           "name": "Palm Strike",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Palm Strike: 4+ = +8 ATK",
-          "needsReview": false,
-          "attackModifier": 8
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -10,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Palm Strike: 3+ | CD 1 | This attack gains +10% ATK and reduce target ATK by 10% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Focus Kata",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Focus Kata: 6 = next attack x2",
-          "needsReview": true,
-          "reviewReason": "effect pattern is not deterministic; timing or calculation needs rules confirmation"
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Focus Kata: 5+ | CD 2 | Gain +20% ATK for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sovereign/kario.png"
@@ -411,22 +680,53 @@
         {
           "name": "Haymaker",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Haymaker: 4+ = +12 ATK",
-          "needsReview": false,
-          "attackModifier": 12
+          "targetType": "enemy",
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -12,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Haymaker: 4+ | CD 1 | This attack gains +12% ATK and reduce target ATK by 12% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Knockout Swing",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Knockout Swing: 6 = Base Attack x2",
-          "needsReview": false,
-          "attackMultiplier": 2
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 18,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            },
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 18,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Knockout Swing: 6+ | CD 2 | Gain +18% ATK and +18% DEF for 2 turns.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sovereign/brawler.png"
@@ -443,23 +743,48 @@
       "moves": [
         {
           "name": "Ripple Shot",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Ripple Shot: 4+ = +6 ATK",
-          "needsReview": false,
-          "attackModifier": 6
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Ripple Shot: 3+ | CD 1 | This attack gains +8% ATK and the target gets -8% ATK for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Slip Away",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Slip Away: 6 = evade attack",
-          "needsReview": false,
-          "evade": true
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 18,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            },
+            {
+              "kind": "retaliateAtkDebuff",
+              "subject": "self",
+              "percent": 8
+            }
+          ],
+          "rawText": "Slip Away: 5+ | CD 2 | Gain +18% DEF until your next turn and reduce the next attacker's ATK by 8% for that attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Verdant/ripple.png"
@@ -477,22 +802,43 @@
         {
           "name": "Deep Strike",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Deep Strike: 4+ = +11 ATK",
-          "needsReview": false,
-          "attackModifier": 11
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -12,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Deep Strike: 4+ | CD 1 | This attack gains +12% ATK and reduce target ATK by 12% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Undertow",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Undertow: 6 = enemy -15 DEF",
-          "needsReview": false,
-          "enemyDefenseModifier": -15
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -24,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Undertow: 6+ | CD 2 | Reduce the target's DEF by 24% for 2 turns.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/moonveil/abyssal.png"
@@ -509,23 +855,39 @@
       "moves": [
         {
           "name": "Rain Drop",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Rain Drop: 4+ = +5 ATK",
-          "needsReview": false,
-          "attackModifier": 5
+          "targetType": "enemy",
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Rain Drop: 3+ | CD 1 | This attack gains +8% ATK and the target gets -8% ATK for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Downpour",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Downpour: 6 = +10 ATK",
-          "needsReview": false,
-          "attackModifier": 10
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 10
+            }
+          ],
+          "rawText": "Downpour: 5+ | CD 2 | Recover 10% of maximum Power Score and gain +12% DEF for 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Verdant/Drizzle.png"
@@ -543,22 +905,43 @@
         {
           "name": "Crashing Wave",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Crashing Wave: 4+ = +15 ATK",
-          "needsReview": false,
-          "attackModifier": 15
+          "targetType": "enemy",
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -15,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Crashing Wave: 4+ | CD 1 | This attack gains +15% ATK and the target gets -15% ATK for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Tidal Surge",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Tidal Surge: 6 = Base Attack x2",
-          "needsReview": false,
-          "attackMultiplier": 2
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 28,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Tidal Surge: 6+ | CD 2 | Gain +28% ATK for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Verdant/Tsunami.png"
@@ -575,23 +958,44 @@
       "moves": [
         {
           "name": "Needle Shot",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Needle Shot: 4+ = +8 ATK",
-          "needsReview": false,
-          "attackModifier": 8
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -10,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Needle Shot: 3+ | CD 1 | This attack gains +10% ATK and the target gets -10% ATK for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Prickly Guard",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Prickly Guard: 6 = attacker takes 10",
-          "needsReview": true,
-          "reviewReason": "effect pattern is not deterministic"
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Prickly Guard: 5+ | CD 2 | Gain +20% DEF for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Verdant/Cactus_Jack.png"
@@ -609,22 +1013,47 @@
         {
           "name": "False Strike",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "False Strike: 4+ = +10 ATK",
-          "needsReview": false,
-          "attackModifier": 10
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -12,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "False Strike: 4+ | CD 1 | This attack gains +12% ATK and reduce target ATK by 12% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Illusion Veil",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Illusion Veil: 6 = evade attack",
-          "needsReview": false,
-          "evade": true
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 24,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            },
+            {
+              "kind": "retaliateAtkDebuff",
+              "subject": "self",
+              "percent": 12
+            }
+          ],
+          "rawText": "Illusion Veil: 6+ | CD 2 | Gain +24% DEF until your next turn and reduce the next attacker's ATK by 12% for that attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/moonveil/Mirage.png"
@@ -641,23 +1070,45 @@
       "moves": [
         {
           "name": "Wind Blade",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Wind Blade: 4+ = +9 ATK",
-          "needsReview": false,
-          "attackModifier": 9
+          "targetType": "enemy",
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "markDefenseOnNextHit",
+              "subject": "target",
+              "percent": 10
+            }
+          ],
+          "rawText": "Wind Blade: 3+ | CD 1 | This attack gains +10% ATK and mark the target with -10% DEF for your next attack.",
+          "needsReview": false
         },
         {
           "name": "Cyclone Rush",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Cyclone Rush: 6 = +18 ATK",
-          "needsReview": false,
-          "attackModifier": 18
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 15,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            },
+            {
+              "kind": "cooldownDelta",
+              "subject": "self",
+              "scope": "longestActive",
+              "amount": -1
+            }
+          ],
+          "rawText": "Cyclone Rush: 5+ | CD 2 | Gain +15% DEF for 1 turn and reduce one active Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/starwatch/Zephyr.png"
@@ -665,7 +1116,7 @@
     {
       "id": "MM-021",
       "name": "Frostbite",
-      "order": "Agespire",
+      "order": "Worldforge",
       "allegiance": "Unbound",
       "rarity": "Predator",
       "power": 79,
@@ -675,23 +1126,48 @@
         {
           "name": "Ice Fang",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Ice Fang: 4+ = +11 ATK",
-          "needsReview": false,
-          "attackModifier": 11
+          "targetType": "enemy",
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -12,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Ice Fang: 4+ | CD 1 | This attack gains +12% ATK and reduce target DEF by 12% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Time Freeze",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Time Freeze: 6 = enemy loses attack",
-          "needsReview": true,
-          "skipTurn": true,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            },
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Time Freeze: 6+ | CD 2 | Reduce the target's ATK by 18% for 2 turns and increase its longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Worldforge/frostbite.png"
@@ -708,23 +1184,39 @@
       "moves": [
         {
           "name": "Gust Swipe",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Gust Swipe: 4+ = +5 ATK",
-          "needsReview": false,
-          "attackModifier": 5
+          "targetType": "enemy",
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "markDefenseOnNextHit",
+              "subject": "target",
+              "percent": 8
+            }
+          ],
+          "rawText": "Gust Swipe: 3+ | CD 1 | This attack gains +8% ATK and mark the target with -8% DEF for your next attack.",
+          "needsReview": false
         },
         {
           "name": "Sweep Away",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
-          "targetType": "self",
-          "rawText": "Sweep Away: 6 = remove DEF bonus",
-          "needsReview": true,
-          "reviewReason": "effect pattern is not deterministic"
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Sweep Away: 5+ | CD 2 | Reduce the target's DEF by 18% for 2 turns.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/starwatch/Sweep.png"
@@ -741,23 +1233,43 @@
       "moves": [
         {
           "name": "Ember Pop",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Ember Pop: 4+ = +5 ATK",
-          "needsReview": false,
-          "attackModifier": 5
+          "targetType": "enemy",
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": -4,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Ember Pop: 3+ | CD 1 | This attack gains +12% ATK. Afterward, this Mystic gets -4% DEF until your next turn.",
+          "needsReview": false
         },
         {
           "name": "Kindle Up",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Kindle Up: 6 = +10 ATK",
-          "needsReview": false,
-          "attackModifier": 10
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 18,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Kindle Up: 5+ | CD 2 | Gain +18% ATK for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/first%20spark/Emberling.png"
@@ -774,23 +1286,43 @@
       "moves": [
         {
           "name": "Static Shock",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Static Shock: 4+ = +9 ATK",
-          "needsReview": false,
-          "attackModifier": 9
+          "targetType": "enemy",
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": -5,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Static Shock: 3+ | CD 1 | This attack gains +15% ATK. Afterward, this Mystic gets -5% DEF until your next turn.",
+          "needsReview": false
         },
         {
           "name": "Overcharge",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Overcharge: 6 = Base Attack x2",
-          "needsReview": false,
-          "attackMultiplier": 2
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Overcharge: 5+ | CD 2 | Gain +20% ATK for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/first%20spark/Voltix.png"
@@ -807,23 +1339,43 @@
       "moves": [
         {
           "name": "Pebble Toss",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Pebble Toss: 4+ = +5 ATK",
-          "needsReview": false,
-          "attackModifier": 5
+          "targetType": "enemy",
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Pebble Toss: 3+ | CD 1 | This attack gains +8% ATK and reduce target DEF by 8% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Harden",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Harden: 6 = +15 DEF",
-          "needsReview": false,
-          "defenseModifier": 15
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 18,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Harden: 5+ | CD 2 | Gain +18% DEF for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Worldforge/Pebblit.png"
@@ -840,23 +1392,50 @@
       "moves": [
         {
           "name": "Gleam Shot",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Gleam Shot: 4+ = +7 ATK",
-          "needsReview": false,
-          "attackModifier": 7
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -10,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Gleam Shot: 3+ | CD 1 | This attack gains +10% ATK and reduce target DEF by 10% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Blinding Ray",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Blinding Ray: 6 = enemy misses",
-          "needsReview": true,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            },
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -15,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Blinding Ray: 5+ | CD 2 | Reduce the target's ATK by 15% for 1 turn and increase its longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sunspire/glint.png"
@@ -873,24 +1452,44 @@
       "moves": [
         {
           "name": "Mud Sling",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Mud Sling: 4+ = +7 ATK",
-          "needsReview": false,
-          "attackModifier": 7
+          "targetType": "enemy",
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -10,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Mud Sling: 3+ | CD 1 | This attack gains +10% ATK and the target gets -10% ATK for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Bogged Down",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Bogged Down: 6 = enemy -10 ATK",
-          "needsReview": true,
-          "enemyAttackModifier": -10,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Bogged Down: 5+ | CD 2 | Reduce the target's ATK by 20% for 2 turns.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Verdant/mire.png"
@@ -908,22 +1507,34 @@
         {
           "name": "Jet Strike",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Jet Strike: 4+ = +14 ATK",
-          "needsReview": false,
-          "attackModifier": 14
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "markDefenseOnNextHit",
+              "subject": "target",
+              "percent": 15
+            }
+          ],
+          "rawText": "Jet Strike: 4+ | CD 1 | This attack gains +15% ATK and mark the target with -15% DEF for your next attack.",
+          "needsReview": false
         },
         {
           "name": "Sonic Rush",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Sonic Rush: 6 = attack twice",
-          "needsReview": false,
-          "multiHitCount": 2
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "self",
+              "scope": "otherMove",
+              "amount": -1
+            }
+          ],
+          "rawText": "Sonic Rush: 6+ | CD 2 | Gain +28% ATK for this attack and reduce this Mystic's other Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/starwatch/slipstream.png"
@@ -941,22 +1552,47 @@
         {
           "name": "Iron Bite",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Iron Bite: 4+ = +17 ATK",
-          "needsReview": false,
-          "attackModifier": 17
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Iron Bite: 4+ | CD 1 | This attack gains +18% ATK and reduce target DEF by 18% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Crushing Jaw",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Crushing Jaw: 6 = Base Attack x2",
-          "needsReview": false,
-          "attackMultiplier": 2
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 35,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            },
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 11
+            }
+          ],
+          "rawText": "Crushing Jaw: 6+ | CD 2 | Gain +35% DEF for 2 turns and recover 11% of maximum Power Score.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Worldforge/ironjaw.png"
@@ -974,24 +1610,47 @@
         {
           "name": "Gate Slam",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Gate Slam: 4+ = +18 ATK",
-          "needsReview": false,
-          "attackModifier": 18
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Gate Slam: 4+ | CD 1 | This attack gains +18% ATK and reduce target DEF by 18% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Blink Gate",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
-          "targetType": "self",
-          "rawText": "Blink Gate: 6 = evade and counter",
-          "needsReview": true,
-          "evade": true,
-          "counter": "base",
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 35,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            },
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            }
+          ],
+          "rawText": "Blink Gate: 6+ | CD 2 | Gain +35% DEF until your next turn and increase the attacker's longest active Special Move recovery by 1 turn if you are hit.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/stargate/tallus.png"
@@ -1008,24 +1667,44 @@
       "moves": [
         {
           "name": "Thorn Whip",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Thorn Whip: 4+ = +6 ATK",
-          "needsReview": false,
-          "attackModifier": 6
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Thorn Whip: 3+ | CD 1 | This attack gains +8% ATK and the target gets -8% ATK for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Tangle",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Tangle: 6 = enemy -8 ATK",
-          "needsReview": true,
-          "enemyAttackModifier": -8,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Tangle: 5+ | CD 2 | Reduce the target's ATK by 18% for 2 turns.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Verdant/bramble.png"
@@ -1042,23 +1721,39 @@
       "moves": [
         {
           "name": "Moss Slam",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Moss Slam: 4+ = +8 ATK",
-          "needsReview": false,
-          "attackModifier": 8
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -10,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Moss Slam: 3+ | CD 1 | This attack gains +10% ATK and the target gets -10% ATK for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Overgrowth",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Overgrowth: 6 = recover 10 Power",
-          "needsReview": false,
-          "healing": 10
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 12
+            }
+          ],
+          "rawText": "Overgrowth: 5+ | CD 2 | Recover 12% of this Mystic's maximum Power Score and gain +10% DEF until your next turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Verdant/mossback.png"
@@ -1075,24 +1770,39 @@
       "moves": [
         {
           "name": "Petal Shot",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Petal Shot: 4+ = +6 ATK",
-          "needsReview": false,
-          "attackModifier": 6
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Petal Shot: 3+ | CD 1 | This attack gains +8% ATK and the target gets -8% ATK for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Bloom",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Bloom: 6 = +8 DEF and heal 8",
-          "needsReview": false,
-          "defenseModifier": 8,
-          "healing": 8
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 10
+            }
+          ],
+          "rawText": "Bloom: 5+ | CD 2 | Recover 10% of maximum Power Score and gain +12% DEF for 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Verdant/bloomlet.png"
@@ -1110,22 +1820,43 @@
         {
           "name": "Black Thorn",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Black Thorn: 4+ = +11 ATK",
-          "needsReview": false,
-          "attackModifier": 11
+          "targetType": "enemy",
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -12,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Black Thorn: 4+ | CD 1 | This attack gains +12% ATK and the target gets -12% ATK for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Rotvine",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Rotvine: 6 = enemy -12 DEF",
-          "needsReview": false,
-          "enemyDefenseModifier": -12
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -24,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Rotvine: 6+ | CD 2 | Reduce the target's DEF by 24% for 2 turns.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Verdant/Thornox.png"
@@ -1143,22 +1874,43 @@
         {
           "name": "Root Crush",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Root Crush: 4+ = +14 ATK",
-          "needsReview": false,
-          "attackModifier": 14
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -15,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Root Crush: 4+ | CD 1 | This attack gains +15% ATK and the target gets -15% ATK for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Deep Roots",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Deep Roots: 6 = reduce damage by 20",
-          "needsReview": true,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 28,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Deep Roots: 6+ | CD 2 | Gain +28% DEF for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Verdant/rootfang.png"
@@ -1175,23 +1927,43 @@
       "moves": [
         {
           "name": "Stone Chip",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Stone Chip: 4+ = +6 ATK",
-          "needsReview": false,
-          "attackModifier": 6
+          "targetType": "enemy",
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Stone Chip: 3+ | CD 1 | This attack gains +8% ATK and reduce target DEF by 8% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Brace",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Brace: 6 = +10 DEF",
-          "needsReview": false,
-          "defenseModifier": 10
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 18,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Brace: 5+ | CD 2 | Gain +18% DEF for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Worldforge/Flint.png"
@@ -1208,23 +1980,43 @@
       "moves": [
         {
           "name": "Horn Ram",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Horn Ram: 4+ = +9 ATK",
-          "needsReview": false,
-          "attackModifier": 9
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -10,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Horn Ram: 3+ | CD 1 | This attack gains +10% ATK and reduce target DEF by 10% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Reinforce",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Reinforce: 6 = +16 DEF",
-          "needsReview": false,
-          "defenseModifier": 16
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Reinforce: 5+ | CD 2 | Gain +20% DEF for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Worldforge/Brasshorn.png"
@@ -1241,23 +2033,43 @@
       "moves": [
         {
           "name": "Rock Toss",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Rock Toss: 4+ = +5 ATK",
-          "needsReview": false,
-          "attackModifier": 5
+          "targetType": "enemy",
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Rock Toss: 3+ | CD 1 | This attack gains +8% ATK and reduce target DEF by 8% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Boulder Hide",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Boulder Hide: 6 = halve next hit",
-          "needsReview": true,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 18,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Boulder Hide: 5+ | CD 2 | Gain +18% DEF for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Worldforge/Craggle.png"
@@ -1275,22 +2087,42 @@
         {
           "name": "Molten Bite",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Molten Bite: 4+ = +12 ATK",
-          "needsReview": false,
-          "attackModifier": 12
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -12,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Molten Bite: 4+ | CD 1 | This attack gains +12% ATK and reduce target DEF by 12% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Tempered Hide",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Tempered Hide: 6 = +20 DEF",
-          "needsReview": false,
-          "defenseModifier": 20
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 24,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Tempered Hide: 6+ | CD 2 | Gain +24% DEF for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Worldforge/Forgefang.png"
@@ -1308,22 +2140,42 @@
         {
           "name": "Seismic Fist",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Seismic Fist: 4+ = +15 ATK",
-          "needsReview": false,
-          "attackModifier": 15
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -15,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Seismic Fist: 4+ | CD 1 | This attack gains +15% ATK and reduce target DEF by 15% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Fortress Form",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Fortress Form: 6 = block 25 damage",
-          "needsReview": true,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 28,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Fortress Form: 6+ | CD 2 | Gain +28% DEF for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Worldforge/Colosslate.png"
@@ -1340,23 +2192,48 @@
       "moves": [
         {
           "name": "Sparkle Shot",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Sparkle Shot: 4+ = +5 ATK",
-          "needsReview": false,
-          "attackModifier": 5
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Sparkle Shot: 3+ | CD 1 | This attack gains +8% ATK and reduce target DEF by 8% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Flashstep",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Flashstep: 6 = evade next attack",
-          "needsReview": false,
-          "evade": true
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 18,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            },
+            {
+              "kind": "retaliateAtkDebuff",
+              "subject": "self",
+              "percent": 8
+            }
+          ],
+          "rawText": "Flashstep: 5+ | CD 2 | Gain +18% DEF until your next turn and reduce the next attacker's ATK by 8% for that attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sunspire/Glimmer.png"
@@ -1373,23 +2250,44 @@
       "moves": [
         {
           "name": "Radiant Bolt",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Radiant Bolt: 4+ = +8 ATK",
-          "needsReview": false,
-          "attackModifier": 8
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -10,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Radiant Bolt: 3+ | CD 1 | This attack gains +10% ATK and reduce target DEF by 10% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Halo Guard",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Halo Guard: 6 = +14 DEF",
-          "needsReview": false,
-          "defenseModifier": 14
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Halo Guard: 5+ | CD 2 | Gain +20% DEF for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sunspire/Halo.png"
@@ -1406,24 +2304,48 @@
       "moves": [
         {
           "name": "Prism Beam",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Prism Beam: 4+ = +8 ATK",
-          "needsReview": false,
-          "attackModifier": 8
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -10,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Prism Beam: 3+ | CD 1 | This attack gains +10% ATK and reduce target DEF by 10% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Refraction",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Refraction: 6 = return 8 damage",
-          "needsReview": true,
-          "counter": 8,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 15,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            },
+            {
+              "kind": "retaliateAtkDebuff",
+              "subject": "self",
+              "percent": 10
+            }
+          ],
+          "rawText": "Refraction: 5+ | CD 2 | Gain +15% DEF until your next turn. If hit, the attacker gets -10% ATK for its next turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sunspire/Prism.png"
@@ -1441,22 +2363,38 @@
         {
           "name": "Solar Arc",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Solar Arc: 4+ = +12 ATK",
-          "needsReview": false,
-          "attackModifier": 12
+          "targetType": "enemy",
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -12,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Solar Arc: 4+ | CD 1 | This attack gains +12% ATK and reduce target DEF by 12% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Sanctuary Light",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Sanctuary Light: 6 = heal 15",
-          "needsReview": false,
-          "healing": 15
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 15
+            }
+          ],
+          "rawText": "Sanctuary Light: 6+ | CD 2 | Recover 15% of this Mystic's maximum Power Score and gain +12% DEF until your next turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sunspire/Lumilux.png"
@@ -1474,22 +2412,43 @@
         {
           "name": "Radiant Claw",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Radiant Claw: 4+ = +14 ATK",
-          "needsReview": false,
-          "attackModifier": 14
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -15,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Radiant Claw: 4+ | CD 1 | This attack gains +15% ATK and reduce target DEF by 15% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Sunrise",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Sunrise: 6 = +20 ATK",
-          "needsReview": false,
-          "attackModifier": 20
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 28,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Sunrise: 6+ | CD 2 | Gain +28% ATK for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sunspire/Dawnclaw.png"
@@ -1506,23 +2465,38 @@
       "moves": [
         {
           "name": "Keen Strike",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Keen Strike: 4+ = +6 ATK",
-          "needsReview": false,
-          "attackModifier": 6
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "markDefenseOnNextHit",
+              "subject": "target",
+              "percent": 8
+            }
+          ],
+          "rawText": "Keen Strike: 3+ | CD 1 | This attack gains +8% ATK and mark the target with -8% DEF for your next attack.",
+          "needsReview": false
         },
         {
           "name": "Read Move",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
-          "targetType": "self",
-          "rawText": "Read Move: 6 = +10 DEF",
-          "needsReview": false,
-          "defenseModifier": 10
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 12,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Read Move: 5+ | CD 2 | Gain +12% DEF until your next turn and reduce the target's DEF by 8% for your next attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/starwatch/watchling_the_keen_lookout.png"
@@ -1539,23 +2513,38 @@
       "moves": [
         {
           "name": "Piercing Gaze",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Piercing Gaze: 4+ = +8 ATK",
-          "needsReview": false,
-          "attackModifier": 8
+          "targetType": "enemy",
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "markDefenseOnNextHit",
+              "subject": "target",
+              "percent": 10
+            }
+          ],
+          "rawText": "Piercing Gaze: 3+ | CD 1 | This attack gains +10% ATK and mark the target with -10% DEF for your next attack.",
+          "needsReview": false
         },
         {
           "name": "Predict",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Predict: 6 = evade attack",
-          "needsReview": false,
-          "evade": true
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 15,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Predict: 5+ | CD 2 | Gain +15% DEF until your next turn and reduce the target's DEF by 10% for your next attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/starwatch/farsee_the_horizon_seer.png"
@@ -1572,23 +2561,38 @@
       "moves": [
         {
           "name": "Wing Slash",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Wing Slash: 4+ = +7 ATK",
-          "needsReview": false,
-          "attackModifier": 7
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "markDefenseOnNextHit",
+              "subject": "target",
+              "percent": 10
+            }
+          ],
+          "rawText": "Wing Slash: 3+ | CD 1 | This attack gains +10% ATK and mark the target with -10% DEF for your next attack.",
+          "needsReview": false
         },
         {
           "name": "Recon",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Recon: 6 = next attack +12",
-          "needsReview": true,
-          "reviewReason": "effect pattern is not deterministic; parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 15,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Recon: 5+ | CD 2 | Gain +15% DEF until your next turn and reduce the target's DEF by 10% for your next attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/starwatch/scoutwing_the_recon_glider.png"
@@ -1606,23 +2610,37 @@
         {
           "name": "Silent Dive",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Silent Dive: 4+ = +11 ATK",
-          "needsReview": false,
-          "attackModifier": 11
+          "targetType": "enemy",
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "markDefenseOnNextHit",
+              "subject": "target",
+              "percent": 12
+            }
+          ],
+          "rawText": "Silent Dive: 4+ | CD 1 | This attack gains +12% ATK and mark the target with -12% DEF for your next attack.",
+          "needsReview": false
         },
         {
           "name": "Foresight",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Foresight: 6 = counter Base Attack",
-          "needsReview": true,
-          "counter": "base",
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 18,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Foresight: 6+ | CD 2 | Gain +18% DEF until your next turn and reduce the target's DEF by 12% for your next attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/starwatch/nightwatch_the_silent_tracker.png"
@@ -1640,22 +2658,37 @@
         {
           "name": "Star Lance",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Star Lance: 4+ = +17 ATK",
-          "needsReview": false,
-          "attackModifier": 17
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "markDefenseOnNextHit",
+              "subject": "target",
+              "percent": 18
+            }
+          ],
+          "rawText": "Star Lance: 4+ | CD 1 | This attack gains +18% ATK and mark the target with -18% DEF for your next attack.",
+          "needsReview": false
         },
         {
           "name": "Perfect Sight",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Perfect Sight: 6 = attack ignores DEF",
-          "needsReview": false,
-          "ignoreDefense": true
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 25,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Perfect Sight: 6+ | CD 2 | Gain +25% DEF until your next turn and reduce the target's DEF by 18% for your next attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/starwatch/astraleye_the_celestial_observer.png"
@@ -1672,23 +2705,43 @@
       "moves": [
         {
           "name": "Spark Snap",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Spark Snap: 4+ = +5 ATK",
-          "needsReview": false,
-          "attackModifier": 5
+          "targetType": "enemy",
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": -4,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Spark Snap: 3+ | CD 1 | This attack gains +12% ATK. Afterward, this Mystic gets -4% DEF until your next turn.",
+          "needsReview": false
         },
         {
           "name": "Charge",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Charge: 6 = next attack +10",
-          "needsReview": true,
-          "reviewReason": "effect pattern is not deterministic; parsed but not enabled in the v1 battle executor"
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 18,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Charge: 5+ | CD 2 | Gain +18% ATK for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/first%20spark/flicker_the_spark_skipper_card.png"
@@ -1705,23 +2758,43 @@
       "moves": [
         {
           "name": "Arc Bite",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Arc Bite: 4+ = +6 ATK",
-          "needsReview": false,
-          "attackModifier": 6
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": -4,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Arc Bite: 3+ | CD 1 | This attack gains +12% ATK. Afterward, this Mystic gets -4% DEF until your next turn.",
+          "needsReview": false
         },
         {
           "name": "Chain Spark",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Chain Spark: 6 = +12 ATK",
-          "needsReview": false,
-          "attackModifier": 12
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 18,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Chain Spark: 5+ | CD 2 | Gain +18% ATK for 1 turn and reduce the other Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/first%20spark/crackle_the_arc_nibbler_card.png"
@@ -1738,23 +2811,43 @@
       "moves": [
         {
           "name": "Power Slam",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Power Slam: 4+ = +9 ATK",
-          "needsReview": false,
-          "attackModifier": 9
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": -5,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Power Slam: 3+ | CD 1 | This attack gains +15% ATK. Afterward, this Mystic gets -5% DEF until your next turn.",
+          "needsReview": false
         },
         {
           "name": "Surge",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Surge: 6 = Base Attack x2",
-          "needsReview": false,
-          "attackMultiplier": 2
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Surge: 5+ | CD 2 | Gain +20% ATK for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/first%20spark/dynamo_the_surge_bruiser_card.png"
@@ -1772,23 +2865,38 @@
         {
           "name": "Flame Rush",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Flame Rush: 4+ = +11 ATK",
-          "needsReview": false,
-          "attackModifier": 11
+          "targetType": "enemy",
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": -6,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Flame Rush: 4+ | CD 1 | This attack gains +18% ATK. Afterward, this Mystic gets -6% DEF until your next turn.",
+          "needsReview": false
         },
         {
           "name": "Burnout",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
-          "targetType": "self",
-          "rawText": "Burnout: 6 = +22 ATK, then lose 6 Power",
-          "needsReview": false,
-          "attackModifier": 22,
-          "selfDamage": 6
+          "targetType": "enemy",
+          "damageModifierPercent": 24,
+          "effects": [
+            {
+              "kind": "recoil",
+              "subject": "self",
+              "percent": 12
+            }
+          ],
+          "rawText": "Burnout: 6+ | CD 2 | This attack gains +24% ATK. After it resolves, lose 12% of maximum Power Score.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/first%20spark/wildfire_fiery_creature_stat_card.png"
@@ -1806,22 +2914,42 @@
         {
           "name": "Thunder Crash",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Thunder Crash: 4+ = +15 ATK",
-          "needsReview": false,
-          "attackModifier": 15
+          "targetType": "enemy",
+          "damageModifierPercent": 20,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": -7,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Thunder Crash: 4+ | CD 1 | This attack gains +20% ATK. Afterward, this Mystic gets -7% DEF until your next turn.",
+          "needsReview": false
         },
         {
           "name": "Supercharge",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Supercharge: 6 = attack twice",
-          "needsReview": false,
-          "multiHitCount": 2
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 28,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Supercharge: 6+ | CD 2 | Gain +28% ATK for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/first%20spark/stormvolt_the_thunder_crown.png"
@@ -1838,25 +2966,50 @@
       "moves": [
         {
           "name": "Dream Dust",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Dream Dust: 4+ = enemy -5 ATK",
-          "needsReview": true,
-          "enemyAttackModifier": -5,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Dream Dust: 3+ | CD 1 | This attack gains +8% ATK and reduce target ATK by 8% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Nap Trap",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Nap Trap: 6 = enemy skips attack",
-          "needsReview": true,
-          "skipTurn": true,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            },
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -12,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Nap Trap: 5+ | CD 2 | Reduce the target's ATK by 12% for 1 turn and increase its longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/moonveil/dreampuff_the_sleepy_drift.png"
@@ -1873,23 +3026,48 @@
       "moves": [
         {
           "name": "Trick Shot",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Trick Shot: 4+ = +6 ATK",
-          "needsReview": false,
-          "attackModifier": 6
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Trick Shot: 3+ | CD 1 | This attack gains +8% ATK and reduce target ATK by 8% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Switcheroo",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Switcheroo: 6 = swap ATK and DEF bonuses",
-          "needsReview": true,
-          "reviewReason": "effect pattern is not deterministic; timing or calculation needs rules confirmation; compound effect needs review"
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 12,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            },
+            {
+              "kind": "retaliateAtkDebuff",
+              "subject": "self",
+              "percent": 8
+            }
+          ],
+          "rawText": "Switcheroo: 5+ | CD 2 | Gain +12% DEF until your next turn. If hit, the attacker gets -8% ATK for its next turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/moonveil/whimsy_the_trickstep_sprite.png"
@@ -1906,23 +3084,48 @@
       "moves": [
         {
           "name": "Phantom Claw",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Phantom Claw: 4+ = +9 ATK",
-          "needsReview": false,
-          "attackModifier": 9
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -10,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Phantom Claw: 3+ | CD 1 | This attack gains +10% ATK and reduce target ATK by 10% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Vanish",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Vanish: 6 = evade attack",
-          "needsReview": false,
-          "evade": true
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 20,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            },
+            {
+              "kind": "retaliateAtkDebuff",
+              "subject": "self",
+              "percent": 10
+            }
+          ],
+          "rawText": "Vanish: 5+ | CD 2 | Gain +20% DEF until your next turn and reduce the next attacker's ATK by 10% for that attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/moonveil/phantasm_the_veiled_prowler.png"
@@ -1940,22 +3143,49 @@
         {
           "name": "Nightmare Bite",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Nightmare Bite: 4+ = +14 ATK",
-          "needsReview": false,
-          "attackModifier": 14
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -15,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Nightmare Bite: 4+ | CD 1 | This attack gains +15% ATK and reduce target ATK by 15% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Dreamlock",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Dreamlock: 6 = enemy loses next move",
-          "needsReview": false,
-          "skipTurn": true
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            },
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -20,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Dreamlock: 6+ | CD 2 | Reduce the target's ATK by 20% for 1 turn and increase its longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/moonveil/dreamfang_the_nightmare_hunter.png"
@@ -1973,22 +3203,49 @@
         {
           "name": "Dread Slash",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Dread Slash: 4+ = +18 ATK",
-          "needsReview": false,
-          "attackModifier": 18
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Dread Slash: 4+ | CD 1 | This attack gains +18% ATK and reduce target ATK by 18% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Endless Night",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Endless Night: 6 = enemy DEF becomes 0 this turn",
-          "needsReview": false,
-          "ignoreDefense": true
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            },
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -25,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Endless Night: 6+ | CD 2 | Reduce the target's ATK by 25% for 1 turn and increase its longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/moonveil/umbraxis_the_endless_shade.png"
@@ -2005,24 +3262,41 @@
       "moves": [
         {
           "name": "Clock Swipe",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Clock Swipe: 4+ = +6 ATK",
-          "needsReview": false,
-          "attackModifier": 6
+          "targetType": "enemy",
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            }
+          ],
+          "rawText": "Clock Swipe: 3+ | CD 1 | This attack gains +8% ATK and increase target's longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Delay",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Delay: 6 = enemy -8 ATK",
-          "needsReview": true,
-          "enemyAttackModifier": -8,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 10
+            },
+            {
+              "kind": "cooldownDelta",
+              "subject": "self",
+              "scope": "bothMoves",
+              "amount": -1
+            }
+          ],
+          "rawText": "Delay: 5+ | CD 2 | Reduce both of this Mystic's active Special Move recoveries by 1 turn and recover 10% of maximum Power Score.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Agespire/ticktail_the_clockskip_critter.png"
@@ -2039,23 +3313,35 @@
       "moves": [
         {
           "name": "Age Strike",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Age Strike: 4+ = +9 ATK",
-          "needsReview": false,
-          "attackModifier": 9
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            }
+          ],
+          "rawText": "Age Strike: 3+ | CD 1 | This attack gains +10% ATK and increase target's longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Rewind",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Rewind: 6 = recover 12 Power",
-          "needsReview": false,
-          "healing": 12
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 12
+            }
+          ],
+          "rawText": "Rewind: 5+ | CD 2 | Recover 12% of this Mystic's maximum Power Score and gain +10% DEF until your next turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Agespire/epoch_the_timeworn_sage.png"
@@ -2073,22 +3359,45 @@
         {
           "name": "Sandfall",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Sandfall: 4+ = +10 ATK",
-          "needsReview": false,
-          "attackModifier": 10
+          "targetType": "enemy",
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            }
+          ],
+          "rawText": "Sandfall: 4+ | CD 1 | This attack gains +12% ATK and increase target's longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Stasis",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Stasis: 6 = block attack",
-          "needsReview": true,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            },
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Stasis: 6+ | CD 2 | Reduce the target's ATK by 18% for 1 turn and increase its longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Agespire/hourglass_the_sandbound_stalker.png"
@@ -2105,23 +3414,40 @@
       "moves": [
         {
           "name": "Ancient Blow",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Ancient Blow: 4+ = +8 ATK",
-          "needsReview": false,
-          "attackModifier": 8
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            }
+          ],
+          "rawText": "Ancient Blow: 3+ | CD 1 | This attack gains +10% ATK and increase target's longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Remembered Guard",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Remembered Guard: 6 = +15 DEF",
-          "needsReview": false,
-          "defenseModifier": 15
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Remembered Guard: 5+ | CD 2 | Gain +20% DEF for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Agespire/relic_the_ancient_bastion.png"
@@ -2139,22 +3465,34 @@
         {
           "name": "Eternal Strike",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Eternal Strike: 4+ = +15 ATK",
-          "needsReview": false,
-          "attackModifier": 15
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            }
+          ],
+          "rawText": "Eternal Strike: 4+ | CD 1 | This attack gains +15% ATK and increase target's longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Second Chance",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Second Chance: 6 = restore 20 Power",
-          "needsReview": false,
-          "healing": 20
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 18
+            }
+          ],
+          "rawText": "Second Chance: 6+ | CD 2 | Recover 18% of this Mystic's maximum Power Score and gain +15% DEF until your next turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Agespire/evermore_the_eternal_herald.png"
@@ -2171,23 +3509,47 @@
       "moves": [
         {
           "name": "Blink Jab",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Blink Jab: 4+ = +6 ATK",
-          "needsReview": false,
-          "attackModifier": 6
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Blink Jab: 3+ | CD 1 | This attack gains +8% ATK and reduce target DEF by 8% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Short Hop",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Short Hop: 6 = evade attack",
-          "needsReview": false,
-          "evade": true
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 18,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            },
+            {
+              "kind": "retaliateAtkDebuff",
+              "subject": "self",
+              "percent": 8
+            }
+          ],
+          "rawText": "Short Hop: 5+ | CD 2 | Gain +18% DEF until your next turn and reduce the next attacker's ATK by 8% for that attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/stargate/Blink.png"
@@ -2204,24 +3566,47 @@
       "moves": [
         {
           "name": "Rift Swipe",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Rift Swipe: 4+ = +9 ATK",
-          "needsReview": false,
-          "attackModifier": 9
+          "targetType": "enemy",
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -10,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Rift Swipe: 3+ | CD 1 | This attack gains +10% ATK and reduce target DEF by 10% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Portal Dodge",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
-          "targetType": "self",
-          "rawText": "Portal Dodge: 6 = evade and +5 ATK next turn",
-          "needsReview": false,
-          "attackModifier": 5,
-          "evade": true
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 20,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            },
+            {
+              "kind": "retaliateAtkDebuff",
+              "subject": "self",
+              "percent": 10
+            }
+          ],
+          "rawText": "Portal Dodge: 5+ | CD 2 | Gain +20% DEF until your next turn and reduce the next attacker's ATK by 10% for that attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/stargate/Riftling.png"
@@ -2238,23 +3623,39 @@
       "moves": [
         {
           "name": "Gate Bump",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Gate Bump: 4+ = +5 ATK",
-          "needsReview": false,
-          "attackModifier": 5
+          "targetType": "enemy",
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Gate Bump: 3+ | CD 1 | This attack gains +8% ATK and reduce target DEF by 8% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Shortcut",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Shortcut: 6 = attack before opponent next turn",
-          "needsReview": true,
-          "reviewReason": "effect pattern is not deterministic; timing or calculation needs rules confirmation"
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "self",
+              "scope": "bothMoves",
+              "amount": -1
+            }
+          ],
+          "rawText": "Shortcut: 5+ | CD 2 | Reduce both of this Mystic's active Special Move recoveries by 1 turn and gain +8% ATK for the next attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/stargate/Doorbit.png"
@@ -2272,22 +3673,41 @@
         {
           "name": "Warp Strike",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Warp Strike: 4+ = +12 ATK",
-          "needsReview": false,
-          "attackModifier": 12
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -12,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Warp Strike: 4+ | CD 1 | This attack gains +12% ATK and reduce target DEF by 12% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Fold Space",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
-          "targetType": "self",
-          "rawText": "Fold Space: 6 = ignore DEF",
-          "needsReview": false,
-          "ignoreDefense": true
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -24,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Fold Space: 6+ | CD 2 | Reduce the target's DEF by 24% for this attack and gain +12% DEF until your next turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/stargate/Wormhole.png"
@@ -2305,23 +3725,44 @@
         {
           "name": "Rift Tear",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Rift Tear: 4+ = +15 ATK",
-          "needsReview": false,
-          "attackModifier": 15
+          "targetType": "enemy",
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -15,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Rift Tear: 4+ | CD 1 | This attack gains +15% ATK and reduce target DEF by 15% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Void Gate",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Void Gate: 6 = attack twice, lose 5 Power",
-          "needsReview": false,
-          "multiHitCount": 2,
-          "selfDamage": 5
+          "damageModifierPercent": 28,
+          "effects": [
+            {
+              "kind": "recoil",
+              "subject": "self",
+              "percent": 15
+            },
+            {
+              "kind": "cooldownDelta",
+              "subject": "self",
+              "scope": "otherMove",
+              "amount": -1
+            }
+          ],
+          "rawText": "Void Gate: 6+ | CD 2 | This attack gains +28% ATK. Lose 15% of maximum Power Score after the attack and reduce this Mystic's other Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/stargate/Riftclaw.png"
@@ -2338,23 +3779,44 @@
       "moves": [
         {
           "name": "Command Jab",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Command Jab: 4+ = +6 ATK",
-          "needsReview": false,
-          "attackModifier": 6
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Command Jab: 3+ | CD 1 | This attack gains +8% ATK and reduce target ATK by 8% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Rally",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Rally: 6 = +10 DEF",
-          "needsReview": false,
-          "defenseModifier": 10
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 18,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Rally: 5+ | CD 2 | Gain +18% ATK for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sovereign/Crownlet.png"
@@ -2371,23 +3833,44 @@
       "moves": [
         {
           "name": "Order Strike",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Order Strike: 4+ = +9 ATK",
-          "needsReview": false,
-          "attackModifier": 9
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -10,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Order Strike: 3+ | CD 1 | This attack gains +10% ATK and reduce target ATK by 10% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Discipline",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Discipline: 6 = +15 DEF",
-          "needsReview": false,
-          "defenseModifier": 15
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Discipline: 5+ | CD 2 | Gain +20% ATK for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sovereign/Marshal.png"
@@ -2405,23 +3888,43 @@
         {
           "name": "Royal Blow",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Royal Blow: 4+ = +12 ATK",
-          "needsReview": false,
-          "attackModifier": 12
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -12,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Royal Blow: 4+ | CD 1 | This attack gains +12% ATK and reduce target ATK by 12% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Decree",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Decree: 6 = enemy -12 ATK",
-          "needsReview": true,
-          "enemyAttackModifier": -12,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -24,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Decree: 6+ | CD 2 | Reduce the target's ATK by 24% for 2 turns.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sovereign/Regent.png"
@@ -2439,22 +3942,49 @@
         {
           "name": "Dominion Crush",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Dominion Crush: 4+ = +15 ATK",
-          "needsReview": false,
-          "attackModifier": 15
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -15,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Dominion Crush: 4+ | CD 1 | This attack gains +15% ATK and reduce target ATK by 15% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Submit",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Submit: 6 = enemy cannot use special move",
-          "needsReview": false,
-          "skipTurn": true
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            },
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -20,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Submit: 6+ | CD 2 | Reduce the target's ATK by 20% for 1 turn and increase its longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sovereign/Tyrant.png"
@@ -2472,22 +4002,35 @@
         {
           "name": "Crown Breaker",
           "requiredRoll": 4,
-          "minimumRoll": 4,
-          "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Crown Breaker: 4+ = +18 ATK",
-          "needsReview": false,
-          "attackModifier": 18
+          "cooldown": 2,
+          "targetType": "enemy",
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 3
+            }
+          ],
+          "rawText": "Crown Breaker: 4+ | CD 2 | This attack gains +10% ATK. On success, increase the target Mystic's Special Move recovery by 3 turns.",
+          "needsReview": false
         },
         {
           "name": "Absolute Rule",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Absolute Rule: 6 = Base Attack x2",
-          "needsReview": false,
-          "attackMultiplier": 2
+          "damageModifierPercent": 100,
+          "effects": [
+            {
+              "kind": "chanceRecoilSplash",
+              "chancePercent": 25,
+              "percentOfDamageDealt": 25
+            }
+          ],
+          "rawText": "Absolute Rule: 6+ | CD 2 | This attack deals +100% ATK. After damage resolves, there is a 25% chance that one random allied Mystic loses 25% of the damage dealt from its current Power Score.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sovereign/Imperius.png"
@@ -2504,23 +4047,50 @@
       "moves": [
         {
           "name": "Star Tap",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Star Tap: 4+ = +5 ATK",
-          "needsReview": false,
-          "attackModifier": 5
+          "targetType": "enemy",
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "allyAuto",
+              "percent": 8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Star Tap: 3+ | CD 1 | This attack gains +8% ATK and one allied Mystic gains +8% DEF for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Guiding Glow",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Guiding Glow: 6 = +10 DEF",
-          "needsReview": false,
-          "defenseModifier": 10
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 12,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            },
+            {
+              "kind": "cooldownDelta",
+              "subject": "self",
+              "scope": "longestActive",
+              "amount": -1
+            }
+          ],
+          "rawText": "Guiding Glow: 5+ | CD 2 | Gain +12% DEF for 2 turns and reduce one allied Mystic's active Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/order%20of%20the%20star/Starbit.png"
@@ -2537,23 +4107,53 @@
       "moves": [
         {
           "name": "Comet Ram",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Comet Ram: 4+ = +9 ATK",
-          "needsReview": false,
-          "attackModifier": 9
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "allyAuto",
+              "percent": 10,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Comet Ram: 3+ | CD 1 | This attack gains +10% ATK and one allied Mystic gains +10% DEF for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Meteor Rush",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Meteor Rush: 6 = +18 ATK",
-          "needsReview": false,
-          "attackModifier": 18
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 20,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            },
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 10,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Meteor Rush: 5+ | CD 2 | Gain +20% ATK for this attack and +10% ATK on your next attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/order%20of%20the%20star/Comet.png"
@@ -2571,22 +4171,53 @@
         {
           "name": "Star Tail",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Star Tail: 4+ = +12 ATK",
-          "needsReview": false,
-          "attackModifier": 12
+          "targetType": "enemy",
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "allyAuto",
+              "percent": 12,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Star Tail: 4+ | CD 1 | This attack gains +12% ATK and one allied Mystic gains +12% DEF for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Celestial Guard",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Celestial Guard: 6 = +18 DEF",
-          "needsReview": false,
-          "defenseModifier": 18
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 24,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            },
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "allyAuto",
+              "percent": 12,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Celestial Guard: 6+ | CD 2 | Gain +24% DEF for 2 turns. One other allied Mystic gains +12% DEF for 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/order%20of%20the%20star/Celestail.png"
@@ -2604,22 +4235,43 @@
         {
           "name": "Nova Burst",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Nova Burst: 4+ = +15 ATK",
-          "needsReview": false,
-          "attackModifier": 15
+          "targetType": "enemy",
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "allyAuto",
+              "percent": 15,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Nova Burst: 4+ | CD 1 | This attack gains +15% ATK and one allied Mystic gains +15% DEF for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Supernova",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
-          "targetType": "self",
-          "rawText": "Supernova: 6 = +25 ATK",
-          "needsReview": false,
-          "attackModifier": 25
+          "targetType": "enemy",
+          "damageModifierPercent": 28,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": -15,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Supernova: 6+ | CD 2 | This attack gains +28% ATK. After resolving, this Mystic gets -15% DEF until the start of your next turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/order%20of%20the%20star/Nova.png"
@@ -2637,23 +4289,38 @@
         {
           "name": "Northstar Strike",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Northstar Strike: 4+ = +17 ATK",
-          "needsReview": false,
-          "attackModifier": 17
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "allyAuto",
+              "percent": 18,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Northstar Strike: 4+ | CD 1 | This attack gains +18% ATK and one allied Mystic gains +18% DEF for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Guiding Star",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Guiding Star: 6 = heal 15 and +10 ATK",
-          "needsReview": false,
-          "attackModifier": 10,
-          "healing": 15
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 22
+            }
+          ],
+          "rawText": "Guiding Star: 6+ | CD 2 | Recover 22% of maximum Power Score and gain +25% ATK for 2 turns.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/order%20of%20the%20star/Polaris.png"
@@ -2670,23 +4337,39 @@
       "moves": [
         {
           "name": "Spore Pop",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Spore Pop: 4+ = +6 ATK",
-          "needsReview": false,
-          "attackModifier": 6
+          "targetType": "enemy",
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -8,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Spore Pop: 3+ | CD 1 | This attack gains +8% ATK and the target gets -8% ATK for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Healing Spores",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Healing Spores: 6 = recover 10 Power",
-          "needsReview": false,
-          "healing": 10
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 10
+            }
+          ],
+          "rawText": "Healing Spores: 5+ | CD 2 | Recover 10% of this Mystic's maximum Power Score and gain +8% DEF until your next turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Verdant/Glowmoss.png"
@@ -2704,22 +4387,42 @@
         {
           "name": "Stone Fist",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Stone Fist: 4+ = +11 ATK",
-          "needsReview": false,
-          "attackModifier": 11
+          "damageModifierPercent": 12,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -12,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Stone Fist: 4+ | CD 1 | This attack gains +12% ATK and reduce target DEF by 12% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Bedrock",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Bedrock: 6 = +20 DEF",
-          "needsReview": false,
-          "defenseModifier": 20
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 24,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Bedrock: 6+ | CD 2 | Gain +24% DEF for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Worldforge/Granite.png"
@@ -2737,23 +4440,38 @@
         {
           "name": "Solar Lash",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Solar Lash: 4+ = +14 ATK",
-          "needsReview": false,
-          "attackModifier": 14
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -15,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Solar Lash: 4+ | CD 1 | This attack gains +15% ATK and reduce target DEF by 15% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Flare Shield",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Flare Shield: 6 = reflect 12 damage",
-          "needsReview": true,
-          "counter": 12,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 18
+            }
+          ],
+          "rawText": "Flare Shield: 6+ | CD 2 | Gain +20% DEF and recover 18% of maximum Power Score.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sunspire/Solflare.png"
@@ -2770,23 +4488,39 @@
       "moves": [
         {
           "name": "Scout Strike",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Scout Strike: 4+ = +6 ATK",
-          "needsReview": false,
-          "attackModifier": 6
+          "damageModifierPercent": 8,
+          "effects": [
+            {
+              "kind": "markDefenseOnNextHit",
+              "subject": "target",
+              "percent": 8
+            }
+          ],
+          "rawText": "Scout Strike: 3+ | CD 1 | This attack gains +8% ATK and mark the target with -8% DEF for your next attack.",
+          "needsReview": false
         },
         {
           "name": "Spot Weakness",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Spot Weakness: 6 = enemy -10 DEF",
-          "needsReview": false,
-          "enemyDefenseModifier": -10
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Spot Weakness: 5+ | CD 2 | Reduce the target's DEF by 18% for 2 turns.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/starwatch/Lookout.png"
@@ -2804,22 +4538,42 @@
         {
           "name": "Arc Slash",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Arc Slash: 4+ = +11 ATK",
-          "needsReview": false,
-          "attackModifier": 11
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": -6,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Arc Slash: 4+ | CD 1 | This attack gains +18% ATK. Afterward, this Mystic gets -6% DEF until your next turn.",
+          "needsReview": false
         },
         {
           "name": "Flash Charge",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Flash Charge: 6 = attack twice",
-          "needsReview": false,
-          "multiHitCount": 2
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 24,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Flash Charge: 6+ | CD 2 | Gain +24% ATK for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/first%20spark/Arcflash.png"
@@ -2836,23 +4590,48 @@
       "moves": [
         {
           "name": "Crescent Cut",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Crescent Cut: 4+ = +8 ATK",
-          "needsReview": false,
-          "attackModifier": 8
+          "targetType": "enemy",
+          "damageModifierPercent": 10,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -10,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Crescent Cut: 3+ | CD 1 | This attack gains +10% ATK and reduce target ATK by 10% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Dreamstep",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Dreamstep: 6 = evade next attack",
-          "needsReview": false,
-          "evade": true
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 20,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            },
+            {
+              "kind": "retaliateAtkDebuff",
+              "subject": "self",
+              "percent": 10
+            }
+          ],
+          "rawText": "Dreamstep: 5+ | CD 2 | Gain +20% DEF until your next turn and reduce the next attacker's ATK by 10% for that attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/moonveil/Moonkin.png"
@@ -2870,23 +4649,45 @@
         {
           "name": "Chrono Hit",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Chrono Hit: 4+ = +14 ATK",
-          "needsReview": false,
-          "attackModifier": 14
+          "targetType": "enemy",
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            }
+          ],
+          "rawText": "Chrono Hit: 4+ | CD 1 | This attack gains +15% ATK and increase target's longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Lock Time",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Lock Time: 6 = enemy skips turn",
-          "needsReview": true,
-          "skipTurn": true,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            },
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -20,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Lock Time: 6+ | CD 2 | Reduce the target's ATK by 20% for 1 turn and increase its longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Agespire/Timelock.png"
@@ -2904,24 +4705,41 @@
         {
           "name": "Portal Crush",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Portal Crush: 4+ = +14 ATK",
-          "needsReview": false,
-          "attackModifier": 14
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -15,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Portal Crush: 4+ | CD 1 | This attack gains +15% ATK and reduce target DEF by 15% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Crossworld",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
-          "targetType": "self",
-          "rawText": "Crossworld: 6 = evade and counter",
-          "needsReview": true,
-          "evade": true,
-          "counter": "base",
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 28,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Crossworld: 6+ | CD 2 | Gain +28% DEF until your next turn and reduce the target's ATK by 20% for its next attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/stargate/Gateway.png"
@@ -2938,23 +4756,43 @@
       "moves": [
         {
           "name": "Rally Strike",
-          "requiredRoll": 4,
-          "minimumRoll": 4,
+          "requiredRoll": 3,
           "cooldown": 1,
-          "targetType": "enemy",
-          "rawText": "Rally Strike: 4+ = +8 ATK",
-          "needsReview": false,
-          "attackModifier": 8
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 15,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Rally Strike: 3+ | CD 1 | Gain +15% ATK for 1 turn(s).",
+          "needsReview": false
         },
         {
           "name": "Stand Firm",
-          "requiredRoll": 6,
-          "exactRoll": 6,
+          "requiredRoll": 5,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Stand Firm: 6 = +16 DEF",
-          "needsReview": false,
-          "defenseModifier": 16
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Stand Firm: 5+ | CD 2 | Gain +20% DEF for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sovereign/Banner.png"
@@ -2972,23 +4810,43 @@
         {
           "name": "Crest Slash",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Crest Slash: 4+ = +13 ATK",
-          "needsReview": false,
-          "attackModifier": 13
+          "damageModifierPercent": 15,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "allyAuto",
+              "percent": 15,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Crest Slash: 4+ | CD 1 | This attack gains +15% ATK and one allied Mystic gains +15% DEF for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Rallying Star",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Rallying Star: 6 = heal 10 and +10 DEF",
-          "needsReview": false,
-          "defenseModifier": 10,
-          "healing": 10
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 28,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Rallying Star: 6+ | CD 2 | Gain +28% ATK for 2 turn(s).",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/order%20of%20the%20star/Starcrest.png"
@@ -3006,22 +4864,38 @@
         {
           "name": "Thorn Crown",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "Thorn Crown: 4+ = +16 ATK",
-          "needsReview": false,
-          "attackModifier": 16
+          "targetType": "enemy",
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Thorn Crown: 4+ | CD 1 | This attack gains +18% ATK and the target gets -18% ATK for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Ancient Growth",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Ancient Growth: 6 = heal 20",
-          "needsReview": false,
-          "healing": 20
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 22
+            }
+          ],
+          "rawText": "Ancient Growth: 6+ | CD 2 | Recover 22% of maximum Power Score and gain +25% DEF for 2 turns.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Verdant/Briar_King.png"
@@ -3039,22 +4913,47 @@
         {
           "name": "Titan Fist",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Titan Fist: 4+ = +18 ATK",
-          "needsReview": false,
-          "attackModifier": 18
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Titan Fist: 4+ | CD 1 | This attack gains +18% ATK and reduce target DEF by 18% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Unbreakable",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Unbreakable: 6 = block 30 damage",
-          "needsReview": true,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 35,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            },
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 11
+            }
+          ],
+          "rawText": "Unbreakable: 6+ | CD 2 | Gain +35% DEF for 2 turns and recover 11% of maximum Power Score.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Worldforge/Iron_Titan.png"
@@ -3072,22 +4971,43 @@
         {
           "name": "Sun Spear",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Sun Spear: 4+ = +18 ATK",
-          "needsReview": false,
-          "attackModifier": 18
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Sun Spear: 4+ | CD 1 | This attack gains +18% ATK and reduce target DEF by 18% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Solar Judgment",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Solar Judgment: 6 = Base Attack x2",
-          "needsReview": false,
-          "attackMultiplier": 2
+          "damageModifierPercent": 35,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -25,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ],
+          "rawText": "Solar Judgment: 6+ | CD 2 | This attack gains +35% ATK. The target loses 25% DEF until the start of your next turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sunspire/Helion.png"
@@ -3105,24 +5025,42 @@
         {
           "name": "Foreseen Strike",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Foreseen Strike: 4+ = +17 ATK",
-          "needsReview": false,
-          "attackModifier": 17
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "markDefenseOnNextHit",
+              "subject": "target",
+              "percent": 18
+            }
+          ],
+          "rawText": "Foreseen Strike: 4+ | CD 1 | This attack gains +18% ATK and mark the target with -18% DEF for your next attack.",
+          "needsReview": false
         },
         {
           "name": "Perfect Prediction",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Perfect Prediction: 6 = evade and counter",
-          "needsReview": true,
-          "evade": true,
-          "counter": "base",
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "self",
+              "percent": 35,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            },
+            {
+              "kind": "retaliateAtkDebuff",
+              "subject": "self",
+              "percent": 25
+            }
+          ],
+          "rawText": "Perfect Prediction: 6+ | CD 2 | Gain +35% DEF until the start of your next turn. The attacking enemy gets -25% ATK on its next attack.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/starwatch/Oracle.png"
@@ -3140,22 +5078,38 @@
         {
           "name": "Wild Surge",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "self",
-          "rawText": "Wild Surge: 4+ = +17 ATK",
-          "needsReview": false,
-          "attackModifier": 17
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "self",
+              "percent": 25,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Wild Surge: 4+ | CD 1 | Gain +25% ATK for 1 turn(s).",
+          "needsReview": false
         },
         {
           "name": "Chain Burst",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
-          "targetType": "enemy",
-          "rawText": "Chain Burst: 6 = attack twice",
-          "needsReview": false,
-          "multiHitCount": 2
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "self",
+              "scope": "otherMove",
+              "amount": -1
+            }
+          ],
+          "rawText": "Chain Burst: 6+ | CD 2 | Gain +35% ATK for this attack and reduce this Mystic's other Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/first%20spark/Wildspark.png"
@@ -3173,23 +5127,49 @@
         {
           "name": "Dream Rend",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Dream Rend: 4+ = +17 ATK",
-          "needsReview": false,
-          "attackModifier": 17
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Dream Rend: 4+ | CD 1 | This attack gains +18% ATK and reduce target ATK by 18% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Waking Nightmare",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Waking Nightmare: 6 = enemy skips attack",
-          "needsReview": true,
-          "skipTurn": true,
-          "reviewReason": "parsed but not enabled in the v1 battle executor"
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            },
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -35,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Waking Nightmare: 6+ | CD 2 | Reduce the target's ATK by 35% for 1 turn and increase its longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/moonveil/Nightweaver.png"
@@ -3207,22 +5187,40 @@
         {
           "name": "Epoch Slam",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Epoch Slam: 4+ = +19 ATK",
-          "needsReview": false,
-          "attackModifier": 19
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            }
+          ],
+          "rawText": "Epoch Slam: 4+ | CD 1 | This attack gains +18% ATK and increase target's longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Rewind Fate",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "self",
-          "rawText": "Rewind Fate: 6 = restore 25 Power",
-          "needsReview": false,
-          "healing": 25
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 22
+            },
+            {
+              "kind": "cooldownDelta",
+              "subject": "self",
+              "scope": "bothMoves",
+              "amount": -1
+            }
+          ],
+          "rawText": "Rewind Fate: 6+ | CD 2 | Recover 22% of this Mystic's maximum Power Score and reduce both of its active Special Move recoveries by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Agespire/Aeon.png"
@@ -3240,23 +5238,47 @@
         {
           "name": "Dimensional Rend",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Dimensional Rend: 4+ = +19 ATK",
-          "needsReview": false,
-          "attackModifier": 19
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Dimensional Rend: 4+ | CD 1 | This attack gains +18% ATK and reduce target DEF by 18% for this attack.",
+          "needsReview": false
         },
         {
           "name": "Collapse Gate",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
-          "targetType": "self",
-          "rawText": "Collapse Gate: 6 = ignore DEF and +15 ATK",
-          "needsReview": false,
-          "attackModifier": 15,
-          "ignoreDefense": true
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            },
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "target",
+              "percent": -35,
+              "duration": {
+                "unit": "thisAttackOnly"
+              }
+            }
+          ],
+          "rawText": "Collapse Gate: 6+ | CD 2 | Reduce the target's DEF by 35% for this attack and increase its longest active Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/stargate/Riftlord.png"
@@ -3274,22 +5296,49 @@
         {
           "name": "Sovereign Blow",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
           "targetType": "enemy",
-          "rawText": "Sovereign Blow: 4+ = +19 ATK",
-          "needsReview": false,
-          "attackModifier": 19
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -18,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "Sovereign Blow: 4+ | CD 1 | This attack gains +18% ATK and reduce target ATK by 18% for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Royal Command",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Royal Command: 6 = enemy loses special move",
-          "needsReview": false,
-          "skipTurn": true
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "bothMoves",
+              "amount": 1
+            },
+            {
+              "kind": "statModifier",
+              "stat": "atk",
+              "subject": "target",
+              "percent": -25,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ],
+          "rawText": "Royal Command: 6+ | CD 2 | Reduce the target's ATK by 25% for 2 turns and increase both of its Special Move recoveries by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/Sovereign/High_Regent.png"
@@ -3307,23 +5356,45 @@
         {
           "name": "First Light",
           "requiredRoll": 4,
-          "minimumRoll": 4,
           "cooldown": 1,
-          "targetType": "self",
-          "rawText": "First Light: 4+ = +20 ATK",
-          "needsReview": false,
-          "attackModifier": 20
+          "targetType": "enemy",
+          "damageModifierPercent": 18,
+          "effects": [
+            {
+              "kind": "statModifier",
+              "stat": "def",
+              "subject": "allyAuto",
+              "percent": 18,
+              "duration": {
+                "unit": "turns",
+                "count": 1
+              }
+            }
+          ],
+          "rawText": "First Light: 4+ | CD 1 | This attack gains +18% ATK and one allied Mystic gains +18% DEF for 1 turn.",
+          "needsReview": false
         },
         {
           "name": "Celestial Awakening",
           "requiredRoll": 6,
-          "exactRoll": 6,
           "cooldown": 2,
           "targetType": "enemy",
-          "rawText": "Celestial Awakening: 6 = Base Attack x2 and recover 10 Power",
-          "needsReview": false,
-          "healing": 10,
-          "attackMultiplier": 2
+          "damageModifierPercent": 35,
+          "effects": [
+            {
+              "kind": "heal",
+              "subject": "self",
+              "percent": 22
+            },
+            {
+              "kind": "cooldownDelta",
+              "subject": "self",
+              "scope": "otherMove",
+              "amount": -1
+            }
+          ],
+          "rawText": "Celestial Awakening: 6+ | CD 2 | This attack gains +35% ATK and this Mystic recovers 22% of its maximum Power Score. Reduce this Mystic's other Special Move recovery by 1 turn.",
+          "needsReview": false
         }
       ],
       "image": "/cards/Mystics/order%20of%20the%20star/Starborn.png"
@@ -3333,210 +5404,373 @@
     {
       "id": "H-001",
       "name": "Max",
-      "allegiance": "Mortalborn",
-      "order": "Unbound",
+      "allegiance": "Mortalbound",
+      "order": "Sunspire",
       "rarity": "Alpha",
       "originalRarity": "Alpha",
-      "activationRoll": 4,
-      "exactRoll": false,
-      "activationDice": 1,
-      "effect": "Stand Together: Choose 1 allied Mystic. It gains +5 ATK and +3 DEF until the start of your next turn.",
-      "effectType": "Attack / Defense Buff",
-      "effectValue": "+5 ATK; +3 DEF",
-      "duration": "Until the start of your next turn",
-      "maxUses": 2,
-      "target": "ally",
       "image": "/cards/Handlers/max.png",
-      "notes": "Leadership-focused Handler. Activation attempt consumes the turn whether it succeeds or fails."
+      "notes": "Both effects are passive while Max is equipped.",
+      "allegiancePassive": {
+        "name": "Stand Together",
+        "targetLabel": "Mortalbound",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "power",
+            "subject": "self",
+            "percent": 10,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+10% Power Score"
+      },
+      "orderPassive": {
+        "name": "Radiant Leadership",
+        "targetLabel": "Sunspire",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "atk",
+            "subject": "self",
+            "percent": 20,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+20% Base ATK"
+      }
     },
     {
       "id": "H-002",
       "name": "Sawyer",
-      "allegiance": "Mortalborn",
-      "order": "Unbound",
+      "allegiance": "Mortalbound",
+      "order": "Starwatch",
       "rarity": "Alpha",
       "originalRarity": "Alpha",
-      "activationRoll": 4,
-      "exactRoll": false,
-      "activationDice": 1,
-      "effect": "Lucky Break: Choose 1 allied Mystic. The next failed Special Move roll it makes before the start of your following turn may be rerolled once. The reroll result must be used.",
-      "effectType": "Special Reroll",
-      "effectValue": "1 reroll",
-      "duration": "Until triggered or until the start of your following turn",
-      "maxUses": 2,
-      "target": "ally",
       "image": "/cards/Handlers/sawyer.png",
-      "notes": "Improvisation/comedic-risk Handler. This does not remove or bypass a Special Move cooldown."
+      "notes": "Both effects are passive while Sawyer is equipped.",
+      "allegiancePassive": {
+        "name": "Lucky Break",
+        "targetLabel": "Mortalbound",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "def",
+            "subject": "self",
+            "percent": 10,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+10% DEF"
+      },
+      "orderPassive": {
+        "name": "Improvised Tactics",
+        "targetLabel": "Starwatch",
+        "effects": [
+          {
+            "kind": "cooldownReductionPerUse",
+            "amount": -1,
+            "floor": 1
+          }
+        ],
+        "rawText": "Special Move recovery time reduced by 1 turn, minimum 1"
+      }
     },
     {
       "id": "H-003",
       "name": "Henry",
-      "allegiance": "Mortalborn",
-      "order": "Unbound",
+      "allegiance": "Mortalbound",
+      "order": "First Spark",
       "rarity": "Alpha",
       "originalRarity": "Alpha",
-      "activationRoll": 5,
-      "exactRoll": false,
-      "activationDice": 1,
-      "effect": "Awaken the Spark: Choose 1 allied Mystic. Reduce the cooldown of one of its Special Moves by 1, to a minimum of 0.",
-      "effectType": "Cooldown Reduction",
-      "effectValue": "-1 Special cooldown",
-      "duration": "Immediate",
-      "maxUses": 2,
-      "target": "ally",
       "image": "/cards/Handlers/henry.png",
-      "notes": "Awakening-focused Handler. Can make a Special immediately available if its cooldown reaches 0. Activation attempt consumes the turn whether it succeeds or fails."
+      "notes": "Both effects are passive while Henry is equipped.",
+      "allegiancePassive": {
+        "name": "Awaken the Spark",
+        "targetLabel": "Mortalbound",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "power",
+            "subject": "self",
+            "percent": 10,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+10% Power Score"
+      },
+      "orderPassive": {
+        "name": "Spark Awakening",
+        "targetLabel": "First Spark",
+        "effects": [
+          {
+            "kind": "cooldownReductionPerUse",
+            "amount": -1,
+            "floor": 1
+          }
+        ],
+        "rawText": "Special Move recovery time reduced by 1 turn, minimum 1"
+      }
     },
     {
       "id": "H-004",
       "name": "Mr. Alden",
-      "allegiance": "Mortalborn",
-      "order": "Unbound",
+      "allegiance": "Mortalbound",
+      "order": "First Spark",
       "rarity": "Prime",
       "originalRarity": "Prime",
-      "activationRoll": 4,
-      "exactRoll": false,
-      "activationDice": 1,
-      "effect": "Overcharge: Choose 1 allied Mystic. Its next attack gets +8 ATK. If that attack is a Special Move, the bonus applies only if the Special succeeds.",
-      "effectType": "Attack Buff",
-      "effectValue": "+8 ATK",
-      "duration": "Until that Mystic makes its next attack",
-      "maxUses": 1,
-      "target": "ally",
       "image": "/cards/Handlers/mralden.png",
-      "notes": "Older historian/bookstore figure. Electricity-themed Handler concept. Activation attempt consumes the turn whether it succeeds or fails."
+      "notes": "Both effects are passive while Mr. Alden is equipped.",
+      "allegiancePassive": {
+        "name": "Overcharge",
+        "targetLabel": "Mortalbound",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "atk",
+            "subject": "self",
+            "percent": 10,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+10% Base ATK"
+      },
+      "orderPassive": {
+        "name": "Charged Knowledge",
+        "targetLabel": "First Spark",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "atk",
+            "subject": "self",
+            "percent": 20,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+20% Base ATK"
+      }
     },
     {
       "id": "H-005",
       "name": "Captain Edmund",
-      "allegiance": "Mortalborn",
-      "order": "Unbound",
+      "allegiance": "Mortalbound",
+      "order": "Sovereign Order",
       "rarity": "Hunter",
       "originalRarity": "Hunter",
-      "activationRoll": 5,
-      "exactRoll": false,
-      "activationDice": 1,
-      "effect": "Battle Command: Choose 1 allied Mystic. It may immediately make a Basic Attack as part of this Handler action.",
-      "effectType": "Immediate Attack",
-      "effectValue": "1 Basic Attack",
-      "duration": "Immediate",
-      "maxUses": 1,
-      "target": "ally",
       "image": "/cards/Handlers/edmund.png",
-      "notes": "Fighting-Mystic Handler concept. The Handler action still counts as the player's one action for the turn."
+      "notes": "Both effects are passive while Captain Edmund is equipped.",
+      "allegiancePassive": {
+        "name": "Battle Command",
+        "targetLabel": "Mortalbound",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "def",
+            "subject": "self",
+            "percent": 10,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+10% DEF"
+      },
+      "orderPassive": {
+        "name": "Disciplined Assault",
+        "targetLabel": "Sovereign Order",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "atk",
+            "subject": "self",
+            "percent": 20,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+20% Base ATK"
+      }
     },
     {
       "id": "H-006",
       "name": "Amelia",
-      "allegiance": "Mortalborn",
-      "order": "Unbound",
+      "allegiance": "Mortalbound",
+      "order": "Worldforge",
       "rarity": "Hunter",
       "originalRarity": "Hunter",
-      "activationRoll": 4,
-      "exactRoll": false,
-      "activationDice": 1,
-      "effect": "Crystal Ward: Choose 1 allied Mystic. It gains +6 DEF until the start of your next turn.",
-      "effectType": "Defense Buff",
-      "effectValue": "+6 DEF",
-      "duration": "Until the start of your next turn",
-      "maxUses": 2,
-      "target": "ally",
       "image": "/cards/Handlers/amelia.png",
-      "notes": "Historian. Crystal-Mystic Handler concept. Activation attempt consumes the turn whether it succeeds or fails."
+      "notes": "Both effects are passive while Amelia is equipped.",
+      "allegiancePassive": {
+        "name": "Crystal Ward",
+        "targetLabel": "Mortalbound",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "power",
+            "subject": "self",
+            "percent": 10,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+10% Power Score"
+      },
+      "orderPassive": {
+        "name": "Shaper Ward",
+        "targetLabel": "Worldforge",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "def",
+            "subject": "self",
+            "percent": 20,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+20% DEF"
+      }
     },
     {
       "id": "H-007",
       "name": "Arch, The Fallen",
       "allegiance": "Voidbound",
-      "order": "Unbound",
+      "order": "Sovereign Order",
       "rarity": "Apex",
       "originalRarity": "Apex",
-      "activationRoll": 6,
-      "exactRoll": true,
-      "activationDice": 1,
-      "effect": "Void Dominion: Choose 1 enemy Mystic. It loses 8 DEF until the start of your next turn, and its Special Moves cannot be used on its next turn.",
-      "effectType": "Debuff / Special Lock",
-      "effectValue": "-8 DEF",
-      "duration": "Until the start of your next turn; Special lock affects target's next turn",
-      "maxUses": 1,
-      "target": "enemy",
       "image": "/cards/Handlers/arch.png",
-      "notes": "Primary Void-aligned Handler. Formerly Archeion, The Crowned. Strong control effect balanced by a 6-only activation."
+      "notes": "Both effects are passive while Arch is equipped. Higher values reflect Apex rarity.",
+      "allegiancePassive": {
+        "name": "Void Dominion",
+        "targetLabel": "Voidbound",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "atk",
+            "subject": "self",
+            "percent": 15,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+15% Base ATK"
+      },
+      "orderPassive": {
+        "name": "Fallen Sovereignty",
+        "targetLabel": "Sovereign Order",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "power",
+            "subject": "self",
+            "percent": 25,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+25% Power Score"
+      }
     },
     {
       "id": "H-008",
       "name": "Captain Vesper",
       "allegiance": "Voidbound",
-      "order": "Unbound",
+      "order": "Stargate",
       "rarity": "Alpha",
       "originalRarity": "Alpha",
-      "activationRoll": 5,
-      "exactRoll": false,
-      "activationDice": 1,
-      "effect": "Marked for Ruin: Choose 1 enemy Mystic. The next time it takes damage before the start of your next turn, it takes +6 additional damage after normal damage is calculated.",
-      "effectType": "Damage Amplifier",
-      "effectValue": "+6 damage",
-      "duration": "Until triggered or until the start of your next turn",
-      "maxUses": 2,
-      "target": "enemy",
       "image": "/cards/Handlers/vesper.png",
-      "notes": "Void general/captain serving Arch. Bonus damage is added after Attack minus Defense is calculated."
+      "notes": "Both effects are passive while Captain Vesper is equipped.",
+      "allegiancePassive": {
+        "name": "Marked for Ruin",
+        "targetLabel": "Voidbound",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "atk",
+            "subject": "self",
+            "percent": 10,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+10% Base ATK"
+      },
+      "orderPassive": {
+        "name": "Rift Assault",
+        "targetLabel": "Stargate",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "atk",
+            "subject": "self",
+            "percent": 20,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+20% Base ATK"
+      }
     },
     {
       "id": "H-009",
       "name": "Lieutenant Morrow",
       "allegiance": "Voidbound",
-      "order": "Unbound",
+      "order": "Moonveil",
       "rarity": "Prime",
       "originalRarity": "Prime",
-      "activationRoll": 4,
-      "exactRoll": false,
-      "activationDice": 1,
-      "effect": "Shadow Step: Choose 1 allied Mystic. The next attack that targets it before the start of your next turn deals 0 damage.",
-      "effectType": "Damage Prevention",
-      "effectValue": "Prevent 1 attack",
-      "duration": "Until triggered or until the start of your next turn",
-      "maxUses": 1,
-      "target": "ally",
       "image": "/cards/Handlers/morrow.png",
-      "notes": "Void lieutenant serving Arch. Prevents damage from one attack but does not cancel other non-damage effects unless explicitly stated."
+      "notes": "Both effects are passive while Lieutenant Morrow is equipped.",
+      "allegiancePassive": {
+        "name": "Shadow Step",
+        "targetLabel": "Voidbound",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "def",
+            "subject": "self",
+            "percent": 10,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+10% DEF"
+      },
+      "orderPassive": {
+        "name": "Veiled Defense",
+        "targetLabel": "Moonveil",
+        "effects": [
+          {
+            "kind": "statModifier",
+            "stat": "def",
+            "subject": "self",
+            "percent": 20,
+            "duration": {
+              "unit": "untilOwnerNextTurn"
+            }
+          }
+        ],
+        "rawText": "+20% DEF"
+      }
     }
   ],
-  "importWarnings": [
-    "MM-002 Duney — Sand Toss: 4+ = enemy -5 ATK: parsed but not enabled in the v1 battle executor",
-    "MM-002 Duney — Burrow: 6 = block next attack: parsed but not enabled in the v1 battle executor",
-    "MM-006 Disco — Dazzle Spin: 6 = enemy misses: parsed but not enabled in the v1 battle executor",
-    "MM-007 Rocky — Rooted Stance: 6 = reduce damage by 15: parsed but not enabled in the v1 battle executor",
-    "MM-008 Coral — Current Curl: 6 = half-power second attack: effect pattern is not deterministic; timing or calculation needs rules confirmation",
-    "MM-009 Jitsuki — Counter Form: 6 = return 10 damage: parsed but not enabled in the v1 battle executor",
-    "MM-011 Gravemaw — Consume: 6 = heal half damage dealt: effect pattern is not deterministic; timing or calculation needs rules confirmation",
-    "MM-012 Kairo — Focus Kata: 6 = next attack x2: effect pattern is not deterministic; timing or calculation needs rules confirmation",
-    "MM-018 Cactus Jack — Prickly Guard: 6 = attacker takes 10: effect pattern is not deterministic",
-    "MM-021 Frostbite — Time Freeze: 6 = enemy loses attack: parsed but not enabled in the v1 battle executor",
-    "MM-022 Sweep — Sweep Away: 6 = remove DEF bonus: effect pattern is not deterministic",
-    "MM-026 Glint — Blinding Ray: 6 = enemy misses: parsed but not enabled in the v1 battle executor",
-    "MM-027 Mire — Bogged Down: 6 = enemy -10 ATK: parsed but not enabled in the v1 battle executor",
-    "MM-030 Tallus — Blink Gate: 6 = evade and counter: parsed but not enabled in the v1 battle executor",
-    "MM-031 Bramble — Tangle: 6 = enemy -8 ATK: parsed but not enabled in the v1 battle executor",
-    "MM-035 Rootfang — Deep Roots: 6 = reduce damage by 20: parsed but not enabled in the v1 battle executor",
-    "MM-038 Craggle — Boulder Hide: 6 = halve next hit: parsed but not enabled in the v1 battle executor",
-    "MM-040 Colosslate — Fortress Form: 6 = block 25 damage: parsed but not enabled in the v1 battle executor",
-    "MM-043 Prism — Refraction: 6 = return 8 damage: parsed but not enabled in the v1 battle executor",
-    "MM-048 Scoutwing — Recon: 6 = next attack +12: effect pattern is not deterministic; parsed but not enabled in the v1 battle executor",
-    "MM-049 Nightwatch — Foresight: 6 = counter Base Attack: parsed but not enabled in the v1 battle executor",
-    "MM-051 Flicker — Charge: 6 = next attack +10: effect pattern is not deterministic; parsed but not enabled in the v1 battle executor",
-    "MM-056 Dreampuff — Dream Dust: 4+ = enemy -5 ATK: parsed but not enabled in the v1 battle executor",
-    "MM-056 Dreampuff — Nap Trap: 6 = enemy skips attack: parsed but not enabled in the v1 battle executor",
-    "MM-057 Whimsy — Switcheroo: 6 = swap ATK and DEF bonuses: effect pattern is not deterministic; timing or calculation needs rules confirmation; compound effect needs review",
-    "MM-061 Ticktail — Delay: 6 = enemy -8 ATK: parsed but not enabled in the v1 battle executor",
-    "MM-063 Hourglass — Stasis: 6 = block attack: parsed but not enabled in the v1 battle executor",
-    "MM-068 Doorbit — Shortcut: 6 = attack before opponent next turn: effect pattern is not deterministic; timing or calculation needs rules confirmation",
-    "MM-073 Regent — Decree: 6 = enemy -12 ATK: parsed but not enabled in the v1 battle executor",
-    "MM-083 Solflare — Flare Shield: 6 = reflect 12 damage: parsed but not enabled in the v1 battle executor",
-    "MM-087 Timelock — Lock Time: 6 = enemy skips turn: parsed but not enabled in the v1 battle executor",
-    "MM-088 Gateway — Crossworld: 6 = evade and counter: parsed but not enabled in the v1 battle executor",
-    "MM-092 Iron Titan — Unbreakable: 6 = block 30 damage: parsed but not enabled in the v1 battle executor",
-    "MM-094 Oracle — Perfect Prediction: 6 = evade and counter: parsed but not enabled in the v1 battle executor",
-    "MM-096 Nightweaver — Waking Nightmare: 6 = enemy skips attack: parsed but not enabled in the v1 battle executor"
-  ]
+  "importWarnings": []
 }

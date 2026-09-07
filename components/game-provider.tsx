@@ -3,8 +3,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import { activateBoost as activateBoostRule, buyPack as buyPackRule, CAMPAIGN, catalog, createAccount, createBattle, definitionFor, initialState, rewardCompletedBattle, type BattleSelection, type Binder, type Loadout, type PlayerState } from "@/lib/client-state";
-import { endTurn, performBasicAttack, performSpecial } from "@/lib/game/engine";
+import { activateBoost as activateBoostRule, buyPack as buyPackRule, CAMPAIGN, createAccount, createBattle, dismantleCard as dismantleCardRule, initialState, levelUpCard as levelUpCardRule, rewardCompletedBattle, sellDuplicateCard as sellDuplicateCardRule, type BattleSelection, type Binder, type Loadout, type PlayerState } from "@/lib/client-state";
+import { performBasicAttack, performSpecial } from "@/lib/game/engine";
 import { getSupabaseClient } from "@/lib/supabase";
 import { ensurePlayerProfile, getPlayerProfile, savePlayerProfile, validateHandlerName, type ProfileInput } from "@/lib/player-profile";
 import { loadCloudGameState, queueCloudGameState, type GameActivityType } from "@/lib/game-sync-client";
@@ -31,10 +31,11 @@ type GameContextValue = {
   renameBinder(id: string, name: string): void;
   toggleBinderCard(binderId: string, ownedId: string): void;
   sellDuplicate(ownedId: string): void;
+  dismantleCard(ownedId: string): void;
+  levelUpCard(ownedId: string): void;
   startBattle(opponentId: string, selection?: BattleSelection): void;
   basicAttack(attackerId: string, defenderId: string): void;
   specialAttack(attackerId: string, defenderId: string, moveIndex: number, rolledFace?: number): void;
-  useHandler(handlerIndex: number, targetId: string, rolledFace?: number): void;
   aiTurn(): void;
 };
 
@@ -94,6 +95,8 @@ function restoreProfile(user: User) {
   if (!Array.isArray(saved.campaignWins)) { saved.campaignWins = []; changed = true; }
   if (!saved.comicProgress || typeof saved.comicProgress !== "object") { saved.comicProgress = {}; changed = true; }
   if ((saved as Partial<PlayerState>).profile === undefined) { saved.profile = null; changed = true; }
+  if (!saved.essence || typeof saved.essence !== "object") { saved.essence = {}; changed = true; }
+  for (const owned of saved.ownedCards) if (typeof owned.level !== "number") { owned.level = 1; changed = true; }
   const campaign = CAMPAIGN.find((opponent) => opponent.id === saved.battle?.campaignId || opponent.name === saved.battle?.ai.name);
   if (saved.battle && campaign && !saved.battle.campaignId) { saved.battle.campaignId = campaign.id; changed = true; }
   if (saved.battle?.winner === "player" && saved.battleRewarded && campaign && !saved.campaignWins.includes(campaign.id)) {
@@ -299,12 +302,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const createBinder = useCallback((name: string) => commit((draft) => { if (!name.trim()) throw new Error("Give the collection a name"); draft.binders.push({ id: `binder-${Date.now()}`, name: name.trim(), cardIds: [] }); }, "BINDER_CREATED", { name }), [commit]);
   const renameBinder = useCallback((id: string, name: string) => commit((draft) => { const binder = draft.binders.find((item) => item.id === id); if (binder && name.trim()) binder.name = name.trim(); }, "BINDER_RENAMED", { binderId: id, name }), [commit]);
   const toggleBinderCard = useCallback((binderId: string, ownedId: string) => commit((draft) => { const binder = draft.binders.find((item) => item.id === binderId); if (!binder) return; binder.cardIds = binder.cardIds.includes(ownedId) ? binder.cardIds.filter((id) => id !== ownedId) : [...binder.cardIds, ownedId]; }, "BINDER_CARD_TOGGLED", { binderId, ownedId }), [commit]);
-  const sellDuplicate = useCallback((ownedId: string) => commit((draft) => {
-    const owned = draft.ownedCards.find((card) => card.id === ownedId); if (!owned) return;
-    const copies = draft.ownedCards.filter((card) => card.definitionId === owned.definitionId); if (copies.length < 2) throw new Error("Only duplicate copies can be sold");
-    const definition = definitionFor(owned.definitionId)!; const values: Record<string, number> = { Wild: 20, Hunter: 35, Predator: 60, Prime: 100, Alpha: 180, Apex: 350, Unassigned: 80 };
-    draft.ownedCards = draft.ownedCards.filter((card) => card.id !== ownedId); draft.coins += values[definition.rarity]; draft.binders.forEach((binder) => binder.cardIds = binder.cardIds.filter((id) => id !== ownedId));
-  }, "CARD_SOLD", { ownedId }), [commit]);
+  const sellDuplicate = useCallback((ownedId: string) => commit((draft) => sellDuplicateCardRule(draft, ownedId), "CARD_SOLD", { ownedId }), [commit]);
+  const dismantleCard = useCallback((ownedId: string) => commit((draft) => dismantleCardRule(draft, ownedId), "CARD_DISMANTLED", { ownedId }), [commit]);
+  const levelUpCard = useCallback((ownedId: string) => commit((draft) => levelUpCardRule(draft, ownedId), "CARD_LEVELED_UP", { ownedId }), [commit]);
   const startBattle = useCallback((opponentId: string, selection?: BattleSelection) => {
     if (!selection) { router.push(`/battle?opponent=${encodeURIComponent(opponentId)}`); return; }
     commit((draft) => createBattle(draft, opponentId, selection), "BATTLE_STARTED", { opponentId, loadoutId: selection.loadoutId, random: selection.random });
@@ -316,51 +316,25 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const specialAttack = useCallback((attackerId: string, defenderId: string, moveIndex: number, rolledFace?: number) => commit((draft) => {
     if (!draft.battle) return;
     let useProvidedRoll = rolledFace !== undefined;
-    const dice = rolledFace === undefined ? undefined : { rollD6: () => {
+    const dice = rolledFace === undefined ? undefined : { rollD8: () => {
       if (useProvidedRoll) { useProvidedRoll = false; return rolledFace; }
-      return Math.floor(Math.random() * 6) + 1;
+      return Math.floor(Math.random() * 8) + 1;
     } };
     performSpecial(draft.battle, "player", attackerId, defenderId, moveIndex, dice);
     finalize(draft);
   }, "SPECIAL_ATTACK", { attackerId, defenderId, moveIndex, rolledFace }), [commit]);
-
-  const useHandler = useCallback((handlerIndex: number, targetId: string, rolledFace?: number) => commit((draft) => {
-    const battle = draft.battle; if (!battle || battle.currentTurn !== "player" || battle.winner) throw new Error("It is not your turn");
-    const owned = battle.player.handlers[handlerIndex]; if (!owned || owned.uses >= owned.maxUses) throw new Error("Handler has no uses remaining");
-    const handler = catalog.handlers.find((item) => item.id === owned.definitionId)!;
-    const side = handler.target === "ally" ? battle.player : battle.ai;
-    const target = side.mystics.find((m) => m.instanceId === targetId && !m.defeated); if (!target) throw new Error("Choose a valid target");
-    const roll = rolledFace ?? Math.floor(Math.random() * 6) + 1; const success = handler.exactRoll ? roll === handler.activationRoll : roll >= handler.activationRoll;
-    owned.uses += 1; battle.lastRoll = roll;
-    battle.events.push({ id: `handler-${Date.now()}`, turn: battle.turnNumber, type: "handler", message: `${handler.name} rolled ${roll}. ${success ? handler.effect.split(":")[0] + " activated." : "Activation failed."}` });
-    if (success) {
-      const effect = handler.effectType.toLowerCase();
-      if (handler.id === "H-001") { target.effects.push({ id: `h-${battle.turnNumber}-a`, kind: "attack", value: 5, expiresAt: "sourceTurnStart", sourceSide: "player" }, { id: `h-${battle.turnNumber}-d`, kind: "defense", value: 3, expiresAt: "sourceTurnStart", sourceSide: "player" }); }
-      else if (handler.id === "H-002") target.effects.push({ id: `h-${battle.turnNumber}`, kind: "reroll", value: 1, expiresAt: "sourceTurnStart", sourceSide: "player" });
-      else if (handler.id === "H-003") { const cooling = Object.entries(target.cooldowns).sort((a, b) => b[1] - a[1])[0]; if (cooling) target.cooldowns[cooling[0]] = Math.max(0, cooling[1] - 1); }
-      else if (handler.id === "H-004") target.effects.push({ id: `h-${battle.turnNumber}`, kind: "attack", value: 8, expiresAt: "onAttack", sourceSide: "player" });
-      else if (handler.id === "H-005") { const enemy = [...battle.ai.mystics].filter((m) => !m.defeated).sort((a, b) => a.currentPower - b.currentPower)[0]; const attack = target.baseAttack; const damage = Math.max(1, attack - enemy.defense); enemy.currentPower = Math.max(0, enemy.currentPower - damage); enemy.defeated = enemy.currentPower === 0; battle.events.push({ id: `command-${Date.now()}`, turn: battle.turnNumber, type: "damage", message: `${target.name} dealt ${damage} damage to ${enemy.name} by Battle Command.` }); }
-      else if (handler.id === "H-006") target.effects.push({ id: `h-${battle.turnNumber}`, kind: "defense", value: 6, expiresAt: "sourceTurnStart", sourceSide: "player" });
-      else if (handler.id === "H-007") { target.effects.push({ id: `h-${battle.turnNumber}-d`, kind: "defense", value: -8, expiresAt: "sourceTurnStart", sourceSide: "player" }, { id: `h-${battle.turnNumber}-l`, kind: "specialLock", value: 1, expiresAt: "ownerTurnStart", sourceSide: "player" }); }
-      else if (handler.id === "H-008") target.effects.push({ id: `h-${battle.turnNumber}`, kind: "marked", value: 6, expiresAt: "sourceTurnStart", sourceSide: "player" });
-      else if (handler.id === "H-009") target.effects.push({ id: `h-${battle.turnNumber}`, kind: "evade", value: 1, expiresAt: "sourceTurnStart", sourceSide: "player" });
-      else if (effect.includes("attack buff")) target.effects.push({ id: `h-${battle.turnNumber}`, kind: "attack", value: 5, expiresAt: "sourceTurnStart", sourceSide: "player" });
-    }
-    if (battle.ai.mystics.every((m) => m.defeated)) battle.winner = "player";
-    if (!battle.winner) endTurn(battle); finalize(draft);
-  }, "HANDLER_USED", { handlerIndex, targetId, rolledFace }), [commit]);
 
   const aiTurn = useCallback(() => commit((draft) => {
     const battle = draft.battle; if (!battle || battle.currentTurn !== "ai" || battle.winner) return;
     const actors = battle.ai.mystics.filter((m) => !m.defeated); const targets = battle.player.mystics.filter((m) => !m.defeated).sort((a, b) => a.currentPower - b.currentPower);
     const actor = [...actors].sort((a, b) => b.baseAttack - a.baseAttack)[Math.floor(Math.random() * Math.min(2, actors.length))] ?? actors[0]; const target = targets[0];
     const available = actor.moves.map((move, index) => ({ move, index })).filter(({ move }) => (actor.cooldowns[move.name] ?? 0) === 0 && !move.needsReview);
-    if (available.length && Math.random() > 0.38) { const choice = available.sort((a, b) => (b.move.attackModifier ?? 0) - (a.move.attackModifier ?? 0))[0]; performSpecial(battle, "ai", actor.instanceId, target.instanceId, choice.index); }
+    if (available.length && Math.random() > 0.38) { const choice = available.sort((a, b) => (b.move.damageModifierPercent ?? 0) - (a.move.damageModifierPercent ?? 0))[0]; performSpecial(battle, "ai", actor.instanceId, target.instanceId, choice.index); }
     else performBasicAttack(battle, "ai", actor.instanceId, target.instanceId);
     finalize(draft);
   }, "AI_TURN"), [commit]);
 
-  const value = useMemo<GameContextValue>(() => ({ state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn }), [state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, startBattle, basicAttack, specialAttack, useHandler, aiTurn]);
+  const value = useMemo<GameContextValue>(() => ({ state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, dismantleCard, levelUpCard, startBattle, basicAttack, specialAttack, aiTurn }), [state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, dismantleCard, levelUpCard, startBattle, basicAttack, specialAttack, aiTurn]);
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }
 
