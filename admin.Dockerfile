@@ -22,4 +22,4 @@ ENV PUBLIC_GAME_URL=https://minimystics.com
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "npx prisma migrate deploy --schema prisma/schema.prisma && node dist/app.js"]
+CMD ["node", "dist/app.js"]
