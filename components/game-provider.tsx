@@ -137,15 +137,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           } catch (cause) {
             setError(isTemporaryProfileSyncFailure(cause) ? null : authMessage(cause));
           }
-          const accountEmail = hydrated.account?.email;
-          if (accountEmail) {
-            const accounts = getAccounts();
-            accounts[accountEmail] = { ...accounts[accountEmail], state: hydrated };
-            localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
-          }
           if (!active || currentSequence !== sequence) return;
           setState(structuredClone(hydrated));
-          if (!cloudState) void queueCloudGameState(hydrated, "SESSION_STARTED");
+          if (!cloudState) {
+            void queueCloudGameState(hydrated, "SESSION_STARTED").catch((cause) => {
+              if (active && currentSequence === sequence) setError(cause instanceof Error ? cause.message : "Could not save game progress.");
+            });
+          }
         } else { localStorage.removeItem(CURRENT_KEY); setState(initialState); setReady(true); }
       };
       const { data: { subscription } } = getSupabaseClient().auth.onAuthStateChange((_event, session) => {
@@ -165,11 +163,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       try { mutator(draft); setError(null); } catch (cause) { setError(cause instanceof Error ? cause.message : "Something went wrong"); return current; }
       const email = draft.account?.email;
       if (email) {
-        const accounts = getAccounts();
-        const existing = accounts[email];
-        accounts[email] = { ...existing, state: draft };
-        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
-        void queueCloudGameState(draft, activity, payload);
+        void queueCloudGameState(draft, activity, payload).catch((cause) => {
+          setError(cause instanceof Error ? cause.message : "Could not save game progress.");
+        });
       }
       return draft;
     });

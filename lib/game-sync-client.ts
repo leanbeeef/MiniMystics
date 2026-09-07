@@ -37,13 +37,16 @@ export async function loadCloudGameState(): Promise<PlayerState | null> {
 
 export async function persistCloudGameState(state: PlayerState, type: GameActivityType, payload?: Record<string, unknown>) {
   const headers = await authorizationHeader();
-  if (!headers) return;
+  if (!headers) throw new Error("Sign in before saving game progress.");
   const response = await fetch("/api/game-state", {
     method: "POST",
     headers: { ...headers, "Content-Type": "application/json" },
     body: JSON.stringify({ state, activity: { type, payload } }),
   });
-  if (!response.ok) throw new Error("Cloud game save is temporarily unavailable.");
+  if (!response.ok) {
+    const body = await response.json().catch(() => null) as { error?: string } | null;
+    throw new Error(body?.error ?? "Cloud game save is temporarily unavailable.");
+  }
 }
 
 let syncQueue = Promise.resolve();
@@ -52,7 +55,6 @@ export function queueCloudGameState(state: PlayerState, type: GameActivityType, 
   const snapshot = structuredClone(state);
   syncQueue = syncQueue
     .catch(() => undefined)
-    .then(() => persistCloudGameState(snapshot, type, payload))
-    .catch(() => undefined);
+    .then(() => persistCloudGameState(snapshot, type, payload));
   return syncQueue;
 }
