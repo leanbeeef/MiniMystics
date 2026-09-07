@@ -10,16 +10,18 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function databaseUrl() {
+  let connectionString: string | undefined;
   try {
     const env = getCloudflareContext().env as CloudflareEnv & { HYPERDRIVE?: HyperdriveBinding };
-    if (env.HYPERDRIVE?.connectionString) return env.HYPERDRIVE.connectionString;
+    connectionString = env.HYPERDRIVE?.connectionString;
   } catch {
     // next dev and local scripts use DATABASE_URL instead of a Worker binding.
   }
 
-  if (!process.env.DATABASE_URL) throw new Error("Database persistence is not configured for this deployment.");
-  const url = new URL(process.env.DATABASE_URL);
-  if (url.hostname.endsWith(".pooler.supabase.com") && url.searchParams.get("sslmode") === "require") {
+  connectionString ??= process.env.DATABASE_URL;
+  if (!connectionString) throw new Error("Database persistence is not configured for this deployment.");
+  const url = new URL(connectionString);
+  if (url.hostname.endsWith(".pooler.supabase.com")) {
     url.searchParams.set("uselibpqcompat", "true");
   }
   return url.toString();
