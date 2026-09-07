@@ -34,7 +34,7 @@
   },
   "routes": [
     {
-      "pattern": "*.minimystics.com/*",
+      "pattern": "www.minimystics.com/*",
       "zone_name": "minimystics.com"
     },
     {
