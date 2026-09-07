@@ -297,6 +297,38 @@ input:focus, select:focus { border-color: var(--aqua); box-shadow: 0 0 0 3px rgb
 .formation-preview-handlers .formation-preview-card { flex-basis: 30px; width: 30px; border-color: rgba(167,124,224,.35); }
 .formation-preview-handlers small { color: #747b87; font-size: 10px; }
 .inline-form { display: flex; gap: .6rem; }.inline-form input { min-width: 230px; }
+
+/* Collection-integrated Loadout/Binder modals */
+.collection-head-actions { display: flex; gap: .6rem; }
+.active-loadout-strip { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.active-loadout-strip span { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .7rem; color: var(--gold-soft); font-size: .72rem; font-weight: 700; background: rgba(242,193,78,.08); border: 1px solid rgba(242,193,78,.2); border-radius: 999px; }
+.active-loadout-strip span svg { width: 13px; height: 13px; }
+.active-loadout-strip b { color: var(--text); }
+.loadout-modal, .binder-modal { position: relative; width: min(1320px, 100%); max-height: min(880px, calc(100dvh - 48px)); padding: 1.6rem; overflow: auto; background: linear-gradient(145deg, #1a1f29, #0d1016 72%); border: 1px solid rgba(230,203,122,.3); border-radius: 12px; box-shadow: 0 30px 90px rgba(0,0,0,.72); }
+.binder-modal { width: min(1080px, 100%); }
+.loadout-modal-head { margin-bottom: 1.2rem; }
+.loadout-modal-head span { color: var(--gold-soft); font-size: 10px; font-weight: 850; letter-spacing: .14em; }
+.loadout-modal-head h2 { margin: .3rem 0; font-family: Georgia, serif; font-size: 1.7rem; font-weight: 500; }
+.loadout-modal-head p { margin: 0; color: #8f96a3; font-size: .82rem; }
+.loadout-modal-body { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(220px, .55fr) minmax(260px, .75fr); gap: 1rem; align-items: start; }
+.loadout-composition { display: grid; gap: .5rem; min-width: 0; padding: 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 13px; }
+.loadout-composition h3 { margin: 0 0 .3rem; font-family: Georgia, serif; font-size: 1.05rem; font-weight: 500; }
+.loadout-composition h4 { margin: .5rem 0 .2rem; color: #8f96a3; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.composition-totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+.composition-totals span { display: grid; place-items: center; gap: .15rem; padding: .6rem; background: #151a22; border: 1px solid rgba(230,203,122,.12); border-radius: 8px; }
+.composition-totals svg { width: 15px; height: 15px; color: var(--aqua); }
+.composition-totals small { color: #7f8796; font-size: 8px; letter-spacing: .08em; }
+.composition-totals strong { font-family: Georgia, serif; font-size: 1.15rem; }
+.composition-list { display: grid; gap: .3rem; margin: 0; padding: 0; list-style: none; }
+.composition-list li { display: flex; align-items: center; gap: .5rem; color: var(--muted); font-size: .78rem; }
+.composition-list li b { margin-left: auto; color: var(--text); }
+.composition-dot { width: 8px; height: 8px; background: var(--order-color, #D7A93B); border-radius: 50%; box-shadow: 0 0 8px var(--order-color, transparent); }
+.saved-loadout.is-active { border-color: rgba(242,193,78,.7); box-shadow: 0 0 0 2px rgba(242,193,78,.14); }
+.saved-loadout button.active { color: var(--gold); border-color: rgba(242,193,78,.4); }
+.empty-hint { color: var(--muted); font-size: .8rem; }
+.binder-create-form { margin-bottom: 1.1rem; }
+@media (max-width: 1180px) { .loadout-modal-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .saved-list { grid-column: 1 / -1; } }
+@media (max-width: 650px) { .loadout-modal, .binder-modal { padding: 1rem; max-height: calc(100dvh - 20px); } .loadout-modal-body { grid-template-columns: 1fr; } .saved-list { grid-column: auto; } }
 .binder-layout { grid-template-columns: 240px minmax(0, 1fr); }
 .binder-tabs { display: grid; gap: .4rem; }
 .binder-tabs button { display: flex; align-items: center; gap: .55rem; min-height: 45px; padding: .6rem .75rem; color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 10px; text-align: left; cursor: pointer; }.binder-tabs button.active { color: var(--text); background: var(--surface); border-color: var(--line); }.binder-tabs small { margin-left: auto; }.binder-content { padding: 1.2rem; }.binder-content > p { color: var(--muted); font-size: .8rem; }.binder-title { display: flex; align-items: center; gap: 1rem; }.binder-title input { max-width: 340px; font-family: Georgia, serif; font-size: 1.25rem; }.binder-title span { color: var(--muted); font-size: .75rem; }

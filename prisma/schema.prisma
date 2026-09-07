@@ -551,6 +551,16 @@ model CustomCollectionCard {
   @@id([collectionId, ownedCardId])
 }
 
+/// One row per Order (10 total) grouping that Order's campaign stages.
+model Campaign {
+  id          String             @id
+  order       String             @unique
+  name        String
+  description String
+  active      Boolean            @default(true)
+  stages      CampaignOpponent[]
+}
+
 model CampaignOpponent {
   id           String             @id
   name         String
@@ -561,6 +571,9 @@ model CampaignOpponent {
   unlockLevel  Int
   sortOrder    Int
   active       Boolean            @default(true)
+  campaignId   String?
+  stageNumber  Int?
+  campaign     Campaign?          @relation(fields: [campaignId], references: [id])
   progress     CampaignProgress[]
 }
 

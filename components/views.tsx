@@ -3,18 +3,19 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Archive, ArrowRight, Backpack, Boxes, Check, ChevronRight, Coins, Crown, Filter, FolderPlus, ImageOff, Layers3, LockKeyhole, MonitorCog, PackageOpen, Pencil, ScrollText, Shield, Sparkles, Swords, Target, Trash2, Trophy, UsersRound, WandSparkles, Zap } from "lucide-react";
+import { Archive, ArrowRight, Backpack, Boxes, Check, ChevronRight, Coins, Crown, Filter, ImageOff, Layers3, LockKeyhole, MonitorCog, PackageOpen, ScrollText, Shield, Sparkles, Star, Swords, Target, Trophy, UsersRound, WandSparkles, Zap } from "lucide-react";
 import { useGame } from "./game-provider";
 import { CardTile } from "./card-tile";
 import { CardInspectModal } from "./card-inspect-modal";
-import { FormationPreview } from "./formation-preview";
+import { LoadoutManagerModal } from "./loadout-manager-modal";
+import { BinderManagerModal } from "./binder-manager-modal";
 import { BattleView as RefinedBattleView } from "./battle/battle-view";
 import { VFXManager, useVFX } from "./vfx/vfx-manager";
-import { CAMPAIGN, catalog, definitionFor } from "@/lib/client-state";
+import { ALL_CAMPAIGN_STAGES, ORDER_CAMPAIGNS, catalog, definitionFor } from "@/lib/client-state";
 import { xpForLevel } from "@/lib/game/rewards";
 import { PACK_DEFINITIONS } from "@/lib/game/packs";
-import { computeOrderSynergies } from "@/lib/game/order-matchups";
-import { BATTLE_ART, COMING_SOON_ART, ORDER_COLORS, OPPONENT_ART, PACK_ART, REWARD_ART } from "@/lib/art";
+import { isStageUnlocked } from "@/lib/game/campaigns";
+import { BATTLE_ART, COMING_SOON_ART, ORDER_ART, ORDER_COLORS, PACK_ART, REWARD_ART } from "@/lib/art";
 import { RARITY_PACK_EFFECT } from "@/lib/vfx/presets";
 
 const PageHead = ({ eyebrow, title, copy, action }: { eyebrow: string; title: string; copy?: string; action?: React.ReactNode }) => <div className="page-head"><div><span className="eyebrow">{eyebrow}</span><h1>{title}</h1>{copy ? <p>{copy}</p> : null}</div>{action}</div>;
@@ -25,9 +26,11 @@ export function DashboardView() {
   const unfinished = state.openings.find((opening) => !opening.complete);
   const mysticCount = state.ownedCards.filter((owned) => catalog.mystics.some((card) => card.id === owned.definitionId)).length;
   const progress = Math.min(100, Math.round(state.xp / xpForLevel(state.level) * 100));
+  const campaignWins = state.campaignWins ?? [];
+  const nextStageEntry = ALL_CAMPAIGN_STAGES.filter((stage) => !campaignWins.includes(stage.id)).map((stage) => ({ stage, campaign: ORDER_CAMPAIGNS.find((c) => c.stages.includes(stage))! })).find(({ stage }) => isStageUnlocked(stage, state.level, campaignWins)) ?? { stage: ALL_CAMPAIGN_STAGES[0], campaign: ORDER_CAMPAIGNS[0] };
   return <div className="page dashboard-page">
     <section className="command-hero">
-      <div className="hero-copy"><span className="eyebrow">HANDLER COMMAND</span><h1>Your next battle<br />starts with a <em>choice.</em></h1><p>Pick any surviving Mystic. Read the field. Commit one action.</p><div className="hero-actions">{mysticCount >= 5 ? <button className="button primary" onClick={() => startBattle("forge")}>Quick battle <Swords /></button> : <Link className="button primary" href="/open">Open starter pack <PackageOpen /></Link>}<Link className="button ghost" href="/loadouts">Edit lineup <ChevronRight /></Link></div></div>
+      <div className="hero-copy"><span className="eyebrow">HANDLER COMMAND</span><h1>Your next battle<br />starts with a <em>choice.</em></h1><p>Pick any surviving Mystic. Read the field. Commit one action.</p><div className="hero-actions">{mysticCount >= nextStageEntry.stage.size ? <button className="button primary" onClick={() => startBattle(nextStageEntry.stage.id)}>Quick battle <Swords /></button> : <Link className="button primary" href="/open">Open starter pack <PackageOpen /></Link>}<Link className="button ghost" href="/collection">Edit lineup <ChevronRight /></Link></div></div>
       <div className="featured-stack" aria-label="Featured collection cards">{state.ownedCards.slice(0, 3).map((owned, index) => <div className={`stack-card stack-${index}`} key={owned.id}><CardTile definitionId={owned.definitionId} /></div>)}</div>
       <div className="hero-rune" aria-hidden="true">✦</div>
     </section>
@@ -35,7 +38,7 @@ export function DashboardView() {
     <section className="dashboard-grid">
       <div className="panel progress-panel"><div className="panel-title"><span><Crown />HANDLER PROGRESS</span><b>LV {state.level}</b></div><div className="level-line"><strong>{state.xp}<small> XP</small></strong><span>{xpForLevel(state.level)} to next level</span></div><div className="progress"><i style={{ width: `${progress}%` }} /></div><div className="mini-stats"><span><b>{state.wins}</b> wins</span><span><b>{state.matches}</b> matches</span><span><b>{state.ownedCards.length}</b> cards</span></div></div>
       <div className="panel boost-panel"><div className="panel-title"><span><Zap />ACTIVE BOOSTS</span><Link href="/inventory">Manage</Link></div><BoostLine label="2× XP" matches={state.activeBoosts.xp?.matches} tone="violet" /><BoostLine label="2× Coins" matches={state.activeBoosts.coins?.matches} tone="gold" /></div>
-      <div className="panel next-panel"><div className="panel-title"><span><Target />NEXT ENCOUNTER</span><small>EASY</small></div><h3>Mara Ironhand</h3><p>A steady Worldforge lineup. Bring exactly 5 Mystics.</p><button className="text-button" onClick={() => startBattle("forge")}>Enter encounter <ArrowRight /></button></div>
+      <div className="panel next-panel"><div className="panel-title"><span><Target />NEXT ENCOUNTER</span><small>{nextStageEntry.stage.difficulty.toUpperCase()}</small></div><h3>{nextStageEntry.stage.opponentName}</h3><p>A {nextStageEntry.campaign.order} lineup. Bring exactly {nextStageEntry.stage.size} Mystics.</p><button className="text-button" onClick={() => startBattle(nextStageEntry.stage.id)}>Enter encounter <ArrowRight /></button></div>
     </section>
     <section className="quick-grid"><Link href="/collection"><Layers3 /><span><strong>Collection</strong><small>{state.ownedCards.length} owned cards</small></span><ChevronRight /></Link><Link href="/packs"><PackageOpen /><span><strong>Pack shop</strong><small>Improve your lineup</small></span><ChevronRight /></Link><Link href="/campaign"><Trophy /><span><strong>Campaign</strong><small>{state.campaignWins.length} encounters cleared</small></span><ChevronRight /></Link></section>
   </div>;
@@ -44,66 +47,68 @@ export function DashboardView() {
 function BoostLine({ label, matches, tone }: { label: string; matches?: number; tone: string }) { return <div className={`boost-line ${tone}`}><span><Zap /></span><div><strong>{matches ? label : `${label} inactive`}</strong><small>{matches ? `${matches} matches remaining` : "Activate a boost from inventory"}</small></div></div>; }
 
 export function CollectionView() {
-  const { state } = useGame(); const [kind, setKind] = useState("all"); const [rarity, setRarity] = useState("all"); const [order, setOrder] = useState("all"); const [allegiance, setAllegiance] = useState("all"); const [sort, setSort] = useState("name"); const [query, setQuery] = useState(""); const [inspectId, setInspectId] = useState<string | null>(null);
+  const { state } = useGame();
+  const editLoadoutParam = useSearchParams().get("editLoadout");
+  const [kind, setKind] = useState("all"); const [rarity, setRarity] = useState("all"); const [order, setOrder] = useState("all"); const [allegiance, setAllegiance] = useState("all"); const [binderFilter, setBinderFilter] = useState("all"); const [sort, setSort] = useState("name"); const [query, setQuery] = useState(""); const [inspectId, setInspectId] = useState<string | null>(null);
+  const [showLoadouts, setShowLoadouts] = useState(Boolean(editLoadoutParam));
+  const [showBinders, setShowBinders] = useState(false);
   const grouped = useMemo(() => state.ownedCards.reduce<Record<string, typeof state.ownedCards>>((acc, owned) => ((acc[owned.definitionId] ??= []).push(owned), acc), {}), [state.ownedCards]);
-  const cards = Object.entries(grouped).filter(([id]) => { const card = definitionFor(id)!; const isMystic = "power" in card; return (kind === "all" || (kind === "mystic") === isMystic) && (rarity === "all" || card.rarity === rarity) && (order === "all" || card.order === order) && (allegiance === "all" || card.allegiance === allegiance) && card.name.toLowerCase().includes(query.toLowerCase()); }).sort(([a], [b]) => { const first = definitionFor(a)!; const second = definitionFor(b)!; if (sort === "order") return first.order.localeCompare(second.order) || first.name.localeCompare(second.name); if (sort === "rarity") return ["Apex", "Alpha", "Prime", "Predator", "Hunter", "Wild", "Unassigned"].indexOf(first.rarity) - ["Apex", "Alpha", "Prime", "Predator", "Hunter", "Wild", "Unassigned"].indexOf(second.rarity); return first.name.localeCompare(second.name); });
-  return <div className="page"><PageHead eyebrow="THE ARCHIVE" title="Your collection" copy={`${state.ownedCards.length} individual card instances · ${Object.keys(grouped).length} unique definitions`} action={<Link href="/collections" className="button ghost">Open binders <ArrowRight /></Link>} />
-    <div className="filterbar collection-filters"><label className="search"><Filter /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a card" /></label><select value={kind} onChange={(e) => setKind(e.target.value)}><option value="all">All card types</option><option value="mystic">Mystics</option><option value="handler">Handlers</option></select><select value={rarity} onChange={(e) => setRarity(e.target.value)}><option value="all">All rarities</option>{["Wild", "Hunter", "Predator", "Prime", "Alpha", "Apex", "Unassigned"].map((r) => <option key={r}>{r}</option>)}</select><select value={order} onChange={(e) => setOrder(e.target.value)}><option value="all">All Orders</option>{[...new Set(catalog.mystics.map((m) => m.order))].map((o) => <option key={o}>{o}</option>)}</select><select value={allegiance} onChange={(e) => setAllegiance(e.target.value)}><option value="all">All allegiances</option>{[...new Set([...catalog.mystics, ...catalog.handlers].map((card) => card.allegiance))].sort().map((item) => <option key={item}>{item}</option>)}</select><select value={sort} onChange={(e) => setSort(e.target.value)}><option value="name">Sort: Name</option><option value="rarity">Sort: Rarity</option><option value="order">Sort: Order</option></select></div>
+  const activeBinder = state.binders.find((item) => item.id === binderFilter);
+  const cards = Object.entries(grouped).filter(([id, copies]) => { const card = definitionFor(id)!; const isMystic = "power" in card; return (kind === "all" || (kind === "mystic") === isMystic) && (rarity === "all" || card.rarity === rarity) && (order === "all" || card.order === order) && (allegiance === "all" || card.allegiance === allegiance) && (binderFilter === "all" || copies.some((owned) => activeBinder?.cardIds.includes(owned.id))) && card.name.toLowerCase().includes(query.toLowerCase()); }).sort(([a], [b]) => { const first = definitionFor(a)!; const second = definitionFor(b)!; if (sort === "order") return first.order.localeCompare(second.order) || first.name.localeCompare(second.name); if (sort === "rarity") return ["Apex", "Alpha", "Prime", "Predator", "Hunter", "Wild", "Unassigned"].indexOf(first.rarity) - ["Apex", "Alpha", "Prime", "Predator", "Hunter", "Wild", "Unassigned"].indexOf(second.rarity); return first.name.localeCompare(second.name); });
+  const activeLoadouts = state.loadouts.filter((loadout) => loadout.active);
+  return <div className="page"><PageHead eyebrow="THE ARCHIVE" title="Your collection" copy={`${state.ownedCards.length} individual card instances · ${Object.keys(grouped).length} unique definitions`} action={<div className="collection-head-actions"><button className="button ghost" onClick={() => setShowBinders(true)}><Archive />Binders</button><button className="button primary" onClick={() => setShowLoadouts(true)}><Boxes />Loadouts</button></div>} />
+    {activeLoadouts.length ? <div className="active-loadout-strip">{activeLoadouts.map((loadout) => <span key={loadout.id}><Star />{loadout.size}-Mystic active: <b>{loadout.name}</b></span>)}</div> : null}
+    <div className="filterbar collection-filters"><label className="search"><Filter /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a card" /></label><select value={kind} onChange={(e) => setKind(e.target.value)}><option value="all">All card types</option><option value="mystic">Mystics</option><option value="handler">Handlers</option></select><select value={rarity} onChange={(e) => setRarity(e.target.value)}><option value="all">All rarities</option>{["Wild", "Hunter", "Predator", "Prime", "Alpha", "Apex", "Unassigned"].map((r) => <option key={r}>{r}</option>)}</select><select value={order} onChange={(e) => setOrder(e.target.value)}><option value="all">All Orders</option>{[...new Set(catalog.mystics.map((m) => m.order))].map((o) => <option key={o}>{o}</option>)}</select><select value={allegiance} onChange={(e) => setAllegiance(e.target.value)}><option value="all">All allegiances</option>{[...new Set([...catalog.mystics, ...catalog.handlers].map((card) => card.allegiance))].sort().map((item) => <option key={item}>{item}</option>)}</select>{state.binders.length ? <select value={binderFilter} onChange={(e) => setBinderFilter(e.target.value)}><option value="all">All binders</option>{state.binders.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select> : null}<select value={sort} onChange={(e) => setSort(e.target.value)}><option value="name">Sort: Name</option><option value="rarity">Sort: Rarity</option><option value="order">Sort: Order</option></select></div>
     {cards.length ? <div className="collection-grid">{cards.map(([definitionId, copies]) => <CardTile key={definitionId} definitionId={definitionId} level={Math.max(...copies.map((owned) => owned.level))} onClick={() => setInspectId(definitionId)} footer={<b>×{copies.length}</b>} />)}</div> : <Empty icon={<Layers3 />} title="No cards match" copy="Try a different filter or open a new pack." />}
     {inspectId ? <CardInspectModal definitionId={inspectId} ownedCards={grouped[inspectId] ?? []} onClose={() => setInspectId(null)} /> : null}
+    {showLoadouts ? <LoadoutManagerModal editLoadoutId={editLoadoutParam} onClose={() => setShowLoadouts(false)} /> : null}
+    {showBinders ? <BinderManagerModal onClose={() => setShowBinders(false)} /> : null}
   </div>;
-}
-
-export function LoadoutsView() {
-  const { state, saveLoadout, deleteLoadout } = useGame();
-  const editParam = useSearchParams().get("edit");
-  const [size, setSize] = useState<3 | 5 | 8>(5);
-  const [name, setName] = useState("Fivefold Line");
-  const [mystics, setMystics] = useState<string[]>([]);
-  const [handlers, setHandlers] = useState<string[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const ownedMystics = state.ownedCards.filter((owned) => catalog.mystics.some((card) => card.id === owned.definitionId));
-  const ownedHandlers = state.ownedCards.filter((owned) => catalog.handlers.some((card) => card.id === owned.definitionId));
-  const editLoadout = (loadout: typeof state.loadouts[number]) => { setEditingId(loadout.id); setName(loadout.name); setSize(loadout.size); setMystics([...loadout.mysticIds]); setHandlers([...loadout.handlerIds]); };
-  const resetEditor = () => { setEditingId(null); setName("Fivefold Line"); setSize(5); setMystics([]); setHandlers([]); };
-  useEffect(() => { setMystics((current) => current.slice(0, size)); }, [size]);
-  useEffect(() => { const requested = state.loadouts.find((loadout) => loadout.id === editParam); if (requested) editLoadout(requested); }, [editParam]);
-  const toggle = (id: string, list: string[], setList: (next: string[]) => void, max: number) => setList(list.includes(id) ? list.filter((item) => item !== id) : list.length < max ? [...list, id] : list);
-  const save = () => { saveLoadout({ id: editingId ?? undefined, name, size, mysticIds: mystics, handlerIds: handlers }); resetEditor(); };
-
-  const ordersOf = (ids: string[]) => ids.map((cardId) => { const owned = state.ownedCards.find((item) => item.id === cardId); return owned && catalog.mystics.find((card) => card.id === owned.definitionId)?.order; }).filter(Boolean) as string[];
-  const draftSynergies = computeOrderSynergies(ordersOf(mystics));
-
-  return <div className="page"><PageHead eyebrow="BATTLE PREP" title="Saved loadouts" copy="Build formations from individual owned card instances, then choose one before battle." />
-    <div className="loadout-layout"><section className="panel builder"><div className="builder-top"><label>Loadout name<input value={name} onChange={(e) => setName(e.target.value)} /></label><div><span>Battle size</span><div className="segmented small">{([3, 5, 8] as const).map((value) => <button key={value} className={size === value ? "active" : ""} onClick={() => setSize(value)}>{value}</button>)}</div></div></div><div className="selected-lineup"><div className="zone-label"><span>{editingId ? "EDITING FORMATION" : "SELECTED LINEUP"}</span><strong>{mystics.length}/{size} Mystics · {handlers.length}/3 Handlers</strong></div>{Object.keys(draftSynergies).length ? <SynergyRow synergies={draftSynergies} /> : null}<div className="lineup-slots">{Array.from({ length: size }, (_, index) => { const owned = ownedMystics.find((item) => item.id === mystics[index]); return owned ? <CardTile key={owned.id} compact definitionId={owned.definitionId} selected onClick={() => toggle(owned.id, mystics, setMystics, size)} /> : <span className="empty-slot" key={index}>+</span>; })}</div></div><h3>Available Mystics <span>{mystics.length}/{size}</span></h3><div className="picker-row">{ownedMystics.map((owned) => <CardTile key={owned.id} compact definitionId={owned.definitionId} selected={mystics.includes(owned.id)} onClick={() => toggle(owned.id, mystics, setMystics, size)} />)}</div><h3>Handlers <span>{handlers.length}/3</span></h3><div className="picker-row">{ownedHandlers.map((owned) => <CardTile key={owned.id} compact definitionId={owned.definitionId} selected={handlers.includes(owned.id)} onClick={() => toggle(owned.id, handlers, setHandlers, 3)} />)}</div><div className="builder-actions"><button className="button primary" disabled={mystics.length !== size || !name.trim()} onClick={save}>{editingId ? "Update formation" : "Save formation"} <Check /></button>{editingId ? <button className="button ghost" onClick={resetEditor}>Cancel edit</button> : null}</div></section>
-      <aside className="saved-list"><h2>Your formations</h2>{state.loadouts.length ? state.loadouts.map((loadout) => <article className={`saved-loadout ${editingId === loadout.id ? "editing" : ""}`} key={loadout.id}><header><span className="formation-icon">{loadout.size}</span><div><strong>{loadout.name}</strong><small>{loadout.mysticIds.length} Mystics · {loadout.handlerIds.length} Handlers</small></div><button onClick={() => editLoadout(loadout)} aria-label={`Edit ${loadout.name}`} title="Edit formation"><Pencil /></button><button onClick={() => { deleteLoadout(loadout.id); if (editingId === loadout.id) resetEditor(); }} aria-label={`Delete ${loadout.name}`} title="Delete formation"><Trash2 /></button></header><FormationPreview ownedCards={state.ownedCards} mysticIds={loadout.mysticIds} handlerIds={loadout.handlerIds} size={loadout.size} />{Object.keys(computeOrderSynergies(ordersOf(loadout.mysticIds))).length ? <SynergyRow synergies={computeOrderSynergies(ordersOf(loadout.mysticIds))} /> : null}</article>) : <Empty icon={<Boxes />} title="No formations yet" copy="Select exactly the required number of Mystics, then save." />}</aside>
-    </div>
-  </div>;
-}
-
-function SynergyRow({ synergies }: { synergies: Record<string, number> }) {
-  return <div className="synergy-row">{Object.entries(synergies).map(([order, percent]) => <span key={order} style={{ "--order-color": ORDER_COLORS[order] ?? "#D7A93B" } as React.CSSProperties}><Sparkles />{order} <b>+{percent}% ATK</b></span>)}</div>;
 }
 
 export function CampaignView() {
   const { state, startBattle } = useGame();
   const campaignWins = state.campaignWins ?? [];
-  const clearedCount = CAMPAIGN.filter((opponent) => campaignWins.includes(opponent.id)).length;
-  const campaignComplete = clearedCount === CAMPAIGN.length;
-  const progress = Math.round(clearedCount / CAMPAIGN.length * 100);
-  const nextOpponent = CAMPAIGN.find((opponent) => !campaignWins.includes(opponent.id));
+  const totalStages = ALL_CAMPAIGN_STAGES.length;
+  const clearedCount = ALL_CAMPAIGN_STAGES.filter((stage) => campaignWins.includes(stage.id)).length;
+  const overallComplete = clearedCount === totalStages;
+  const [selectedOrder, setSelectedOrder] = useState(() => (ORDER_CAMPAIGNS.find((c) => c.stages.some((s) => !campaignWins.includes(s.id))) ?? ORDER_CAMPAIGNS[0]).order);
+  const campaign = ORDER_CAMPAIGNS.find((c) => c.order === selectedOrder) ?? ORDER_CAMPAIGNS[0];
+  const campaignCleared = campaign.stages.filter((s) => campaignWins.includes(s.id)).length;
+  const campaignComplete = campaignCleared === campaign.stages.length;
+  const progress = Math.round(campaignCleared / campaign.stages.length * 100);
+  const nextStage = campaign.stages.find((s) => !campaignWins.includes(s.id));
+  const ownedMysticCount = state.ownedCards.filter((owned) => catalog.mystics.some((m) => m.id === owned.definitionId)).length;
   return <div className="page campaign-page">
-    <PageHead eyebrow="THE FIRST CONVERGENCE" title="Campaign path" copy="Face fixed rivals, learn their style, and unlock tougher encounters." />
-    <section className={`campaign-progress-card ${campaignComplete ? "complete" : ""}`} aria-label={`Campaign progress: ${clearedCount} of ${CAMPAIGN.length} encounters cleared`}>
+    <PageHead eyebrow="THE FIRST CONVERGENCE" title="Campaign path" copy={`Ten Order campaigns, each built from its own Mystics. ${clearedCount} of ${totalStages} stages cleared overall.`} />
+    <nav className="campaign-order-tabs" aria-label="Choose a campaign">
+      {ORDER_CAMPAIGNS.map((c) => { const cleared = c.stages.filter((s) => campaignWins.includes(s.id)).length; const complete = cleared === c.stages.length; return <button type="button" key={c.order} className={`${c.order === selectedOrder ? "active" : ""} ${complete ? "complete" : ""}`} style={{ "--order-color": ORDER_COLORS[c.order] ?? "#D7A93B" } as React.CSSProperties} onClick={() => setSelectedOrder(c.order)}>{ORDER_ART[c.order] ? <img src={ORDER_ART[c.order]} alt="" /> : null}<span>{c.order}</span><small>{complete ? <Check /> : `${cleared}/${c.stages.length}`}</small></button>; })}
+    </nav>
+    <section className={`campaign-progress-card ${campaignComplete ? "complete" : ""}`} aria-label={`${campaign.name} progress: ${campaignCleared} of ${campaign.stages.length} stages cleared`}>
       <span className="campaign-progress-emblem">{campaignComplete ? <Trophy /> : <ScrollText />}</span>
-      <div className="campaign-progress-copy"><small>{campaignComplete ? "CONVERGENCE MASTERED" : "CAMPAIGN PROGRESS"}</small><strong>{campaignComplete ? "Campaign complete" : `${clearedCount} of ${CAMPAIGN.length} rivals defeated`}</strong><p>{campaignComplete ? "Every rival has fallen. You can replay any encounter." : nextOpponent ? `Next: ${nextOpponent.name}` : "Continue the campaign."}</p></div>
+      <div className="campaign-progress-copy"><small>{campaignComplete ? "CAMPAIGN MASTERED" : "CAMPAIGN PROGRESS"}</small><strong>{campaign.name}</strong><p>{campaignComplete ? "Every stage has fallen. You can replay any stage." : nextStage ? `Next: ${nextStage.opponentName}` : "Continue the campaign."}</p></div>
       <b>{progress}%</b>
       <div className="campaign-progress-rail" style={{ "--campaign-progress": `${progress}%` } as React.CSSProperties}>
         <i aria-hidden="true" />
-        <ol>{CAMPAIGN.map((opponent, index) => { const cleared = campaignWins.includes(opponent.id); const current = !campaignComplete && opponent.id === nextOpponent?.id; return <li key={opponent.id} className={`${cleared ? "cleared" : ""} ${current ? "current" : ""}`} title={`${opponent.name}: ${cleared ? "cleared" : "not cleared"}`}><span>{cleared ? <Check /> : index + 1}</span><small>{opponent.name.split(" ")[0]}</small></li>; })}</ol>
+        <ol>{campaign.stages.map((stage, index) => { const cleared = campaignWins.includes(stage.id); const current = !campaignComplete && stage.id === nextStage?.id; return <li key={stage.id} className={`${cleared ? "cleared" : ""} ${current ? "current" : ""}`} title={`Stage ${stage.stageNumber}: ${cleared ? "cleared" : "not cleared"}`}><span>{cleared ? <Check /> : index + 1}</span><small>Stage {stage.stageNumber}</small></li>; })}</ol>
       </div>
     </section>
-    <div className="campaign-path">{CAMPAIGN.map((opponent, index) => { const locked = state.level < opponent.level; const cleared = campaignWins.includes(opponent.id); const compatible = state.ownedCards.filter((owned) => catalog.mystics.some((m) => m.id === owned.definitionId)).length >= opponent.size; return <article className={`encounter ${locked ? "locked" : ""} ${cleared ? "cleared" : ""}`} key={opponent.id}><span className="path-index">{cleared ? <Check /> : index + 1}</span><div className="encounter-art"><img src={OPPONENT_ART[opponent.id]} alt="" /></div><div className="encounter-copy"><div className="encounter-status"><span className={`difficulty ${opponent.difficulty.toLowerCase()}`}>{opponent.difficulty}</span>{cleared ? <span className="cleared-label"><Check />Cleared</span> : null}</div><h2>{opponent.name}</h2><p>{opponent.style} playstyle · {opponent.size}-Mystic battle</p><small className={cleared ? "reward-claimed" : ""}><Coins />{cleared ? `First clear bonus claimed: ${opponent.reward}` : `First clear bonus: ${opponent.reward}`}</small></div>{locked ? <div className="lock-copy"><LockKeyhole />Unlocks at level {opponent.level}</div> : <button disabled={!compatible} className={`button ${cleared ? "ghost" : "primary"}`} onClick={() => startBattle(opponent.id)}>{compatible ? cleared ? "Replay" : "Challenge" : `Need ${opponent.size} Mystics`}<Swords /></button>}</article>; })}</div>
+    <div className="campaign-path">{campaign.stages.map((stage, index) => {
+      const unlocked = isStageUnlocked(stage, state.level, campaignWins);
+      const cleared = campaignWins.includes(stage.id);
+      const compatible = ownedMysticCount >= stage.size;
+      return <article className={`encounter ${!unlocked ? "locked" : ""} ${cleared ? "cleared" : ""}`} key={stage.id}>
+        <span className="path-index">{cleared ? <Check /> : index + 1}</span>
+        <div className="encounter-art">{ORDER_ART[campaign.order] ? <img src={ORDER_ART[campaign.order]} alt="" /> : null}</div>
+        <div className="encounter-copy">
+          <div className="encounter-status"><span className={`difficulty ${stage.difficulty.toLowerCase()}`}>{stage.difficulty}</span>{cleared ? <span className="cleared-label"><Check />Cleared</span> : null}</div>
+          <h2>{stage.opponentName}</h2>
+          <p>{stage.aiLogicProfile} playstyle · {stage.size}-Mystic battle · Level {stage.opponentLevel}</p>
+          <small className={cleared ? "reward-claimed" : ""}><Coins />{cleared ? `First clear bonus claimed: ${stage.firstClearReward.coins} Coins + ${stage.firstClearReward.essence} ${campaign.order} Essence` : `First clear bonus: ${stage.firstClearReward.coins} Coins + ${stage.firstClearReward.essence} ${campaign.order} Essence`}</small>
+        </div>
+        {!unlocked ? <div className="lock-copy"><LockKeyhole />{state.level < stage.unlockRequirement.minPlayerLevel ? `Unlocks at level ${stage.unlockRequirement.minPlayerLevel}` : "Clear the previous stage first"}</div> : <button disabled={!compatible} className={`button ${cleared ? "ghost" : "primary"}`} onClick={() => startBattle(stage.id)}>{compatible ? cleared ? "Replay" : "Challenge" : `Need ${stage.size} Mystics`}<Swords /></button>}
+      </article>;
+    })}</div>
   </div>;
 }
 
@@ -155,7 +160,7 @@ function OpeningExperience() {
 
   const revealed = opening.cards.filter((card) => card.revealed).length;
   const pendingRarity = opening.cards.find((card) => card.id === pendingId)?.rarity.toLowerCase();
-  return <div className={`opening-page ${pendingId ? "reveal-active" : ""} ${pendingRarity ? `active-${pendingRarity}` : ""}`}><div className="pack-vfx-dimmer" /><div className="opening-head"><div><span className="eyebrow">PACK CHAMBER</span><h1>{opening.name}</h1><p>{opening.complete ? "Everything is yours." : "Choose a card. Read the shimmer. Reveal one at a time."}</p></div><div className="opening-progress"><strong>{revealed}/{opening.cards.length}</strong><button className="button ghost" disabled={opening.complete || revealingAll || !!pendingId} onClick={() => void revealAll()}>{revealingAll ? "Revealing…" : "Reveal all"} <WandSparkles /></button></div></div><div className={`reveal-grid count-${opening.cards.length}`}>{opening.cards.map((card) => <button key={card.id} data-vfx-id={card.id} aria-label={card.revealed ? "Revealed card" : "Reveal card"} disabled={!!pendingId && pendingId !== card.id} className={`reveal-card ${card.revealed ? "revealed" : ""} ${pendingId === card.id ? "revealing" : ""} tell-${card.rarity.toLowerCase()}`} onClick={() => !card.revealed && void revealOne(card)}><span className="reveal-aura" /><span className="reveal-inner"><span className="card-back"><img src="/cards/Mystics/back.png" alt="Mini Mystics card back" /></span><span className="card-front"><RewardFace card={card} /></span></span></button>)}</div>{opening.complete ? <div className="opening-complete"><div><Check /><span><strong>Pack complete</strong><small>Rewards redeemed. Cards added to your collection.</small></span></div><Link href="/loadouts" className="button primary">Build a lineup <ArrowRight /></Link></div> : null}</div>;
+  return <div className={`opening-page ${pendingId ? "reveal-active" : ""} ${pendingRarity ? `active-${pendingRarity}` : ""}`}><div className="pack-vfx-dimmer" /><div className="opening-head"><div><span className="eyebrow">PACK CHAMBER</span><h1>{opening.name}</h1><p>{opening.complete ? "Everything is yours." : "Choose a card. Read the shimmer. Reveal one at a time."}</p></div><div className="opening-progress"><strong>{revealed}/{opening.cards.length}</strong><button className="button ghost" disabled={opening.complete || revealingAll || !!pendingId} onClick={() => void revealAll()}>{revealingAll ? "Revealing…" : "Reveal all"} <WandSparkles /></button></div></div><div className={`reveal-grid count-${opening.cards.length}`}>{opening.cards.map((card) => <button key={card.id} data-vfx-id={card.id} aria-label={card.revealed ? "Revealed card" : "Reveal card"} disabled={!!pendingId && pendingId !== card.id} className={`reveal-card ${card.revealed ? "revealed" : ""} ${pendingId === card.id ? "revealing" : ""} tell-${card.rarity.toLowerCase()}`} onClick={() => !card.revealed && void revealOne(card)}><span className="reveal-aura" /><span className="reveal-inner"><span className="card-back"><img src="/cards/Mystics/back.png" alt="Mini Mystics card back" /></span><span className="card-front"><RewardFace card={card} /></span></span></button>)}</div>{opening.complete ? <div className="opening-complete"><div><Check /><span><strong>Pack complete</strong><small>Rewards redeemed. Cards added to your collection.</small></span></div><Link href="/collection" className="button primary">Build a lineup <ArrowRight /></Link></div> : null}</div>;
 }
 
 function RewardFace({ card }: { card: import("@/lib/client-state").RewardCard }) {
@@ -171,11 +176,6 @@ function RewardFace({ card }: { card: import("@/lib/client-state").RewardCard })
 export function InventoryView() {
   const { state, activateBoost } = useGame();
   return <div className="page"><PageHead eyebrow="SUPPLY CASE" title="Boost inventory" copy="Boosts last for completed matches. Matching boosts extend duration; they never become 4×." /><div className="active-boost-cards"><BoostLine label="2× XP" matches={state.activeBoosts.xp?.matches} tone="violet" /><BoostLine label="2× Coins" matches={state.activeBoosts.coins?.matches} tone="gold" /></div>{state.inventory.length ? <div className="inventory-grid">{state.inventory.map((boost) => <article className={`inventory-boost ${boost.type}`} key={boost.id}><span><Zap /></span><small>{boost.rarity} BOOST</small><h2>2× {boost.type === "xp" ? "XP" : "Coins"}</h2><p>{boost.matches} completed matches</p><button className="button primary" disabled={!!state.battle && !state.battle.winner} onClick={() => activateBoost(boost.id)}>Activate</button></article>)}</div> : <Empty icon={<Backpack />} title="No boosts stored" copy="Boost cards can appear in Standard and Starter packs." action={<Link className="button primary" href="/packs">Browse packs</Link>} />}</div>;
-}
-
-export function BindersView() {
-  const { state, createBinder, renameBinder, toggleBinderCard } = useGame(); const [name, setName] = useState(""); const [active, setActive] = useState(state.binders[0]?.id ?? ""); const binder = state.binders.find((item) => item.id === active);
-  return <div className="page"><PageHead eyebrow="PERSONAL ARCHIVE" title="Custom collections" copy="Organize individual owned cards into binders. These are not booster packs." action={<form className="inline-form" onSubmit={(e) => { e.preventDefault(); createBinder(name); setName(""); }}><input value={name} onChange={(e) => setName(e.target.value)} placeholder="New binder name" /><button className="button primary"><FolderPlus />Create</button></form>} />{state.binders.length ? <div className="binder-layout"><aside className="binder-tabs">{state.binders.map((item) => <button className={item.id === active ? "active" : ""} key={item.id} onClick={() => setActive(item.id)}><Archive />{item.name}<small>{item.cardIds.length}</small></button>)}</aside><section className="panel binder-content">{binder ? <><div className="binder-title"><input value={binder.name} onChange={(e) => renameBinder(binder.id, e.target.value)} /><span>{binder.cardIds.length} cards filed</span></div><p>Tap cards to add or remove their owned instance.</p><div className="picker-row large">{state.ownedCards.map((owned) => <CardTile key={owned.id} definitionId={owned.definitionId} compact selected={binder.cardIds.includes(owned.id)} onClick={() => toggleBinderCard(binder.id, owned.id)} />)}</div></> : null}</section></div> : <Empty icon={<Archive />} title="Create your first binder" copy="Name it, then file any owned card instances inside." />}</div>;
 }
 
 export function ProfileView() {

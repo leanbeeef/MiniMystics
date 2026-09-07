@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Activity, ArrowRight, Check, CircleOff, Clock3, Dices, Eye, GripHorizontal, Heart, Info, Maximize2, Minus, ScrollText, Shield, Sparkles, Swords, Target, TrendingUp, Trophy, WandSparkles, X, Zap } from "lucide-react";
 import { useGame } from "../game-provider";
 import { VFXManager, useVFX } from "../vfx/vfx-manager";
-import { BATTLE_ART, OPPONENT_ART, ORDER_ART, ORDER_COLORS } from "@/lib/art";
+import { BATTLE_ART, ORDER_ART, ORDER_COLORS } from "@/lib/art";
 import { catalog } from "@/lib/client-state";
 import type { BattleEvent, BattleSide, Combatant, HandlerDefinition, ParsedMove } from "@/lib/game/types";
 import { effectiveDefense, previewDamage } from "@/lib/game/engine";
@@ -213,7 +213,7 @@ function BattleExperience() {
       <div className="battle-board-column">
         <BattleTurnBar battle={battle} phase={phase} />
         <main className="battle-arena">
-          <BattleMysticRow side="ai" team={battle.ai} format={battle.size} opponentId={battle.ai.name} selectedId={targetId} targeting={isTargeting && targetSide === "ai"} actorOrder={actor?.order} damageFx={damageFx} onSelect={(mystic) => selectMystic(mystic, "ai")} />
+          <BattleMysticRow side="ai" team={battle.ai} format={battle.size} selectedId={targetId} targeting={isTargeting && targetSide === "ai"} actorOrder={actor?.order} damageFx={damageFx} onSelect={(mystic) => selectMystic(mystic, "ai")} />
           <div className="battle-center"><i /><span>VS</span><i /></div>
           <BattleMysticRow side="player" team={battle.player} format={battle.size} selectedId={battle.currentTurn === "player" ? actorId : ""} targetId={targetId} targeting={isTargeting && targetSide === "player"} damageFx={damageFx} onSelect={(mystic) => selectMystic(mystic, "player")} />
         </main>
@@ -259,8 +259,8 @@ function BattleTurnBar({ battle, phase }: { battle: NonNullable<ReturnType<typeo
   </header>;
 }
 
-function BattleMysticRow({ side, team, format, opponentId, selectedId, targetId, targeting, actorOrder, damageFx, onSelect }: { side: "player" | "ai"; team: BattleSide; format: 3 | 5 | 8; opponentId?: string; selectedId: string; targetId?: string; targeting: boolean; actorOrder?: string; damageFx: DamageFx; onSelect: (mystic: Combatant) => void }) {
-  const portrait = side === "ai" ? Object.entries(OPPONENT_ART).find(([id]) => opponentId?.toLowerCase().includes(id === "forge" ? "mara" : id === "rookie" ? "lio" : id === "gale" ? "aster" : id === "veil" ? "nox" : id === "regent" ? "regent" : "arch"))?.[1] : undefined;
+function BattleMysticRow({ side, team, format, selectedId, targetId, targeting, actorOrder, damageFx, onSelect }: { side: "player" | "ai"; team: BattleSide; format: 3 | 5 | 8; selectedId: string; targetId?: string; targeting: boolean; actorOrder?: string; damageFx: DamageFx; onSelect: (mystic: Combatant) => void }) {
+  const portrait = side === "ai" ? ORDER_ART[team.mystics[0]?.order ?? ""] : undefined;
   return <section className={`battle-side battle-side-${side}`}>
     <BattleSideLabel side={side} name={team.name} portrait={portrait} />
     <div className="battle-mystic-row" role="list" aria-label={`${team.name} lineup`}>

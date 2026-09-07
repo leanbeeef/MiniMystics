@@ -26,12 +26,17 @@ export function orderAdvantagePercent(attackerOrder: string, defenderOrder: stri
 
 export const SYNERGY_PERCENT_BY_COUNT: Record<number, number> = { 2: 5, 3: 10, 4: 15, 5: 20, 6: 25, 7: 30, 8: 35 };
 
-/** Order -> synergy percent for a starting lineup, based only on Order counts (Handlers never count). Fixed at battle start. */
-export function computeOrderSynergies(orders: string[]): Record<string, number> {
+/** Order -> count of Mystics belonging to it. Reused by the Loadout builder's composition panel and by computeOrderSynergies. */
+export function orderCounts(orders: string[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const order of orders) counts[order] = (counts[order] ?? 0) + 1;
+  return counts;
+}
+
+/** Order -> synergy percent for a starting lineup, based only on Order counts (Handlers never count). Fixed at battle start. */
+export function computeOrderSynergies(orders: string[]): Record<string, number> {
   const synergies: Record<string, number> = {};
-  for (const [order, count] of Object.entries(counts)) {
+  for (const [order, count] of Object.entries(orderCounts(orders))) {
     const percent = SYNERGY_PERCENT_BY_COUNT[Math.min(count, 8)];
     if (percent) synergies[order] = percent;
   }

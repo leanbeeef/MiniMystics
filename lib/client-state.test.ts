@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { stackBoost } from "./game/boosts";
 import { nextAlphaPity, shouldGuaranteeAlpha } from "./game/packs";
 import { LEVEL_UP_ESSENCE_COST, MAX_MYSTIC_LEVEL, RARITY_DISMANTLE_ESSENCE, RARITY_SELL_COINS } from "./game/economy";
-import { catalog, combatant, createBattle, dismantleCard, initialState, levelUpCard, rewardCompletedBattle, sellDuplicateCard, type OwnedCard, type PlayerState } from "./client-state";
+import { ALL_CAMPAIGN_STAGES, buyPack, catalog, combatant, createBattle, dismantleCard, drawUniqueMystics, initialState, levelUpCard, rewardCompletedBattle, sellDuplicateCard, setActiveLoadout, type OwnedCard, type PlayerState } from "./client-state";
+import { PACK_DEFINITIONS, weightedRarity } from "./game/packs";
+import type { MysticDefinition } from "./game/types";
 
 const owned = (definitionId: string, level = 1): OwnedCard => ({ id: `owned-${definitionId}-${level}-${Math.random()}`, definitionId, acquiredAt: "", level });
 
@@ -12,7 +14,7 @@ describe("battle formation selection", () => {
     state.account = { email: "handler@example.com", username: "Handler" };
     state.ownedCards = catalog.mystics.slice(0, 4).map((card) => owned(card.id));
     const selected = [state.ownedCards[2].id, state.ownedCards[0].id, state.ownedCards[3].id];
-    createBattle(state, "rookie", { mysticIds: selected, handlerIds: [] });
+    createBattle(state, ALL_CAMPAIGN_STAGES[0].id, { mysticIds: selected, handlerIds: [] });
     expect(state.battle?.player.mystics.map((card) => card.definitionId)).toEqual(selected.map((id) => state.ownedCards.find((card) => card.id === id)?.definitionId));
   });
 
@@ -20,10 +22,33 @@ describe("battle formation selection", () => {
     const state = structuredClone(initialState);
     state.account = { email: "handler@example.com", username: "Handler" };
     state.ownedCards = catalog.mystics.slice(0, 6).map((card) => owned(card.id));
-    createBattle(state, "rookie", { random: true });
+    createBattle(state, ALL_CAMPAIGN_STAGES[0].id, { random: true });
     const lineup = state.battle?.player.mystics ?? [];
     expect(lineup).toHaveLength(3);
     expect(new Set(lineup.map((card) => card.instanceId)).size).toBe(3);
+  });
+
+  it("prefers the active loadout for the opponent's battle size when no explicit selection is given", () => {
+    const state = structuredClone(initialState);
+    state.account = { email: "handler@example.com", username: "Handler" };
+    state.ownedCards = catalog.mystics.slice(0, 5).map((card) => owned(card.id));
+    const activeMysticIds = [state.ownedCards[3].id, state.ownedCards[4].id, state.ownedCards[0].id];
+    state.loadouts = [
+      { id: "inactive-3", name: "Bench", size: 3, mysticIds: [state.ownedCards[0].id, state.ownedCards[1].id, state.ownedCards[2].id], handlerIds: [], active: false },
+      { id: "active-3", name: "Starters", size: 3, mysticIds: activeMysticIds, handlerIds: [], active: true },
+    ];
+    createBattle(state, ALL_CAMPAIGN_STAGES[0].id); // the first campaign stage requires a 3-Mystic formation, no selection passed
+    expect(state.battle?.player.mystics.map((card) => card.definitionId)).toEqual(activeMysticIds.map((id) => state.ownedCards.find((card) => card.id === id)?.definitionId));
+  });
+
+  it("an explicit selection overrides the active loadout even when one exists", () => {
+    const state = structuredClone(initialState);
+    state.account = { email: "handler@example.com", username: "Handler" };
+    state.ownedCards = catalog.mystics.slice(0, 4).map((card) => owned(card.id));
+    state.loadouts = [{ id: "active-3", name: "Starters", size: 3, mysticIds: state.ownedCards.slice(0, 3).map((c) => c.id), handlerIds: [], active: true }];
+    const explicit = [state.ownedCards[1].id, state.ownedCards[2].id, state.ownedCards[3].id];
+    createBattle(state, ALL_CAMPAIGN_STAGES[0].id, { mysticIds: explicit, handlerIds: [] });
+    expect(state.battle?.player.mystics.map((card) => card.definitionId)).toEqual(explicit.map((id) => state.ownedCards.find((card) => card.id === id)?.definitionId));
   });
 
   it("computes Order Synergy for the starting lineup and never for a single Mystic", () => {
@@ -31,7 +56,7 @@ describe("battle formation selection", () => {
     state.account = { email: "handler@example.com", username: "Handler" };
     const sameOrder = catalog.mystics.filter((card) => card.order === catalog.mystics[0].order);
     state.ownedCards = sameOrder.slice(0, 3).map((card) => owned(card.id));
-    createBattle(state, "rookie", { mysticIds: state.ownedCards.map((card) => card.id) });
+    createBattle(state, ALL_CAMPAIGN_STAGES[0].id, { mysticIds: state.ownedCards.map((card) => card.id) });
     expect(state.battle?.player.synergies[catalog.mystics[0].order]).toBe(10); // 3 matching -> +10%
   });
 });
@@ -59,20 +84,130 @@ describe("economy rules", () => {
   it("guarantees Alpha after nine misses and only Alpha resets", () => { expect(shouldGuaranteeAlpha(9)).toBe(true); expect(nextAlphaPity(9, ["Alpha"])).toBe(0); expect(nextAlphaPity(9, ["Apex"])).toBe(10); });
 
   it("records a campaign victory and grants its first-clear bonus once", () => {
-    const base = (): PlayerState => { const state = structuredClone(initialState); state.battle = { id: "b", size: 3, player: { id: "player", name: "P", mystics: [], handlers: [], synergies: {} }, ai: { id: "ai", name: "Lio of the Lowlands", mystics: [{ ...combatant(owned(catalog.mystics[0].id), 0), currentPower: 0, defeated: true }], handlers: [], synergies: {} }, currentTurn: "player", turnNumber: 1, winner: "player", events: [], lastRoll: null, campaignId: "rookie" }; return state; };
+    const stage = ALL_CAMPAIGN_STAGES[0];
+    const base = (): PlayerState => { const state = structuredClone(initialState); state.battle = { id: "b", size: 3, player: { id: "player", name: "P", mystics: [], handlers: [], synergies: {} }, ai: { id: "ai", name: stage.opponentName, mystics: [{ ...combatant(owned(catalog.mystics[0].id), 0), currentPower: 0, defeated: true }], handlers: [], synergies: {} }, currentTurn: "player", turnNumber: 1, winner: "player", events: [], lastRoll: null, campaignId: stage.id }; return state; };
 
     const state = base();
     rewardCompletedBattle(state);
-    expect(state.campaignWins).toEqual(["rookie"]);
-    expect(state.lastRewards?.campaignBonus).toBe(90);
+    expect(state.campaignWins).toEqual([stage.id]);
+    expect(state.lastRewards?.campaignBonus).toBe(stage.firstClearReward.coins);
     expect(state.wins).toBe(1);
 
     const state2 = base();
-    state2.campaignWins = ["rookie"];
+    state2.campaignWins = [stage.id];
     rewardCompletedBattle(state2);
-    expect(state2.campaignWins).toEqual(["rookie"]);
+    expect(state2.campaignWins).toEqual([stage.id]);
     expect(state2.lastRewards?.campaignBonus).toBe(0);
     expect(state2.wins).toBe(1);
+  });
+});
+
+function fakeMystic(id: string, overrides: Partial<MysticDefinition> = {}): MysticDefinition {
+  return { id, name: id, order: "Worldforge", allegiance: "Unbound", rarity: "Wild", power: 50, defense: 20, baseAttack: 15, moves: [], image: null, ...overrides };
+}
+
+describe("drawUniqueMystics (pack duplicate protection)", () => {
+  it("never draws the same Mystic twice when the pool is at least as large as the count", () => {
+    for (let trial = 0; trial < 25; trial += 1) {
+      const drawn = drawUniqueMystics(5, catalog.mystics, () => weightedRarity());
+      expect(new Set(drawn.map((card) => card.id)).size).toBe(5);
+    }
+  });
+
+  it("degrades gracefully (allows a repeat, never hangs) when the pool is smaller than the requested count", () => {
+    const tinyPool = [fakeMystic("A"), fakeMystic("B")];
+    const drawn = drawUniqueMystics(5, tinyPool, () => "Wild");
+    expect(drawn).toHaveLength(5);
+    expect(drawn.every((card) => card.id === "A" || card.id === "B")).toBe(true);
+  });
+
+  it("draws every card from a pool exactly the requested size with no duplicates or omissions", () => {
+    const pool = [fakeMystic("A"), fakeMystic("B"), fakeMystic("C")];
+    const drawn = drawUniqueMystics(3, pool, () => "Wild");
+    expect(drawn.map((card) => card.id).sort()).toEqual(["A", "B", "C"]);
+  });
+});
+
+describe("buyPack duplicate protection end to end", () => {
+  const richState = () => { const state = structuredClone(initialState); state.account = { email: "handler@example.com", username: "Handler" }; state.coins = 1_000_000; return state; };
+
+  it("standard pack never contains the same Mystic twice", () => {
+    for (let trial = 0; trial < 15; trial += 1) {
+      const state = richState();
+      buyPack(state, "standard");
+      const mysticIds = state.openings[0].cards.filter((card) => card.kind === "mystic").map((card) => card.definitionId);
+      expect(new Set(mysticIds).size).toBe(mysticIds.length);
+    }
+  });
+
+  it("order/random-order/void packs never contain the same Mystic twice", () => {
+    const order = catalog.mystics[0].order;
+    for (const packId of ["order", "random-order", "void"]) {
+      for (let trial = 0; trial < 10; trial += 1) {
+        const state = richState();
+        buyPack(state, packId, order);
+        const mysticIds = state.openings[0].cards.filter((card) => card.kind === "mystic").map((card) => card.definitionId);
+        expect(new Set(mysticIds).size).toBe(mysticIds.length);
+      }
+    }
+  });
+
+  it("Standard Pack no longer guarantees a Handler or bonus reward cards", () => {
+    const standard = PACK_DEFINITIONS.find((pack) => pack.id === "standard")!;
+    expect(standard.handlerChancePercent).toBeLessThan(100);
+    expect(standard.bonusRewardChancePercent).toBeLessThan(100);
+    expect(standard.coinPrice).toBeLessThan(500); // cheaper than the old guaranteed-everything price
+  });
+
+  it("Handler Pack still guarantees a Handler", () => {
+    const state = richState();
+    buyPack(state, "handler");
+    expect(state.openings[0].cards).toHaveLength(1);
+    expect(state.openings[0].cards[0].kind).toBe("handler");
+  });
+});
+
+describe("weightedRarity distribution", () => {
+  it("roughly matches the configured rarity weights over a large sample", () => {
+    const counts: Record<string, number> = {};
+    const samples = 20_000;
+    for (let i = 0; i < samples; i += 1) { const rarity = weightedRarity(); counts[rarity] = (counts[rarity] ?? 0) + 1; }
+    // Wild is the dominant weight (53 of ~100 total) — assert it lands in a generous band around 53%.
+    expect((counts.Wild ?? 0) / samples).toBeGreaterThan(0.45);
+    expect((counts.Wild ?? 0) / samples).toBeLessThan(0.61);
+    // Apex is the rarest (0.5 of ~100 total) — assert it's rare but not literally impossible over 20k samples.
+    expect((counts.Apex ?? 0) / samples).toBeLessThan(0.02);
+  });
+});
+
+describe("setActiveLoadout", () => {
+  it("activates a loadout and deactivates any other loadout of the same size", () => {
+    const state = structuredClone(initialState);
+    state.loadouts = [
+      { id: "a", name: "A", size: 3, mysticIds: [], handlerIds: [], active: true },
+      { id: "b", name: "B", size: 3, mysticIds: [], handlerIds: [] },
+    ];
+    setActiveLoadout(state, "b");
+    expect(state.loadouts.find((l) => l.id === "a")?.active).toBe(false);
+    expect(state.loadouts.find((l) => l.id === "b")?.active).toBe(true);
+  });
+
+  it("does not affect a loadout of a different size", () => {
+    const state = structuredClone(initialState);
+    state.loadouts = [
+      { id: "a", name: "A", size: 3, mysticIds: [], handlerIds: [] },
+      { id: "b", name: "B", size: 5, mysticIds: [], handlerIds: [], active: true },
+    ];
+    setActiveLoadout(state, "a");
+    expect(state.loadouts.find((l) => l.id === "a")?.active).toBe(true);
+    expect(state.loadouts.find((l) => l.id === "b")?.active).toBe(true);
+  });
+
+  it("toggles off when activating an already-active loadout", () => {
+    const state = structuredClone(initialState);
+    state.loadouts = [{ id: "a", name: "A", size: 3, mysticIds: [], handlerIds: [], active: true }];
+    setActiveLoadout(state, "a");
+    expect(state.loadouts[0].active).toBe(false);
   });
 });
 

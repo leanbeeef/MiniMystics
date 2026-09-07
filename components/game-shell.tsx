@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Archive, Backpack, Bell, BookOpen, Boxes, ChevronLeft, ChevronRight, Coins, House, Layers3, LogOut, Menu, ScrollText, Settings, ShoppingBag, Swords, Trophy, UserRound, UsersRound, X, Zap } from "lucide-react";
+import { Backpack, Bell, BookOpen, ChevronLeft, ChevronRight, Coins, House, Layers3, LogOut, Menu, ScrollText, Settings, ShoppingBag, Swords, Trophy, UserRound, UsersRound, X, Zap } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useGame } from "./game-provider";
-import { DashboardView, CollectionView, LoadoutsView, CampaignView, PacksView, OpeningView, InventoryView, BindersView, ComingSoonView, BattleView, SettingsView } from "./views";
+import { DashboardView, CollectionView, CampaignView, PacksView, OpeningView, InventoryView, ComingSoonView, BattleView, SettingsView } from "./views";
 import { LOGO_ART } from "@/lib/art";
 import { xpForLevel } from "@/lib/game/rewards";
 import { ComicsLibraryPage } from "./comics/comics-library-page";
@@ -18,8 +18,6 @@ const nav = [
   { href: "battle", label: "Battle", icon: Swords },
   { href: "campaign", label: "Campaign", icon: ScrollText },
   { href: "collection", label: "Collection", icon: Layers3 },
-  { href: "collections", label: "Binders", icon: Archive },
-  { href: "loadouts", label: "Loadouts", icon: Boxes },
   { href: "packs", label: "Packs", icon: ShoppingBag },
   { href: "inventory", label: "Inventory", icon: Backpack },
   { href: "comics", label: "Comics", icon: BookOpen },
@@ -54,8 +52,6 @@ export function GameShell({ view }: { view: string }) {
     switch (view) {
       case "game": return <DashboardView />;
       case "collection": return <CollectionView />;
-      case "collections": return <BindersView />;
-      case "loadouts": return <LoadoutsView />;
       case "campaign": return <CampaignView />;
       case "battle": return <BattleView />;
       case "packs": return <PacksView />;

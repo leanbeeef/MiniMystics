@@ -3,8 +3,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import { activateBoost as activateBoostRule, buyPack as buyPackRule, CAMPAIGN, createAccount, createBattle, dismantleCard as dismantleCardRule, initialState, levelUpCard as levelUpCardRule, rewardCompletedBattle, sellDuplicateCard as sellDuplicateCardRule, type BattleSelection, type Binder, type Loadout, type PlayerState } from "@/lib/client-state";
-import { performBasicAttack, performSpecial } from "@/lib/game/engine";
+import { activateBoost as activateBoostRule, buyPack as buyPackRule, createAccount, createBattle, dismantleCard as dismantleCardRule, initialState, levelUpCard as levelUpCardRule, ORDER_CAMPAIGNS, rewardCompletedBattle, sellDuplicateCard as sellDuplicateCardRule, setActiveLoadout as setActiveLoadoutRule, type BattleSelection, type Binder, type Loadout, type PlayerState } from "@/lib/client-state";
+import { findStage } from "@/lib/game/campaigns";
+import { performBasicAttack, performSpecial, previewDamage } from "@/lib/game/engine";
+import { orderAdvantagePercent } from "@/lib/game/order-matchups";
 import { getSupabaseClient } from "@/lib/supabase";
 import { ensurePlayerProfile, getPlayerProfile, savePlayerProfile, validateHandlerName, type ProfileInput } from "@/lib/player-profile";
 import { loadCloudGameState, queueCloudGameState, type GameActivityType } from "@/lib/game-sync-client";
@@ -27,6 +29,7 @@ type GameContextValue = {
   activateBoost(id: string): void;
   saveLoadout(loadout: Omit<Loadout, "id"> & { id?: string }): void;
   deleteLoadout(id: string): void;
+  setActiveLoadout(id: string): void;
   createBinder(name: string): void;
   renameBinder(id: string, name: string): void;
   toggleBinderCard(binderId: string, ownedId: string): void;
@@ -99,12 +102,6 @@ function migrateLegacyState(saved: PlayerState): boolean {
     saved.battle = null;
     saved.battleRewarded = false;
     saved.lastRewards = null;
-    changed = true;
-  }
-  const campaign = CAMPAIGN.find((opponent) => opponent.id === saved.battle?.campaignId || opponent.name === saved.battle?.ai.name);
-  if (saved.battle && campaign && !saved.battle.campaignId) { saved.battle.campaignId = campaign.id; changed = true; }
-  if (saved.battle?.winner === "player" && saved.battleRewarded && campaign && !saved.campaignWins.includes(campaign.id)) {
-    saved.campaignWins.push(campaign.id);
     changed = true;
   }
   return changed;
@@ -320,6 +317,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     else draft.loadouts.push({ ...next, id: `loadout-${Date.now()}` });
   }, "LOADOUT_SAVED", { name: loadout.name, size: loadout.size, loadoutId: loadout.id }), [commit]);
   const deleteLoadout = useCallback((id: string) => commit((draft) => { draft.loadouts = draft.loadouts.filter((item) => item.id !== id); }, "LOADOUT_DELETED", { loadoutId: id }), [commit]);
+  const setActiveLoadout = useCallback((id: string) => commit((draft) => setActiveLoadoutRule(draft, id), "LOADOUT_ACTIVATED", { loadoutId: id }), [commit]);
   const createBinder = useCallback((name: string) => commit((draft) => { if (!name.trim()) throw new Error("Give the collection a name"); draft.binders.push({ id: `binder-${Date.now()}`, name: name.trim(), cardIds: [] }); }, "BINDER_CREATED", { name }), [commit]);
   const renameBinder = useCallback((id: string, name: string) => commit((draft) => { const binder = draft.binders.find((item) => item.id === id); if (binder && name.trim()) binder.name = name.trim(); }, "BINDER_RENAMED", { binderId: id, name }), [commit]);
   const toggleBinderCard = useCallback((binderId: string, ownedId: string) => commit((draft) => { const binder = draft.binders.find((item) => item.id === binderId); if (!binder) return; binder.cardIds = binder.cardIds.includes(ownedId) ? binder.cardIds.filter((id) => id !== ownedId) : [...binder.cardIds, ownedId]; }, "BINDER_CARD_TOGGLED", { binderId, ownedId }), [commit]);
@@ -347,15 +345,28 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const aiTurn = useCallback(() => commit((draft) => {
     const battle = draft.battle; if (!battle || battle.currentTurn !== "ai" || battle.winner) return;
-    const actors = battle.ai.mystics.filter((m) => !m.defeated); const targets = battle.player.mystics.filter((m) => !m.defeated).sort((a, b) => a.currentPower - b.currentPower);
-    const actor = [...actors].sort((a, b) => b.baseAttack - a.baseAttack)[Math.floor(Math.random() * Math.min(2, actors.length))] ?? actors[0]; const target = targets[0];
+    const actors = battle.ai.mystics.filter((m) => !m.defeated);
+    const enemies = battle.player.mystics.filter((m) => !m.defeated);
+    const profile = findStage(ORDER_CAMPAIGNS, battle.campaignId ?? "")?.stage.aiLogicProfile ?? "balanced";
+    const actor = [...actors].sort((a, b) => b.baseAttack - a.baseAttack)[Math.floor(Math.random() * Math.min(2, actors.length))] ?? actors[0];
+    // Defensive AI neutralizes the biggest threat first; aggressive/balanced both finish off the weakest (aggressive differs via move choice below).
+    const target = profile === "defensive" ? [...enemies].sort((a, b) => b.baseAttack - a.baseAttack)[0] : [...enemies].sort((a, b) => a.currentPower - b.currentPower)[0];
+
     const available = actor.moves.map((move, index) => ({ move, index })).filter(({ move }) => (actor.cooldowns[move.name] ?? 0) === 0 && !move.needsReview);
-    if (available.length && Math.random() > 0.38) { const choice = available.sort((a, b) => (b.move.damageModifierPercent ?? 0) - (a.move.damageModifierPercent ?? 0))[0]; performSpecial(battle, "ai", actor.instanceId, target.instanceId, choice.index); }
+    const damaging = available.map((entry) => ({ ...entry, preview: entry.move.targetType === "enemy" ? previewDamage(actor, target, entry.move, battle.ai.synergies) : null })).filter((entry) => entry.preview);
+    const lethal = damaging.find((entry) => entry.preview!.finalDamage >= target.currentPower);
+    const bestDamage = [...damaging].sort((a, b) => b.preview!.finalDamage - a.preview!.finalDamage)[0];
+    const hasAdvantage = orderAdvantagePercent(actor.order, target.order) > 0;
+    // Never pass up a kill; capitalize on Order Advantage when it's live; otherwise fall back to the existing damage-modifier-first heuristic, biased by aiLogicProfile.
+    const specialChance = profile === "aggressive" ? 0.8 : profile === "defensive" ? 0.5 : 0.62;
+    const choice = lethal ?? (hasAdvantage && bestDamage ? bestDamage : available.length && Math.random() < specialChance ? [...available].sort((a, b) => (b.move.damageModifierPercent ?? 0) - (a.move.damageModifierPercent ?? 0))[0] : null);
+
+    if (choice) performSpecial(battle, "ai", actor.instanceId, target.instanceId, choice.index);
     else performBasicAttack(battle, "ai", actor.instanceId, target.instanceId);
     finalize(draft);
   }, "AI_TURN"), [commit]);
 
-  const value = useMemo<GameContextValue>(() => ({ state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, dismantleCard, levelUpCard, startBattle, basicAttack, specialAttack, aiTurn }), [state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, dismantleCard, levelUpCard, startBattle, basicAttack, specialAttack, aiTurn]);
+  const value = useMemo<GameContextValue>(() => ({ state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, setActiveLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, dismantleCard, levelUpCard, startBattle, basicAttack, specialAttack, aiTurn }), [state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, setActiveLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, dismantleCard, levelUpCard, startBattle, basicAttack, specialAttack, aiTurn]);
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }
 

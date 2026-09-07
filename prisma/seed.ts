@@ -1,10 +1,13 @@
 import { PrismaClient, CardKind, Rarity } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import catalog from "../lib/data/cards.generated.json";
-import { CAMPAIGN } from "../lib/client-state";
+import catalogData from "../lib/data/cards.generated.json";
 import { PACK_DEFINITIONS, STANDARD_RARITY_WEIGHTS } from "../lib/game/packs";
 import { RARITY_DISMANTLE_ESSENCE, RARITY_SELL_COINS, LEVEL_UP_ESSENCE_COST } from "../lib/game/economy";
+import { buildOrderCampaigns } from "../lib/game/campaigns";
+import type { CardCatalog } from "../lib/game/types";
 import { PACK_ART } from "../lib/art";
+
+const catalog = catalogData as CardCatalog;
 
 function databaseUrl() {
   const connectionString = process.env.DATABASE_URL;
@@ -43,9 +46,34 @@ async function main() {
   for (const [level, essenceCost] of Object.entries(LEVEL_UP_ESSENCE_COST)) {
     await prisma.mysticLevelCost.upsert({ where: { level: Number(level) }, create: { level: Number(level), essenceCost }, update: { essenceCost } });
   }
-  for (const pack of PACK_DEFINITIONS) await prisma.packDefinition.upsert({ where: { id: pack.id }, create: { ...pack, poolConfig: {}, rarityWeights: STANDARD_RARITY_WEIGHTS, guaranteedSlots: {}, premiumPrice: null, eligibilityRules: {}, pityRules: pack.id === "standard" ? { rarity: "Alpha", misses: 9 } : {}, artwork: PACK_ART[pack.id] ?? null }, update: { name: pack.name, description: pack.description, cardCount: pack.cardCount, coinPrice: pack.coinPrice, theme: pack.theme, artwork: PACK_ART[pack.id] ?? null, active: pack.active } });
+  for (const pack of PACK_DEFINITIONS) {
+    const guaranteedSlots = { mystics: pack.id === "handler" ? 0 : pack.cardCount, handlerChancePercent: pack.handlerChancePercent, bonusRewardChancePercent: pack.bonusRewardChancePercent };
+    const poolConfig = pack.id === "order" ? { filter: "order", selectable: true } : pack.id === "random-order" ? { filter: "randomOrder" } : pack.id === "void" ? { filter: "allegiance", value: "Voidbound" } : { filter: "all" };
+    const fields = { id: pack.id, name: pack.name, description: pack.description, cardCount: pack.cardCount, coinPrice: pack.coinPrice, theme: pack.theme, active: pack.active, poolConfig, rarityWeights: STANDARD_RARITY_WEIGHTS, guaranteedSlots, premiumPrice: null, eligibilityRules: {}, pityRules: pack.id === "standard" ? { rarity: "Alpha", misses: 9 } : {}, artwork: PACK_ART[pack.id] ?? null };
+    await prisma.packDefinition.upsert({ where: { id: pack.id }, create: fields, update: fields });
+  }
   await prisma.packDefinition.upsert({ where: { id: "starter" }, create: { id: "starter", name: "Starter Pack", description: "The initial account collection grant.", cardCount: 10, poolConfig: {}, rarityWeights: STANDARD_RARITY_WEIGHTS, guaranteedSlots: {}, coinPrice: 0, premiumPrice: null, eligibilityRules: { newAccountOnly: true }, pityRules: {}, theme: "Starter", artwork: null, active: false }, update: { name: "Starter Pack", cardCount: 10, active: false } });
-  for (const [sortOrder, opponent] of CAMPAIGN.entries()) await prisma.campaignOpponent.upsert({ where: { id: opponent.id }, create: { id: opponent.id, name: opponent.name, difficulty: opponent.difficulty, playstyle: opponent.style, deckConfig: { size: opponent.size }, rewardConfig: { firstClearCoins: opponent.reward }, unlockLevel: opponent.level, sortOrder }, update: { name: opponent.name, difficulty: opponent.difficulty, playstyle: opponent.style, unlockLevel: opponent.level, sortOrder } });
+  const orderCampaigns = buildOrderCampaigns(catalog);
+  let campaignSortOrder = 0;
+  for (const campaign of orderCampaigns) {
+    const campaignId = campaign.order.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    await prisma.campaign.upsert({
+      where: { id: campaignId },
+      create: { id: campaignId, order: campaign.order, name: campaign.name, description: campaign.description },
+      update: { name: campaign.name, description: campaign.description },
+    });
+    for (const stage of campaign.stages) {
+      const fields = {
+        name: stage.opponentName, difficulty: stage.difficulty, playstyle: stage.aiLogicProfile,
+        deckConfig: { size: stage.size, mysticIds: stage.opponentMysticIds, level: stage.opponentLevel, handlerId: stage.opponentHandlerId },
+        rewardConfig: { firstClear: stage.firstClearReward, repeat: stage.repeatReward },
+        unlockLevel: stage.unlockRequirement.minPlayerLevel, sortOrder: campaignSortOrder,
+        campaignId, stageNumber: stage.stageNumber,
+      };
+      await prisma.campaignOpponent.upsert({ where: { id: stage.id }, create: { id: stage.id, ...fields }, update: fields });
+      campaignSortOrder += 1;
+    }
+  }
 }
 
 main().finally(() => prisma.$disconnect());

@@ -6,12 +6,15 @@ import { ArrowLeft, ChevronRight, Dices, Pencil, Plus, Shield, Swords, WandSpark
 import { useGame } from "../game-provider";
 import { CardTile } from "../card-tile";
 import { FormationPreview } from "../formation-preview";
-import { BATTLE_ART, OPPONENT_ART } from "@/lib/art";
-import { CAMPAIGN, catalog } from "@/lib/client-state";
+import { BATTLE_ART, ORDER_ART } from "@/lib/art";
+import { catalog } from "@/lib/client-state";
+import { ORDER_CAMPAIGNS } from "@/lib/client-state";
+import { findStage } from "@/lib/game/campaigns";
 
 export function BattleSetup({ opponentId }: { opponentId: string }) {
   const { state, startBattle } = useGame();
-  const opponent = CAMPAIGN.find((item) => item.id === opponentId);
+  const found = findStage(ORDER_CAMPAIGNS, opponentId);
+  const opponent = found ? { id: found.stage.id, size: found.stage.size, name: found.stage.opponentName, difficulty: found.stage.difficulty, style: found.stage.aiLogicProfile, order: found.campaign.order } : undefined;
   const ownedMystics = useMemo(() => state.ownedCards.filter((owned) => catalog.mystics.some((card) => card.id === owned.definitionId)), [state.ownedCards]);
   const ownedHandlers = useMemo(() => state.ownedCards.filter((owned) => catalog.handlers.some((card) => card.id === owned.definitionId)), [state.ownedCards]);
   const validLoadouts = useMemo(() => opponent ? state.loadouts.filter((loadout) => loadout.size === opponent.size && loadout.mysticIds.length === opponent.size && loadout.mysticIds.every((id) => ownedMystics.some((card) => card.id === id))) : [], [opponent, state.loadouts, ownedMystics]);
@@ -31,14 +34,14 @@ export function BattleSetup({ opponentId }: { opponentId: string }) {
     else if (mode === "custom" && customValid) startBattle(opponent.id, { mysticIds: customMystics, handlerIds: customHandlers });
     else if (selectedLoadout) startBattle(opponent.id, { loadoutId: selectedLoadout.id });
   };
-  const style = { "--battle-setup-art": `url("${BATTLE_ART[opponent.name]}")` } as React.CSSProperties;
+  const style = { "--battle-setup-art": `url("${BATTLE_ART[opponent.name] ?? ""}")` } as React.CSSProperties;
 
   return <div className="battle-setup" style={style}>
     <div className="battle-setup-backdrop" />
     <header className="battle-setup-header">
       <Link href="/campaign"><ArrowLeft />Campaign</Link>
       <div><span>PREPARE FOR BATTLE</span><h1>Choose your formation</h1><p>{opponent.size} Mystics enter. Up to 3 Handlers may support them.</p></div>
-      <div className="battle-setup-opponent"><img src={OPPONENT_ART[opponent.id]} alt="" /><span><small>OPPONENT</small><strong>{opponent.name}</strong><em>{opponent.difficulty} · {opponent.style}</em></span></div>
+      <div className="battle-setup-opponent">{ORDER_ART[opponent.order] ? <img src={ORDER_ART[opponent.order]} alt="" /> : null}<span><small>OPPONENT</small><strong>{opponent.name}</strong><em>{opponent.difficulty} · {opponent.style}</em></span></div>
     </header>
 
     <div className="battle-setup-layout">
@@ -51,7 +54,7 @@ export function BattleSetup({ opponentId }: { opponentId: string }) {
       </aside>
 
       <main className="battle-formation-stage">
-        <div className="battle-formation-title"><div><span>{mode === "random" ? "RANDOM DRAW" : mode === "custom" ? "CUSTOM LINEUP" : "SAVED FORMATION"}</span><h2>{mode === "random" ? "Fate decides" : mode === "custom" ? "Choose your cards" : selectedLoadout?.name}</h2></div>{selectedLoadout ? <Link href={`/loadouts?edit=${encodeURIComponent(selectedLoadout.id)}`}><Pencil />Edit formation</Link> : null}</div>
+        <div className="battle-formation-title"><div><span>{mode === "random" ? "RANDOM DRAW" : mode === "custom" ? "CUSTOM LINEUP" : "SAVED FORMATION"}</span><h2>{mode === "random" ? "Fate decides" : mode === "custom" ? "Choose your cards" : selectedLoadout?.name}</h2></div>{selectedLoadout ? <Link href={`/collection?editLoadout=${encodeURIComponent(selectedLoadout.id)}`}><Pencil />Edit formation</Link> : null}</div>
         <FormationPreview ownedCards={state.ownedCards} mysticIds={previewMystics} handlerIds={previewHandlers} size={opponent.size} concealed={mode === "random"} />
         {mode === "random" ? <div className="battle-random-copy"><Dices /><p><strong>A fresh lineup each battle</strong><span>{opponent.size} Mystics and up to 3 Handlers will be selected from your collection when battle begins.</span></p></div> : null}
         {mode === "custom" ? <div className="battle-custom-picker">

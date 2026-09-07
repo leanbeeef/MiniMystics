@@ -5,6 +5,7 @@ import { BOOST_MATCHES, stackBoost } from "./game/boosts";
 import { calculateRewards, xpForLevel } from "./game/rewards";
 import { rollStartingPlayer } from "./game/engine";
 import { computeOrderSynergies } from "./game/order-matchups";
+import { buildOrderCampaigns, findStage } from "./game/campaigns";
 import { roundHalfUp } from "./game/rounding";
 import { LEVEL_UP_ESSENCE_COST, MAX_MYSTIC_LEVEL, RARITY_DISMANTLE_ESSENCE, RARITY_SELL_COINS, levelBonusPercent } from "./game/economy";
 import type { PlayerProfile } from "./player-profile";
@@ -20,7 +21,7 @@ export const catalog: CardCatalog = {
 export type OwnedCard = { id: string; definitionId: string; acquiredAt: string; level: number };
 export type RewardCard = { id: string; kind: "mystic" | "handler" | "xp" | "coins" | "xpBoost" | "coinBoost"; definitionId?: string; rarity: Rarity | "Unassigned"; amount?: number; revealed: boolean };
 export type PackOpening = { id: string; packId: string; name: string; cards: RewardCard[]; complete: boolean };
-export type Loadout = { id: string; name: string; size: 3 | 5 | 8; mysticIds: string[]; handlerIds: string[] };
+export type Loadout = { id: string; name: string; size: 3 | 5 | 8; mysticIds: string[]; handlerIds: string[]; active?: boolean };
 export type BattleSelection = { loadoutId?: string; mysticIds?: string[]; handlerIds?: string[]; random?: boolean };
 export type Binder = { id: string; name: string; cardIds: string[] };
 export type ComicProgress = { pageIndex: number; completed: boolean; updatedAt: string };
@@ -78,6 +79,24 @@ function drawMystic(rarity?: Rarity, pool = catalog.mystics) {
   return randomOf(exact.length ? exact : pool);
 }
 
+/**
+ * Draws `count` Mystics with no duplicate `definitionId` within this one draw — a single pack
+ * must never contain the same card twice. Falls back to allowing a repeat only once the pool is
+ * genuinely smaller than the requested count (e.g. a niche Order/Void pool), rather than looping
+ * forever chasing an impossible draw.
+ */
+export function drawUniqueMystics(count: number, pool: MysticDefinition[], rarityPicker: (index: number) => Rarity): MysticDefinition[] {
+  const drawnIds = new Set<string>();
+  const results: MysticDefinition[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const remaining = pool.filter((card) => !drawnIds.has(card.id));
+    const drawn = remaining.length ? drawMystic(rarityPicker(index), remaining) : drawMystic(undefined, pool);
+    drawnIds.add(drawn.id);
+    results.push(drawn);
+  }
+  return results;
+}
+
 function grantOpening(state: PlayerState, opening: PackOpening) {
   for (const card of opening.cards) {
     if ((card.kind === "mystic" || card.kind === "handler") && card.definitionId) state.ownedCards.push({ id: id("owned"), definitionId: card.definitionId, acquiredAt: new Date().toISOString(), level: 1 });
@@ -95,7 +114,7 @@ export function createAccount(email: string, username: string): PlayerState {
   state.account = { email, username };
   const starter: PackOpening = {
     id: id("opening"), packId: "starter", name: "Starter Pack", complete: false,
-    cards: [cardReward("handler", randomOf(catalog.handlers)), ...Array.from({ length: 5 }, () => cardReward("mystic", drawMystic())), ...Array.from({ length: 4 }, createRewardCard)],
+    cards: [cardReward("handler", randomOf(catalog.handlers)), ...drawUniqueMystics(5, catalog.mystics, () => weightedRarity()).map((m) => cardReward("mystic", m)), ...Array.from({ length: 4 }, createRewardCard)],
   };
   grantOpening(state, starter);
   return state;
@@ -109,8 +128,10 @@ export function buyPack(state: PlayerState, packId: string, selectedOrder?: stri
   let cards: RewardCard[] = [];
   if (packId === "standard") {
     const forceAlpha = shouldGuaranteeAlpha(state.pity);
-    const mystics = Array.from({ length: 5 }, (_, index) => drawMystic(forceAlpha && index === 0 ? "Alpha" : weightedRarity()));
-    cards = [cardReward("handler", randomOf(catalog.handlers)), ...mystics.map((m) => cardReward("mystic", m)), ...Array.from({ length: 4 }, createRewardCard)];
+    const mystics = drawUniqueMystics(5, catalog.mystics, (index) => (forceAlpha && index === 0 ? "Alpha" : weightedRarity()));
+    const bonusHandler = Math.random() * 100 < pack.handlerChancePercent ? [cardReward("handler", randomOf(catalog.handlers))] : [];
+    const bonusReward = Math.random() * 100 < pack.bonusRewardChancePercent ? [createRewardCard()] : [];
+    cards = [...mystics.map((m) => cardReward("mystic", m)), ...bonusHandler, ...bonusReward];
     state.pity = nextAlphaPity(state.pity, mystics.map((m) => m.rarity));
   } else if (packId === "handler") cards = [cardReward("handler", randomOf(catalog.handlers))];
   else {
@@ -118,7 +139,7 @@ export function buyPack(state: PlayerState, packId: string, selectedOrder?: stri
     if (packId === "order") pool = pool.filter((m) => m.order === selectedOrder);
     if (packId === "random-order") { const order = randomOf([...new Set(pool.map((m) => m.order))]); pool = pool.filter((m) => m.order === order); }
     if (packId === "void") pool = pool.filter((m) => m.allegiance.toLowerCase().includes("void"));
-    cards = Array.from({ length: 5 }, () => cardReward("mystic", drawMystic(weightedRarity(), pool)));
+    cards = drawUniqueMystics(5, pool, () => weightedRarity()).map((m) => cardReward("mystic", m));
   }
   grantOpening(state, { id: id("opening"), packId, name: pack.name, cards, complete: false });
 }
@@ -170,14 +191,8 @@ export function combatant(owned: OwnedCard, index: number, equippedHandlers: Han
   };
 }
 
-export const CAMPAIGN = [
-  { id: "rookie", name: "Lio of the Lowlands", difficulty: "Easy", style: "Balanced", level: 1, size: 3 as const, reward: 90 },
-  { id: "forge", name: "Mara Ironhand", difficulty: "Easy", style: "Defensive", level: 1, size: 5 as const, reward: 135 },
-  { id: "gale", name: "Aster Gale", difficulty: "Medium", style: "Aggressive", level: 2, size: 5 as const, reward: 180 },
-  { id: "veil", name: "Nox of Moonveil", difficulty: "Medium", style: "Control", level: 3, size: 5 as const, reward: 220 },
-  { id: "regent", name: "The Silver Regent", difficulty: "Hard", style: "Finishers", level: 4, size: 8 as const, reward: 320 },
-  { id: "fallen", name: "Arch, The Fallen", difficulty: "Hard", style: "Void control", level: 6, size: 8 as const, reward: 500 },
-];
+export const ORDER_CAMPAIGNS = buildOrderCampaigns(catalog);
+export const ALL_CAMPAIGN_STAGES = ORDER_CAMPAIGNS.flatMap((campaign) => campaign.stages);
 
 function shuffled<T>(items: T[]) {
   const next = [...items];
@@ -189,35 +204,36 @@ function shuffled<T>(items: T[]) {
 }
 
 export function createBattle(state: PlayerState, opponentId: string, selection?: BattleSelection) {
-  const opponent = CAMPAIGN.find((item) => item.id === opponentId) ?? CAMPAIGN[0];
-  const loadout = state.loadouts.find((item) => item.id === selection?.loadoutId && item.size === opponent.size);
+  const { stage } = findStage(ORDER_CAMPAIGNS, opponentId) ?? findStage(ORDER_CAMPAIGNS, ALL_CAMPAIGN_STAGES[0].id)!;
+  const explicitSelection = Boolean(selection?.loadoutId || selection?.mysticIds || selection?.random);
+  const loadout = state.loadouts.find((item) => item.id === selection?.loadoutId && item.size === stage.size)
+    ?? (!explicitSelection ? state.loadouts.find((item) => item.active && item.size === stage.size) : undefined);
   const mysticPool = state.ownedCards.filter((owned) => catalog.mystics.some((m) => m.id === owned.definitionId));
   const chosenMysticIds = selection?.mysticIds ?? loadout?.mysticIds;
   const mysticOwned = selection?.random
-    ? shuffled(mysticPool).slice(0, opponent.size)
+    ? shuffled(mysticPool).slice(0, stage.size)
     : chosenMysticIds
       ? chosenMysticIds.map((cardId) => state.ownedCards.find((owned) => owned.id === cardId)!).filter(Boolean)
-      : mysticPool.slice(0, opponent.size);
+      : mysticPool.slice(0, stage.size);
   if (new Set(mysticOwned.map((card) => card.id)).size !== mysticOwned.length) throw new Error("A formation cannot use the same owned card twice");
-  if (mysticOwned.length !== opponent.size) throw new Error(`A valid ${opponent.size}-Mystic loadout is required`);
+  if (mysticOwned.length !== stage.size) throw new Error(`A valid ${stage.size}-Mystic loadout is required`);
   const handlerPool = state.ownedCards.filter((owned) => catalog.handlers.some((h) => h.id === owned.definitionId));
   const chosenHandlerIds = selection?.handlerIds ?? loadout?.handlerIds;
   const handlerOwned = selection?.random
     ? shuffled(handlerPool).slice(0, 3)
     : (chosenHandlerIds ?? handlerPool.slice(0, 3).map((owned) => owned.id)).map((cardId) => state.ownedCards.find((owned) => owned.id === cardId)!).filter(Boolean);
   if (handlerOwned.length > 3 || new Set(handlerOwned.map((card) => card.id)).size !== handlerOwned.length) throw new Error("Choose no more than three different Handlers");
-  const aiPool = [...catalog.mystics].sort((a, b) => a.power + a.defense + a.baseAttack - (b.power + b.defense + b.baseAttack));
-  const start = opponent.difficulty === "Hard" ? Math.max(0, aiPool.length - opponent.size * 2) : opponent.difficulty === "Medium" ? Math.floor(aiPool.length / 2) : 0;
-  const aiCards: OwnedCard[] = aiPool.slice(start, start + opponent.size).map((card, index) => ({ id: `ai-owned-${index}`, definitionId: card.id, acquiredAt: "", level: 1 }));
+  const aiCards: OwnedCard[] = stage.opponentMysticIds.map((definitionId, index) => ({ id: `ai-owned-${index}`, definitionId, acquiredAt: "", level: stage.opponentLevel }));
+  const aiHandlerDefs = stage.opponentHandlerId ? [catalog.handlers.find((h) => h.id === stage.opponentHandlerId)!] : [];
   const roll = rollStartingPlayer();
   const equippedHandlerDefs = handlerOwned.map((owned) => catalog.handlers.find((item) => item.id === owned.definitionId)!);
   const orderOf = (owned: OwnedCard) => catalog.mystics.find((m) => m.id === owned.definitionId)!.order;
   state.battle = {
-    id: id("battle"), campaignId: opponent.id, size: opponent.size,
+    id: id("battle"), campaignId: stage.id, size: stage.size,
     player: { id: "player", name: state.account?.username ?? "Player", mystics: mysticOwned.map((owned, index) => combatant(owned, index, equippedHandlerDefs)), handlers: equippedHandlerDefs.map((h) => h.id), synergies: computeOrderSynergies(mysticOwned.map(orderOf)) },
-    ai: { id: "ai", name: opponent.name, mystics: aiCards.map((owned, index) => combatant(owned, index)), handlers: [], synergies: computeOrderSynergies(aiCards.map(orderOf)) },
+    ai: { id: "ai", name: stage.opponentName, mystics: aiCards.map((owned, index) => combatant(owned, index, aiHandlerDefs)), handlers: aiHandlerDefs.map((h) => h.id), synergies: computeOrderSynergies(aiCards.map(orderOf)) },
     currentTurn: roll.first, turnNumber: 1, winner: null, lastRoll: null,
-    events: [{ id: id("event"), turn: 0, type: "system", message: `${state.account?.username ?? "Player"} rolled ${roll.player}; ${opponent.name} rolled ${roll.ai}. ${roll.first === "player" ? "You go" : "Opponent goes"} first.` }],
+    events: [{ id: id("event"), turn: 0, type: "system", message: `${state.account?.username ?? "Player"} rolled ${roll.player}; ${stage.opponentName} rolled ${roll.ai}. ${roll.first === "player" ? "You go" : "Opponent goes"} first.` }],
   };
   state.battleRewarded = false;
   state.lastRewards = null;
@@ -227,15 +243,18 @@ export function rewardCompletedBattle(state: PlayerState) {
   if (!state.battle?.winner || state.battleRewarded) return;
   const won = state.battle.winner === "player";
   state.campaignWins ??= [];
-  const campaign = CAMPAIGN.find((opponent) => opponent.id === state.battle?.campaignId || opponent.name === state.battle?.ai.name);
-  const firstCampaignClear = Boolean(won && campaign && !state.campaignWins.includes(campaign.id));
-  if (firstCampaignClear && campaign) state.campaignWins.push(campaign.id);
+  const found = findStage(ORDER_CAMPAIGNS, state.battle.campaignId ?? "");
+  const firstCampaignClear = Boolean(won && found && !state.campaignWins.includes(found.stage.id));
+  if (firstCampaignClear && found) state.campaignWins.push(found.stage.id);
   const player = state.battle.player.mystics;
   const enemy = state.battle.ai.mystics;
   const base = calculateRewards({ size: state.battle.size, won, defeated: enemy.filter((m) => m.defeated).length, survivors: player.filter((m) => !m.defeated).length, survivingPower: player.reduce((sum, m) => sum + m.currentPower, 0), maxPower: player.reduce((sum, m) => sum + m.maxPower, 0) });
-  const xp = base.xp * (state.activeBoosts.xp ? 2 : 1);
-  const campaignBonus = firstCampaignClear ? campaign?.reward ?? 0 : 0;
-  const coins = base.coins * (state.activeBoosts.coins ? 2 : 1) + campaignBonus;
+  const repeatBonus = won && found ? found.stage.repeatReward : { coins: 0, xp: 0 };
+  const firstClearBonus = firstCampaignClear && found ? found.stage.firstClearReward : { coins: 0, xp: 0, essence: 0 };
+  const xp = base.xp * (state.activeBoosts.xp ? 2 : 1) + repeatBonus.xp + firstClearBonus.xp;
+  const campaignBonus = firstClearBonus.coins;
+  const coins = base.coins * (state.activeBoosts.coins ? 2 : 1) + repeatBonus.coins + campaignBonus;
+  if (firstClearBonus.essence && found) state.essence[found.campaign.order] = (state.essence[found.campaign.order] ?? 0) + firstClearBonus.essence;
   state.xp += xp; state.coins += coins; state.matches += 1; won ? state.wins += 1 : state.losses += 1;
   for (const kind of ["xp", "coins"] as const) if (state.activeBoosts[kind]) { state.activeBoosts[kind]!.matches -= 1; if (state.activeBoosts[kind]!.matches <= 0) state.activeBoosts[kind] = null; }
   state.lastRewards = { xp, coins, won, campaignBonus }; state.battleRewarded = true; levelUp(state);
@@ -280,6 +299,17 @@ export function dismantleCard(state: PlayerState, ownedId: string) {
   if (copies.length < 2) throw new Error("Only duplicate copies can be dismantled");
   removeOwnedCopy(state, ownedId);
   state.essence[mystic.order] = (state.essence[mystic.order] ?? 0) + RARITY_DISMANTLE_ESSENCE[mystic.rarity];
+}
+
+/** Toggles a loadout active for its battle size, deactivating any other loadout of the same size (only one active loadout per size). */
+export function setActiveLoadout(state: PlayerState, id: string) {
+  const target = state.loadouts.find((item) => item.id === id);
+  if (!target) return;
+  const activating = !target.active;
+  for (const loadout of state.loadouts) {
+    if (loadout.id === id) loadout.active = activating;
+    else if (loadout.size === target.size) loadout.active = false;
+  }
 }
 
 /** Levels a specific owned Mystic instance up by exactly one level, spending that Order's Essence. */
