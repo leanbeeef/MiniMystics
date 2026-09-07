@@ -1,5 +1,4 @@
 import { Container, getContainer } from '@cloudflare/containers';
-import { env as runtimeEnv } from 'cloudflare:workers';
 
 type AdminBindings = {
   ADMIN_CONTAINER: DurableObjectNamespace;
@@ -7,14 +6,12 @@ type AdminBindings = {
   COOKIE_SECRET: string;
 };
 
-const secrets = runtimeEnv as unknown as AdminBindings;
-
-export class MiniMysticsAdminContainer extends Container {
+export class MiniMysticsAdminContainer extends Container<AdminBindings> {
   defaultPort = 3001;
   sleepAfter = '30m';
   envVars = {
-    DATABASE_URL: secrets.DATABASE_URL,
-    COOKIE_SECRET: secrets.COOKIE_SECRET,
+    DATABASE_URL: this.env.DATABASE_URL,
+    COOKIE_SECRET: this.env.COOKIE_SECRET,
     HOST: '0.0.0.0',
     PORT: '3001',
     NODE_ENV: 'production',
