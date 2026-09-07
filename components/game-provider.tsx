@@ -80,6 +80,36 @@ function isTemporaryProfileSyncFailure(cause: unknown) {
     || /network|failed to fetch|temporarily unavailable/i.test(message);
 }
 
+/**
+ * Backfills fields the current build requires that a saved blob may predate — applies to both
+ * the local/localStorage copy and whatever comes back from the cloud, since a cloud save can be
+ * arbitrarily old and is otherwise used as-is with no migration pass of its own.
+ */
+function migrateLegacyState(saved: PlayerState): boolean {
+  let changed = false;
+  if (!Array.isArray(saved.campaignWins)) { saved.campaignWins = []; changed = true; }
+  if (!saved.comicProgress || typeof saved.comicProgress !== "object") { saved.comicProgress = {}; changed = true; }
+  if ((saved as Partial<PlayerState>).profile === undefined) { saved.profile = null; changed = true; }
+  if (!saved.essence || typeof saved.essence !== "object") { saved.essence = {}; changed = true; }
+  for (const owned of saved.ownedCards) if (typeof owned.level !== "number") { owned.level = 1; changed = true; }
+  // A battle saved before the D8 rewrite is missing required fields (synergies, activeEffects,
+  // handlerBonuses, ...) that the current engine/UI assume are always present. Rather than guess
+  // at reconstructing it, drop it — battles were never resumable across a deploy regardless.
+  if (saved.battle && !(saved.battle.player as { synergies?: unknown } | undefined)?.synergies) {
+    saved.battle = null;
+    saved.battleRewarded = false;
+    saved.lastRewards = null;
+    changed = true;
+  }
+  const campaign = CAMPAIGN.find((opponent) => opponent.id === saved.battle?.campaignId || opponent.name === saved.battle?.ai.name);
+  if (saved.battle && campaign && !saved.battle.campaignId) { saved.battle.campaignId = campaign.id; changed = true; }
+  if (saved.battle?.winner === "player" && saved.battleRewarded && campaign && !saved.campaignWins.includes(campaign.id)) {
+    saved.campaignWins.push(campaign.id);
+    changed = true;
+  }
+  return changed;
+}
+
 function restoreProfile(user: User) {
   const email = user.email?.trim().toLowerCase();
   if (!email) return initialState;
@@ -92,17 +122,7 @@ function restoreProfile(user: User) {
     saved = createAccount(email, fallbackName);
     changed = true;
   }
-  if (!Array.isArray(saved.campaignWins)) { saved.campaignWins = []; changed = true; }
-  if (!saved.comicProgress || typeof saved.comicProgress !== "object") { saved.comicProgress = {}; changed = true; }
-  if ((saved as Partial<PlayerState>).profile === undefined) { saved.profile = null; changed = true; }
-  if (!saved.essence || typeof saved.essence !== "object") { saved.essence = {}; changed = true; }
-  for (const owned of saved.ownedCards) if (typeof owned.level !== "number") { owned.level = 1; changed = true; }
-  const campaign = CAMPAIGN.find((opponent) => opponent.id === saved.battle?.campaignId || opponent.name === saved.battle?.ai.name);
-  if (saved.battle && campaign && !saved.battle.campaignId) { saved.battle.campaignId = campaign.id; changed = true; }
-  if (saved.battle?.winner === "player" && saved.battleRewarded && campaign && !saved.campaignWins.includes(campaign.id)) {
-    saved.campaignWins.push(campaign.id);
-    changed = true;
-  }
+  if (migrateLegacyState(saved)) changed = true;
   if (changed || !accounts[email]) {
     accounts[email] = { ...accounts[email], state: saved };
     localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
@@ -131,6 +151,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           try { cloudState = await loadCloudGameState(); } catch { /* The local save remains available while the API recovers. */ }
           const hydrated = cloudState ?? restored;
           hydrated.account = restored.account;
+          const cloudNeededMigration = Boolean(cloudState) && migrateLegacyState(hydrated);
           try {
             const profile = await getPlayerProfile(user.id)
               ?? await ensurePlayerProfile(user, hydrated.account?.username);
@@ -142,7 +163,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           }
           if (!active || currentSequence !== sequence) return;
           setState(structuredClone(hydrated));
-          if (!cloudState) {
+          if (!cloudState || cloudNeededMigration) {
             void queueCloudGameState(hydrated, "SESSION_STARTED").catch((cause) => {
               if (active && currentSequence === sequence) setError(cause instanceof Error ? cause.message : "Could not save game progress.");
             });
