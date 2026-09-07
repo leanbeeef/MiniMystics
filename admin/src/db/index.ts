@@ -1,8 +1,17 @@
+import { PrismaPg } from '@prisma/adapter-pg';
 import { Database, Resource } from '@adminjs/prisma';
 import { PrismaClient } from '@prisma/client';
 import AdminJS from 'adminjs';
 
-export const prisma = new PrismaClient();
+const connectionString = () => {
+  const url = new URL(process.env.DATABASE_URL as string);
+  if (url.hostname.endsWith('.pooler.supabase.com')) {
+    url.searchParams.set('uselibpqcompat', 'true');
+  }
+  return url.toString();
+};
+
+export const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: connectionString() }) });
 
 AdminJS.registerAdapter({ Database, Resource });
 
