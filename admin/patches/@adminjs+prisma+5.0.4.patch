@@ -1,0 +1,13 @@
+diff --git a/node_modules/@adminjs/prisma/lib/Resource.js b/node_modules/@adminjs/prisma/lib/Resource.js
+index bf7d78f..b96601a 100644
+--- a/node_modules/@adminjs/prisma/lib/Resource.js
++++ b/node_modules/@adminjs/prisma/lib/Resource.js
+@@ -140,7 +140,7 @@ export class Resource extends BaseResource {
+     prepareProperties() {
+         const { fields = [] } = this.model;
+         const properties = fields.reduce((memo, field) => {
+-            if (field.isReadOnly
++            if ((field.isReadOnly && !field.isId)
+                 || (field.relationName && !field.relationFromFields?.length)) {
+                 return memo;
+             }

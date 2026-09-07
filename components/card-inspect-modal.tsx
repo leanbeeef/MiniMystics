@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { ArrowUp, Clock3, Coins, Dices, Gem, Hammer, Shield, Sparkles, Swords, TriangleAlert, X } from "lucide-react";
 import { definitionFor, type OwnedCard } from "@/lib/client-state";
 import { useGame } from "./game-provider";
@@ -46,7 +47,11 @@ export function CardInspectModal({ definitionId, ownedCards, onClose }: { defini
   };
   const referencingLoadouts = confirmAction ? state.loadouts.filter((loadout) => loadout.mysticIds.includes(confirmAction.ownedId) || loadout.handlerIds.includes(confirmAction.ownedId)) : [];
 
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+  // Rendered via a portal straight to <body> so `position: fixed` always anchors to the true
+  // viewport, regardless of any transform/filter on an ancestor (e.g. the page-transition wrapper)
+  // that would otherwise turn this into a containing block and throw off centering/sizing.
+  return createPortal(
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
     <section className="card-inspect" role="dialog" aria-modal="true" aria-labelledby="card-inspect-title" style={{ "--order-color": ORDER_COLORS[card.order] ?? "#D7A93B" } as React.CSSProperties}>
       <button className="modal-close icon-button" onClick={onClose} aria-label="Close card details"><X /></button>
       <div className="inspect-art">
@@ -64,48 +69,56 @@ export function CardInspectModal({ definitionId, ownedCards, onClose }: { defini
           <div><dt>Allegiance</dt><dd>{card.allegiance}</dd></div>
           <div><dt>Rarity</dt><dd>{card.rarity}</dd></div>
         </dl>
-        {mystic ? <>
-          {ownedCards.length > 1 ? <div className="inspect-copy-switcher" role="listbox" aria-label="Owned copies">
-            {sorted.map((owned) => <button key={owned.id} type="button" role="option" aria-selected={owned.id === selected?.id} className={owned.id === selected?.id ? "active" : ""} onClick={() => setSelectedId(owned.id)}>Lv.{owned.level}</button>)}
-          </div> : null}
-          <div className="inspect-stats">
-            <span><Sparkles /><small>POWER</small><strong>{leveledStat(mystic.power, level)}</strong></span>
-            <span><Shield /><small>DEFENSE</small><strong>{leveledStat(mystic.defense, level)}</strong></span>
-            <span><Swords /><small>ATTACK</small><strong>{leveledStat(mystic.baseAttack, level)}</strong></span>
-          </div>
-          <div className="move-list"><h3>Battle moves</h3>{mystic.moves.map((move) => <article key={move.name}>
-            <div><strong>{move.name}</strong><span><Dices />{move.requiredRoll}+<Clock3 />Cooldown {move.cooldown}</span></div>
-            <p>{move.rawText.split("|").pop()?.trim()}</p>
-          </article>)}</div>
-          <div className="inspect-actions">
-            <div className="inspect-level-panel">
-              <div className="level-panel-heading"><span>Level {level}{canLevel ? ` → ${nextLevel}` : " (MAX)"}</span></div>
-              {canLevel ? <>
-                <div className="level-stat-preview">
-                  <span>Power Score<b>{leveledStat(mystic.power, level)} → {leveledStat(mystic.power, nextLevel)}</b></span>
-                  <span>DEF<b>{leveledStat(mystic.defense, level)} → {leveledStat(mystic.defense, nextLevel)}</b></span>
-                  <span>Base ATK<b>{leveledStat(mystic.baseAttack, level)} → {leveledStat(mystic.baseAttack, nextLevel)}</b></span>
-                </div>
-                <div className="level-cost-row"><Gem /><span>{essenceOwned} / {cost} {card.order} Essence</span></div>
-                <button className="button primary" disabled={essenceOwned < cost} onClick={() => selected && levelUpCard(selected.id)}><ArrowUp />Level up</button>
-              </> : <p>This Mystic has reached the maximum level.</p>}
+        {mystic ? <div className="inspect-columns">
+          <div className="inspect-primary">
+            {ownedCards.length > 1 ? <div className="inspect-copy-switcher" role="listbox" aria-label="Owned copies">
+              {sorted.map((owned) => <button key={owned.id} type="button" role="option" aria-selected={owned.id === selected?.id} className={owned.id === selected?.id ? "active" : ""} onClick={() => setSelectedId(owned.id)}>Lv.{owned.level}</button>)}
+            </div> : null}
+            <div className="inspect-stats">
+              <span><Sparkles /><small>POWER</small><strong>{leveledStat(mystic.power, level)}</strong></span>
+              <span><Shield /><small>DEFENSE</small><strong>{leveledStat(mystic.defense, level)}</strong></span>
+              <span><Swords /><small>ATTACK</small><strong>{leveledStat(mystic.baseAttack, level)}</strong></span>
             </div>
-            <div className="inspect-duplicate-actions">
-              <button className="button ghost" disabled={ownedCards.length < 2} onClick={() => requestConfirm("sell")}><Coins />Sell duplicate</button>
-              <button className="button ghost" disabled={ownedCards.length < 2} onClick={() => requestConfirm("dismantle")}><Hammer />Dismantle for Essence</button>
-            </div>
+            <div className="move-list"><h3>Battle moves</h3>{mystic.moves.map((move) => <article key={move.name}>
+              <div><strong>{move.name}</strong><span><Dices />{move.requiredRoll}+<Clock3 />Cooldown {move.cooldown}</span></div>
+              <p>{move.rawText.split("|").pop()?.trim()}</p>
+            </article>)}</div>
           </div>
-        </> : <>
-          <div className="move-list"><h3>Handler passives</h3>
-            <article><div><strong>{handler?.allegiancePassive.name}</strong><span>Targets {handler?.allegiancePassive.targetLabel}</span></div><p>{handler?.allegiancePassive.rawText}</p></article>
-            <article><div><strong>{handler?.orderPassive.name}</strong><span>Targets {handler?.orderPassive.targetLabel}</span></div><p>{handler?.orderPassive.rawText}</p></article>
-          </div>
-          <div className="inspect-actions">
-            <div className="inspect-duplicate-actions">
-              <button className="button ghost" disabled={ownedCards.length < 2} onClick={() => requestConfirm("sell")}><Coins />Sell duplicate</button>
+          <div className="inspect-secondary">
+            <div className="inspect-actions">
+              <div className="inspect-level-panel">
+                <div className="level-panel-heading"><span>Level {level}{canLevel ? ` → ${nextLevel}` : " (MAX)"}</span></div>
+                {canLevel ? <>
+                  <div className="level-stat-preview">
+                    <span>Power Score<b>{leveledStat(mystic.power, level)} → {leveledStat(mystic.power, nextLevel)}</b></span>
+                    <span>DEF<b>{leveledStat(mystic.defense, level)} → {leveledStat(mystic.defense, nextLevel)}</b></span>
+                    <span>Base ATK<b>{leveledStat(mystic.baseAttack, level)} → {leveledStat(mystic.baseAttack, nextLevel)}</b></span>
+                  </div>
+                  <div className="level-cost-row"><Gem /><span>{essenceOwned} / {cost} {card.order} Essence</span></div>
+                  <button className="button primary" disabled={essenceOwned < cost} onClick={() => selected && levelUpCard(selected.id)}><ArrowUp />Level up</button>
+                </> : <p>This Mystic has reached the maximum level.</p>}
+              </div>
+              <div className="inspect-duplicate-actions">
+                <button className="button ghost" disabled={ownedCards.length < 2} onClick={() => requestConfirm("sell")}><Coins />Sell duplicate</button>
+                <button className="button ghost" disabled={ownedCards.length < 2} onClick={() => requestConfirm("dismantle")}><Hammer />Dismantle for Essence</button>
+              </div>
             </div>
           </div>
-        </>}
+        </div> : <div className="inspect-columns">
+          <div className="inspect-primary">
+            <div className="move-list"><h3>Handler passives</h3>
+              <article><div><strong>{handler?.allegiancePassive.name}</strong><span>Targets {handler?.allegiancePassive.targetLabel}</span></div><p>{handler?.allegiancePassive.rawText}</p></article>
+              <article><div><strong>{handler?.orderPassive.name}</strong><span>Targets {handler?.orderPassive.targetLabel}</span></div><p>{handler?.orderPassive.rawText}</p></article>
+            </div>
+          </div>
+          <div className="inspect-secondary">
+            <div className="inspect-actions">
+              <div className="inspect-duplicate-actions">
+                <button className="button ghost" disabled={ownedCards.length < 2} onClick={() => requestConfirm("sell")}><Coins />Sell duplicate</button>
+              </div>
+            </div>
+          </div>
+        </div>}
       </div>
     </section>
     {confirmAction ? <div className="modal-backdrop confirm-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setConfirmAction(null)}>
@@ -117,5 +130,7 @@ export function CardInspectModal({ definitionId, ownedCards, onClose }: { defini
         <div className="confirm-actions"><button className="button ghost" onClick={() => setConfirmAction(null)}>Cancel</button><button className="button primary" onClick={runConfirmed}>Confirm</button></div>
       </section>
     </div> : null}
-  </div>;
+  </div>,
+    document.body,
+  );
 }

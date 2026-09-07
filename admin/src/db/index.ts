@@ -1,4 +1,3 @@
-import { PrismaPg } from '@prisma/adapter-pg';
 import { Database, Resource } from '@adminjs/prisma';
 import { PrismaClient } from '@prisma/client';
 import AdminJS from 'adminjs';
@@ -11,7 +10,8 @@ const connectionString = () => {
   return url.toString();
 };
 
-export const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: connectionString() }) });
+// Classic engine (see scripts/sync-schema.mjs) talks to Postgres directly — no driver adapter.
+export const prisma = new PrismaClient({ datasourceUrl: connectionString() });
 
 AdminJS.registerAdapter({ Database, Resource });
 
