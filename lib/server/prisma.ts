@@ -17,7 +17,7 @@ function databaseUrl() {
   connectionString ??= process.env.DATABASE_URL;
   if (!connectionString) throw new Error("Database persistence is not configured for this deployment.");
   const url = new URL(connectionString);
-  if (url.hostname.endsWith(".pooler.supabase.com")) {
+  if (url.hostname.endsWith(".pooler.supabase.com") || url.hostname.endsWith(".supabase.co")) {
     url.searchParams.set("uselibpqcompat", "true");
   }
   return url.toString();

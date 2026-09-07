@@ -5,7 +5,7 @@ import AdminJS from 'adminjs';
 
 const connectionString = () => {
   const url = new URL(process.env.DATABASE_URL as string);
-  if (url.hostname.endsWith('.pooler.supabase.com')) {
+  if (url.hostname.endsWith('.pooler.supabase.com') || url.hostname.endsWith('.supabase.co')) {
     url.searchParams.set('uselibpqcompat', 'true');
   }
   return url.toString();

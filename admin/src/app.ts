@@ -24,10 +24,13 @@ const sessionConnectionString = () => {
   const value = process.env.DATABASE_URL as string;
   const url = new URL(value);
 
-  // Supabase's shared pooler presents a managed certificate chain that
-  // node-postgres treats differently from libpq when sslmode=require.
+  // Supabase's managed certificate chain (pooler or direct) is treated
+  // differently by node-postgres than by libpq when sslmode=require.
   // Preserve encrypted transport while opting into standard libpq semantics.
-  if (url.hostname.endsWith('.pooler.supabase.com') && url.searchParams.get('sslmode') === 'require') {
+  if (
+    (url.hostname.endsWith('.pooler.supabase.com') || url.hostname.endsWith('.supabase.co'))
+    && url.searchParams.get('sslmode') === 'require'
+  ) {
     url.searchParams.set('uselibpqcompat', 'true');
   }
 
