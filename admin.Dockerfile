@@ -19,6 +19,7 @@ ENV PORT=3001
 ENV NODE_ENV=production
 ENV TRUST_PROXY=true
 ENV PUBLIC_GAME_URL=https://minimystics.com
+ENV ADMIN_JS_TMP_DIR=adminjs-tmp
 
 EXPOSE 3001
 
