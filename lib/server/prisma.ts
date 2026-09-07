@@ -1,13 +1,9 @@
+import { cache } from "react";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { PrismaClient } from "@prisma/client";
 
 type HyperdriveBinding = { connectionString: string };
-
-const globalForPrisma = globalThis as unknown as {
-  prisma?: PrismaClient;
-  prismaConnectionString?: string;
-};
 
 function databaseUrl() {
   let connectionString: string | undefined;
@@ -27,12 +23,7 @@ function databaseUrl() {
   return url.toString();
 }
 
-export function getPrisma() {
-  const connectionString = databaseUrl();
-  if (!globalForPrisma.prisma || globalForPrisma.prismaConnectionString !== connectionString) {
-    const adapter = new PrismaPg({ connectionString, max: 5 });
-    globalForPrisma.prisma = new PrismaClient({ adapter });
-    globalForPrisma.prismaConnectionString = connectionString;
-  }
-  return globalForPrisma.prisma;
-}
+export const getPrisma = cache(() => {
+  const adapter = new PrismaPg({ connectionString: databaseUrl(), max: 1, maxUses: 1 });
+  return new PrismaClient({ adapter });
+});
