@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 let verifier: ReturnType<typeof createClient> | undefined;
 
@@ -11,8 +12,14 @@ export type VerifiedSupabaseUser = {
 };
 
 function serverConfiguration() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
+  let runtimeEnv: Record<string, unknown> = {};
+  try {
+    runtimeEnv = getCloudflareContext().env as Record<string, unknown>;
+  } catch {
+    // Local Next.js runs use process.env instead of Worker bindings.
+  }
+  const url = String(runtimeEnv.NEXT_PUBLIC_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+  const publishableKey = String(runtimeEnv.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "").trim();
   if (!url || !publishableKey) throw new Error("AUTH_CONFIGURATION_MISSING");
   return { url, publishableKey };
 }
