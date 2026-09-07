@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Pencil, Shield, Sparkles, Star, Swords, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, Filter, Pencil, Shield, Sparkles, Star, Swords, Trash2, X } from "lucide-react";
 import { useGame } from "./game-provider";
 import { CardTile } from "./card-tile";
 import { FormationPreview } from "./formation-preview";
-import { catalog, type Loadout } from "@/lib/client-state";
+import { catalog, definitionFor, type Loadout } from "@/lib/client-state";
 import { computeOrderSynergies, orderCounts } from "@/lib/game/order-matchups";
 import { levelBonusPercent } from "@/lib/game/economy";
 import { roundHalfUp } from "@/lib/game/rounding";
@@ -16,6 +16,8 @@ function leveledStat(printed: number, level: number) {
   return roundHalfUp(printed * (1 + levelBonusPercent(level) / 100));
 }
 
+type PickerKind = "mystic" | "handler";
+
 export function LoadoutManagerModal({ editLoadoutId, onClose }: { editLoadoutId?: string | null; onClose: () => void }) {
   const { state, saveLoadout, deleteLoadout, setActiveLoadout } = useGame();
   const [size, setSize] = useState<3 | 5 | 8>(5);
@@ -23,6 +25,11 @@ export function LoadoutManagerModal({ editLoadoutId, onClose }: { editLoadoutId?
   const [mystics, setMystics] = useState<string[]>([]);
   const [handlers, setHandlers] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [picker, setPicker] = useState<PickerKind | null>(null);
+  const [pickerQuery, setPickerQuery] = useState("");
+  const [pickerOrder, setPickerOrder] = useState("all");
+  const [pickerAllegiance, setPickerAllegiance] = useState("all");
+  const [pickerRarity, setPickerRarity] = useState("all");
   const ownedMystics = state.ownedCards.filter((owned) => catalog.mystics.some((card) => card.id === owned.definitionId));
   const ownedHandlers = state.ownedCards.filter((owned) => catalog.handlers.some((card) => card.id === owned.definitionId));
 
@@ -43,8 +50,30 @@ export function LoadoutManagerModal({ editLoadoutId, onClose }: { editLoadoutId?
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editLoadoutId]);
 
-  const toggle = (id: string, list: string[], setList: (next: string[]) => void, max: number) => setList(list.includes(id) ? list.filter((item) => item !== id) : list.length < max ? [...list, id] : list);
+  const removeMystic = (id: string) => setMystics((current) => current.filter((item) => item !== id));
+  const removeHandler = (id: string) => setHandlers((current) => current.filter((item) => item !== id));
   const save = () => { saveLoadout({ id: editingId ?? undefined, name, size, mysticIds: mystics, handlerIds: handlers }); resetEditor(); };
+
+  const openPicker = (kind: PickerKind) => { setPickerQuery(""); setPickerOrder("all"); setPickerAllegiance("all"); setPickerRarity("all"); setPicker(kind); };
+  const pickCard = (kind: PickerKind, ownedId: string) => {
+    if (kind === "mystic") setMystics((current) => (current.length < size ? [...current, ownedId] : current));
+    else setHandlers((current) => (current.length < 3 ? [...current, ownedId] : current));
+    setPicker(null);
+  };
+
+  const pickerPool = useMemo(() => {
+    const pool = picker === "mystic" ? ownedMystics.filter((owned) => !mystics.includes(owned.id)) : picker === "handler" ? ownedHandlers.filter((owned) => !handlers.includes(owned.id)) : [];
+    return pool.filter((owned) => {
+      const definition = definitionFor(owned.definitionId);
+      if (!definition) return false;
+      return (pickerOrder === "all" || definition.order === pickerOrder) && (pickerAllegiance === "all" || definition.allegiance === pickerAllegiance) && (pickerRarity === "all" || definition.rarity === pickerRarity) && definition.name.toLowerCase().includes(pickerQuery.toLowerCase());
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [picker, ownedMystics, ownedHandlers, mystics, handlers, pickerOrder, pickerAllegiance, pickerRarity, pickerQuery]);
+  const pickerCatalog = picker === "mystic" ? catalog.mystics : catalog.handlers;
+  const pickerOrders = [...new Set(pickerCatalog.map((card) => card.order))];
+  const pickerAllegiances = [...new Set(pickerCatalog.map((card) => card.allegiance))].sort();
+  const pickerRarities = [...new Set(pickerCatalog.map((card) => card.rarity))];
 
   const selectedMysticCards = mystics.map((ownedId) => {
     const owned = state.ownedCards.find((item) => item.id === ownedId);
@@ -69,17 +98,35 @@ export function LoadoutManagerModal({ editLoadoutId, onClose }: { editLoadoutId?
       <section className="loadout-modal" role="dialog" aria-modal="true" aria-label="Loadout manager">
         <button className="modal-close icon-button" onClick={onClose} aria-label="Close loadout manager"><X /></button>
         <header className="loadout-modal-head"><span>BATTLE PREP</span><h2>Loadout manager</h2><p>Build formations from individual owned card instances, then set one active per battle size.</p></header>
+        {picker ? (
+          <div className="card-picker">
+            <div className="card-picker-head">
+              <button className="button ghost" onClick={() => setPicker(null)}><ArrowLeft />Back</button>
+              <h3>Choose a {picker === "mystic" ? "Mystic" : "Handler"}</h3>
+              <span>{picker === "mystic" ? `${mystics.length}/${size}` : `${handlers.length}/3`}</span>
+            </div>
+            <div className="filterbar collection-filters">
+              <label className="search"><Filter /><input value={pickerQuery} onChange={(e) => setPickerQuery(e.target.value)} placeholder="Find a card" autoFocus /></label>
+              <select value={pickerOrder} onChange={(e) => setPickerOrder(e.target.value)}><option value="all">All Orders</option>{pickerOrders.map((o) => <option key={o}>{o}</option>)}</select>
+              <select value={pickerAllegiance} onChange={(e) => setPickerAllegiance(e.target.value)}><option value="all">All allegiances</option>{pickerAllegiances.map((a) => <option key={a}>{a}</option>)}</select>
+              <select value={pickerRarity} onChange={(e) => setPickerRarity(e.target.value)}><option value="all">All rarities</option>{pickerRarities.map((r) => <option key={r}>{r}</option>)}</select>
+            </div>
+            <div className="card-picker-grid">
+              {pickerPool.length ? pickerPool.map((owned) => <CardTile key={owned.id} definitionId={owned.definitionId} level={picker === "mystic" ? owned.level : undefined} onClick={() => pickCard(picker, owned.id)} />) : <p className="empty-hint">No cards match. Try a different filter, or open a pack to get more.</p>}
+            </div>
+          </div>
+        ) : (
         <div className="loadout-modal-body">
           <section className="panel builder">
             <div className="builder-top"><label>Loadout name<input value={name} onChange={(e) => setName(e.target.value)} /></label><div><span>Battle size</span><div className="segmented small">{([3, 5, 8] as const).map((value) => <button key={value} className={size === value ? "active" : ""} onClick={() => setSize(value)}>{value}</button>)}</div></div></div>
             <div className="selected-lineup">
-              <div className="zone-label"><span>{editingId ? "EDITING FORMATION" : "SELECTED LINEUP"}</span><strong>{mystics.length}/{size} Mystics · {handlers.length}/3 Handlers</strong></div>
-              <div className="lineup-slots">{Array.from({ length: size }, (_, index) => { const owned = ownedMystics.find((item) => item.id === mystics[index]); return owned ? <CardTile key={owned.id} compact definitionId={owned.definitionId} level={owned.level} selected onClick={() => toggle(owned.id, mystics, setMystics, size)} /> : <span className="empty-slot" key={index}>+</span>; })}</div>
+              <div className="zone-label"><span>MYSTICS</span><strong>{mystics.length}/{size}</strong></div>
+              <div className="lineup-slots">{Array.from({ length: size }, (_, index) => { const owned = ownedMystics.find((item) => item.id === mystics[index]); return owned ? <CardTile key={owned.id} compact definitionId={owned.definitionId} level={owned.level} selected onClick={() => removeMystic(owned.id)} /> : <button type="button" className="empty-slot" key={index} onClick={() => openPicker("mystic")} aria-label="Add a Mystic">+</button>; })}</div>
             </div>
-            <h3>Available Mystics <span>{mystics.length}/{size}</span></h3>
-            <div className="picker-row">{ownedMystics.map((owned) => <CardTile key={owned.id} compact definitionId={owned.definitionId} level={owned.level} selected={mystics.includes(owned.id)} onClick={() => toggle(owned.id, mystics, setMystics, size)} />)}</div>
-            <h3>Handlers <span>{handlers.length}/3</span></h3>
-            <div className="picker-row">{ownedHandlers.map((owned) => <CardTile key={owned.id} compact definitionId={owned.definitionId} selected={handlers.includes(owned.id)} onClick={() => toggle(owned.id, handlers, setHandlers, 3)} />)}</div>
+            <div className="selected-lineup">
+              <div className="zone-label"><span>{editingId ? "EDITING FORMATION · HANDLERS" : "HANDLERS"}</span><strong>{handlers.length}/3</strong></div>
+              <div className="lineup-slots">{Array.from({ length: 3 }, (_, index) => { const owned = ownedHandlers.find((item) => item.id === handlers[index]); return owned ? <CardTile key={owned.id} compact definitionId={owned.definitionId} selected onClick={() => removeHandler(owned.id)} /> : <button type="button" className="empty-slot" key={index} onClick={() => openPicker("handler")} aria-label="Add a Handler">+</button>; })}</div>
+            </div>
             <div className="builder-actions"><button className="button primary" disabled={mystics.length !== size || !name.trim()} onClick={save}>{editingId ? "Update formation" : "Save formation"} <Check /></button>{editingId ? <button className="button ghost" onClick={resetEditor}>Cancel edit</button> : null}</div>
           </section>
 
@@ -110,6 +157,7 @@ export function LoadoutManagerModal({ editLoadoutId, onClose }: { editLoadoutId?
             </article>) : <p className="empty-hint">No formations yet. Select exactly the required number of Mystics, then save.</p>}
           </aside>
         </div>
+        )}
       </section>
     </div>,
     document.body,
