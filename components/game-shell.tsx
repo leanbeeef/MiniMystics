@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Backpack, Bell, BookOpen, ChevronLeft, ChevronRight, Coins, House, Layers3, LogOut, Menu, ScrollText, Settings, ShoppingBag, Swords, Trophy, UserRound, UsersRound, X, Zap } from "lucide-react";
+import { Backpack, Bell, BookOpen, BookOpenCheck, ChevronLeft, ChevronRight, Coins, House, Layers3, LogOut, Menu, ScrollText, Settings, ShoppingBag, Swords, Trophy, UserRound, UsersRound, X, Zap } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useGame } from "./game-provider";
 import { DashboardView, CollectionView, CampaignView, PacksView, OpeningView, InventoryView, ComingSoonView, BattleView, SettingsView } from "./views";
@@ -12,6 +12,7 @@ import { ComicsLibraryPage } from "./comics/comics-library-page";
 import { ProfileView } from "./profile-view";
 import { FriendsView } from "./friends-view";
 import { optimizedAsset } from "@/lib/asset-url";
+import { RulesView } from "./rules-view";
 
 const nav = [
   { href: "game", label: "Dashboard", icon: House },
@@ -23,6 +24,7 @@ const nav = [
   { href: "comics", label: "Comics", icon: BookOpen },
   { href: "profile", label: "Profile", icon: UserRound },
   { href: "friends", label: "Friends", icon: UsersRound },
+  { href: "rules", label: "How to Play", icon: BookOpenCheck },
   { href: "marketplace", label: "Marketplace", icon: Trophy, soon: true },
   { href: "trading", label: "Trading", icon: UsersRound, soon: true },
   { href: "settings", label: "Settings", icon: Settings },
@@ -60,6 +62,7 @@ export function GameShell({ view }: { view: string }) {
       case "comics": return <ComicsLibraryPage />;
       case "profile": return <ProfileView />;
       case "friends": return <FriendsView />;
+      case "rules": return <RulesView />;
       case "marketplace": return <ComingSoonView kind="Marketplace" />;
       case "trading": return <ComingSoonView kind="Trading" />;
       case "settings": return <SettingsView />;
