@@ -5,7 +5,7 @@
   "scripts": {
     "predev": "npm run assets:optimize",
     "dev": "next dev --turbopack",
-    "prebuild": "npm run assets:optimize",
+    "prebuild": "npm run prisma:generate && npm run assets:optimize",
     "build": "next build",
     "build:cloudflare": "opennextjs-cloudflare build && node scripts/copy-prisma-wasm.mjs",
     "preview:cloudflare": "npm run build:cloudflare && opennextjs-cloudflare preview",
