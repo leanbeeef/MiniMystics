@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { activateBoost as activateBoostRule, buyPack as buyPackRule, createAccount, createBattle, dismantleCard as dismantleCardRule, initialState, levelUpCard as levelUpCardRule, ORDER_CAMPAIGNS, rewardCompletedBattle, sellDuplicateCard as sellDuplicateCardRule, setActiveLoadout as setActiveLoadoutRule, type BattleSelection, type Binder, type Loadout, type PlayerState } from "@/lib/client-state";
@@ -132,14 +132,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PlayerState>(initialState);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const localRevision = useRef(0);
   const router = useRouter();
 
   useEffect(() => {
     try {
       let active = true;
       let sequence = 0;
+      let hydratedUserId: string | null | undefined;
       const hydrate = async (user: User | null, currentSequence: number) => {
         if (user) {
+          const startingRevision = localRevision.current;
           const restored = restoreProfile(user);
           setState(restored);
           // The local save renders immediately while the PostgreSQL-backed API hydrates durable state.
@@ -158,7 +161,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           } catch (cause) {
             setError(isTemporaryProfileSyncFailure(cause) ? null : authMessage(cause));
           }
-          if (!active || currentSequence !== sequence) return;
+          if (!active || currentSequence !== sequence || localRevision.current !== startingRevision) return;
           setState(structuredClone(hydrated));
           if (!cloudState || cloudNeededMigration) {
             void queueCloudGameState(hydrated, "SESSION_STARTED").catch((cause) => {
@@ -168,6 +171,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         } else { localStorage.removeItem(CURRENT_KEY); setState(initialState); setReady(true); }
       };
       const { data: { subscription } } = getSupabaseClient().auth.onAuthStateChange((_event, session) => {
+        const userId = session?.user.id ?? null;
+        // Supabase also emits auth events when it refreshes a token or re-confirms the same
+        // session. Rehydrating for those events can replace newer optimistic game state with a
+        // cloud snapshot that is still waiting in the save queue.
+        if (userId === hydratedUserId) return;
+        hydratedUserId = userId;
         const currentSequence = ++sequence;
         window.setTimeout(() => { if (active) void hydrate(session?.user ?? null, currentSequence); }, 0);
       });
@@ -182,6 +191,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setState((current) => {
       const draft = structuredClone(current);
       try { mutator(draft); setError(null); } catch (cause) { setError(cause instanceof Error ? cause.message : "Something went wrong"); return current; }
+      localRevision.current += 1;
       const email = draft.account?.email;
       if (email) {
         const accounts = getAccounts();

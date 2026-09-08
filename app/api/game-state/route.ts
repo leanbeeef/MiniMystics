@@ -113,6 +113,17 @@ async function synchronizeState(identity: Awaited<ReturnType<typeof requireSupab
       if (!usernameOwner || usernameOwner.id === user.id) await tx.user.update({ where: { id: user.id }, data: { username: displayName } });
     }
 
+    // CampaignProgress is the normalized, monotonic record of earned clears. Merge it into an
+    // incoming snapshot so a stale client can never erase an already-recorded completion.
+    const persistedCampaignWins = await tx.campaignProgress.findMany({
+      where: { profileId: profile.id },
+      select: { opponentId: true },
+    });
+    state.campaignWins = [...new Set([
+      ...state.campaignWins,
+      ...persistedCampaignWins.map(({ opponentId }) => opponentId),
+    ])];
+
     await tx.playerGameState.upsert({
       where: { profileId: profile.id },
       create: { profileId: profile.id, state: asJson(state) },
@@ -282,9 +293,17 @@ export async function GET(request: Request) {
   try {
     const identity = await requireSupabaseUser(request);
     const prisma = getPrisma();
-    const save = await prisma.playerGameState.findFirst({ where: { profile: { user: { OR: [{ supabaseAuthId: identity.uid }, { email: identity.email }] } } } });
+    const save = await prisma.playerGameState.findFirst({
+      where: { profile: { user: { OR: [{ supabaseAuthId: identity.uid }, { email: identity.email }] } } },
+      include: { profile: { select: { campaign: { select: { opponentId: true } } } } },
+    });
     if (!save) return NextResponse.json({ error: "No cloud save yet." }, { status: 404 });
-    return NextResponse.json({ state: save.state, version: save.version, updatedAt: save.updatedAt }, { headers: { "Cache-Control": "private, no-store" } });
+    const state = structuredClone(save.state) as unknown as PlayerState;
+    state.campaignWins = [...new Set([
+      ...(Array.isArray(state.campaignWins) ? state.campaignWins : []),
+      ...save.profile.campaign.map(({ opponentId }) => opponentId),
+    ])];
+    return NextResponse.json({ state, version: save.version, updatedAt: save.updatedAt }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (cause) {
     return errorResponse(cause);
   }
