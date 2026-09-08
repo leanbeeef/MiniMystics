@@ -194,7 +194,7 @@ function BattleExperience() {
         setHoldingRoll(false);
         setPhase("PLAYER_RESOLVING");
       }, 1000);
-    }, 650);
+    }, 1100);
   }, [battle, selection, target, actor, rolling, specialAttack, emitAudioHook]);
 
   // The die rolls the instant a target is locked in (or the instant a self-targeted move is
@@ -363,29 +363,62 @@ function BattleDiceTray({ requirement, rolling, holding, face }: { requirement: 
 
 /**
  * A CSS-only 3D octahedron (8-sided die, matching the game's D8) built from eight border-triangle
- * "faces" arranged around a rotating shell. While rolling, the shell spins continuously via the
- * `.rolling` keyframes; when it stops, we freeze the mid-spin transform for one frame (via a
- * direct style read) before handing off to the `data-rolled="N"` resting transform, so the
- * `transition: transform` on `.dice` settles smoothly onto the landed face instead of snapping.
+ * "faces" arranged around a rotating shell. The Web Animations API drives the tumble. When it
+ * stops, we preserve the exact mid-spin matrix for one frame before CSS settles smoothly onto the
+ * `data-rolled="N"` resting transform.
  */
 function BattleDie3D({ face, rolling }: { face: number; rolling: boolean }) {
   const diceRef = useRef<HTMLDivElement>(null);
-  const wasRolling = useRef(rolling);
+  const animationRef = useRef<Animation | null>(null);
+  const settleFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     const node = diceRef.current;
-    if (node && wasRolling.current && !rolling) {
-      const midSpin = window.getComputedStyle(node).transform;
-      node.style.transform = midSpin === "none" ? "" : midSpin;
-      requestAnimationFrame(() => { node.style.transform = ""; });
+    if (!node) return;
+    if (settleFrameRef.current !== null) {
+      window.cancelAnimationFrame(settleFrameRef.current);
+      settleFrameRef.current = null;
     }
-    wasRolling.current = rolling;
+
+    if (rolling) {
+      animationRef.current?.cancel();
+      node.style.transition = "";
+      node.style.transform = "";
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        animationRef.current = node.animate([
+          { transform: "rotateX(0deg) rotateY(0deg) rotateZ(0deg)" },
+          { transform: "rotateX(410deg) rotateY(250deg) rotateZ(180deg)" },
+          { transform: "rotateX(740deg) rotateY(570deg) rotateZ(500deg)" },
+          { transform: "rotateX(1080deg) rotateY(720deg) rotateZ(1080deg)" },
+        ], { duration: 760, iterations: Infinity, easing: "linear" });
+      }
+      return;
+    }
+
+    if (animationRef.current) {
+      const midSpin = window.getComputedStyle(node).transform;
+      animationRef.current.cancel();
+      animationRef.current = null;
+      node.style.transition = "none";
+      node.style.transform = midSpin === "none" ? "" : midSpin;
+      void node.offsetWidth;
+      settleFrameRef.current = window.requestAnimationFrame(() => {
+        node.style.transition = "";
+        node.style.transform = "";
+        settleFrameRef.current = null;
+      });
+    }
   }, [rolling]);
 
+  useEffect(() => () => {
+    animationRef.current?.cancel();
+    if (settleFrameRef.current !== null) window.cancelAnimationFrame(settleFrameRef.current);
+  }, []);
+
   return (
-    <div className="dice-stage">
-      <div className={`dice ${rolling ? "rolling" : ""}`} data-rolled={rolling ? undefined : face} ref={diceRef} aria-label={`Die showing ${face}`} role="img">
-        {[1, 2, 3, 4, 5, 6, 7, 8].map((side) => <div className="face" data-side={side} key={side}><span className="face-pip">{side}</span></div>)}
+    <div className={`battle-die-stage ${rolling ? "is-rolling" : ""}`}>
+      <div className="battle-die" data-rolled={face} ref={diceRef} aria-label={`Die showing ${face}`} role="img">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((side) => <div className="d8-face" data-side={side} key={side}><span className="d8-face-number">{side}</span></div>)}
       </div>
     </div>
   );

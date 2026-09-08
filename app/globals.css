@@ -6591,7 +6591,7 @@ select:focus {
   align-items: center;
   gap: 22px;
   width: min(560px, 100%);
-  min-height: 160px;
+  min-height: 205px;
   padding: 26px 30px;
   background:
     radial-gradient(circle at 50% 0, rgba(242, 193, 78, 0.1), transparent 46%),
@@ -6630,85 +6630,130 @@ select:focus {
   justify-content: center;
 }
 
-/* D8 roll animation — a CSS-only octahedron built from eight border-triangle faces. */
-.dice-stage {
-  --d8-size: 3.5em;
-  --d8-halfbase: calc(var(--d8-size) / 2);
-  --d8-height: calc(1.73205080757 * var(--d8-halfbase));
+/* D8 roll animation — a true CSS 3D octahedron built from eight triangular planes. */
+.battle-die-stage {
+  --d8-size: 6rem;
   --d8-angle: 35deg;
   --d8-n-angle: -35deg;
-  --d8-na-angle: calc(180deg - 35deg);
+  --d8-na-angle: 145deg;
   position: relative;
   width: var(--d8-size);
-  height: calc(var(--d8-size) * 1.55);
-  perspective: 600px;
-  perspective-origin: 50% 35%;
+  height: 8.5rem;
+  perspective: 700px;
+  perspective-origin: 50% 42%;
+  transform: translateZ(0);
 }
-.dice {
+.battle-die-stage::before {
   position: absolute;
-  top: 18%;
-  left: 0;
-  height: calc(var(--d8-size) * 1.3);
-  width: var(--d8-size);
-  transition: transform 0.5s linear;
-  transform-style: preserve-3d;
-  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.5));
-}
-.face {
-  position: absolute;
-  height: 0;
-  width: 0;
-  transform-origin: center top;
-  border: var(--d8-halfbase) solid transparent;
-  border-top: 0;
-  border-bottom: var(--d8-height) solid #171c26;
-}
-.face::after {
+  right: 4%;
+  bottom: 2%;
+  left: 4%;
+  height: 18%;
   content: "";
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.62), transparent 68%);
+  border-radius: 50%;
+  filter: blur(3px);
+  transform: translateZ(-30px);
+}
+.battle-die-stage::after {
+  position: absolute;
+  inset: 6% -14%;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(242, 193, 78, 0.13), transparent 66%);
+  opacity: 0.65;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.battle-die-stage.is-rolling::after {
+  opacity: 1;
+  transform: scale(1.22);
+}
+.battle-die {
+  position: absolute;
+  top: 5%;
+  left: 0;
+  width: var(--d8-size);
+  height: 100%;
+  transition: transform 0.62s cubic-bezier(0.18, 0.78, 0.24, 1);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.d8-face {
+  --face-start: #313949;
+  --face-end: #111722;
   position: absolute;
   top: 0;
-  left: calc(var(--d8-halfbase) * -1);
-  height: 0;
-  width: 0;
-  border: var(--d8-halfbase) solid transparent;
-  border-top: 0;
-  border-bottom: var(--d8-height) solid rgba(230, 203, 122, 0.16);
-  z-index: -1;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 1.154700538 / 1;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(246, 213, 125, 0.92), rgba(91, 62, 20, 0.88));
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  transform-origin: 50% 0;
+  transform-style: preserve-3d;
+  backface-visibility: visible;
+  filter:
+    drop-shadow(0 5px 5px rgba(0, 0, 0, 0.46))
+    drop-shadow(0 0 2px rgba(230, 203, 122, 0.2));
 }
-.face-pip {
+.d8-face::before {
   position: absolute;
-  left: calc(var(--d8-halfbase) / -10);
-  top: calc(var(--d8-halfbase) / 3.6);
-  width: calc(var(--d8-size) / 10);
-  height: calc(var(--d8-size) / 10);
-  color: var(--gold);
+  inset: 2px 3px 3px;
+  content: "";
+  background:
+    radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.18), transparent 28%),
+    linear-gradient(145deg, var(--face-start), var(--face-end));
+  clip-path: inherit;
+}
+.d8-face::after {
+  position: absolute;
+  inset: 2px 3px 3px;
+  content: "";
+  background: linear-gradient(105deg, transparent 28%, rgba(255, 255, 255, 0.08) 48%, transparent 69%);
+  clip-path: inherit;
+}
+.d8-face-number {
+  position: absolute;
+  z-index: 2;
+  top: 58%;
+  left: 50%;
+  color: #f5d77f;
   font-family: Georgia, serif;
-  font-size: calc(var(--d8-halfbase) * 0.55);
+  font-size: 1.22rem;
   font-weight: 700;
+  line-height: 1;
   text-align: center;
-  text-shadow: 0 0 8px rgba(242, 193, 78, 0.4);
+  text-shadow: 0 1px 2px #000, 0 0 9px rgba(242, 193, 78, 0.46);
+  transform: translate(-50%, -50%);
 }
-.face[data-side="1"] { transform: rotateY(0deg) rotateX(var(--d8-angle)); }
-.face[data-side="2"] { transform: rotateY(90deg) rotateX(var(--d8-angle)); }
-.face[data-side="3"] { transform: rotateY(180deg) rotateX(var(--d8-angle)); }
-.face[data-side="4"] { transform: rotateY(270deg) rotateX(var(--d8-angle)); }
-.face[data-side="5"] { transform: translateY(calc(var(--d8-height) * 1.63)) rotateY(0deg) rotateX(var(--d8-n-angle)) rotateZ(180deg); }
-.face[data-side="6"] { transform: translateY(calc(var(--d8-height) * 1.63)) rotateY(90deg) rotateX(var(--d8-n-angle)) rotateZ(180deg); }
-.face[data-side="7"] { transform: translateY(calc(var(--d8-height) * 1.63)) rotateY(180deg) rotateX(var(--d8-n-angle)) rotateZ(180deg); }
-.face[data-side="8"] { transform: translateY(calc(var(--d8-height) * 1.63)) rotateY(270deg) rotateX(var(--d8-n-angle)) rotateZ(180deg); }
-.dice.rolling { animation: d8Roll 0.55s infinite linear; }
-@keyframes d8Roll {
-  to { transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg); }
+.d8-face[data-side="2"],
+.d8-face[data-side="6"] { --face-start: #293241; --face-end: #0b111a; }
+.d8-face[data-side="3"],
+.d8-face[data-side="7"] { --face-start: #3b3345; --face-end: #17121e; }
+.d8-face[data-side="4"],
+.d8-face[data-side="8"] { --face-start: #252f3d; --face-end: #0a0e16; }
+.d8-face[data-side="1"] { transform: rotateY(0deg) rotateX(var(--d8-angle)); }
+.d8-face[data-side="2"] { transform: rotateY(90deg) rotateX(var(--d8-angle)); }
+.d8-face[data-side="3"] { transform: rotateY(180deg) rotateX(var(--d8-angle)); }
+.d8-face[data-side="4"] { transform: rotateY(270deg) rotateX(var(--d8-angle)); }
+.d8-face[data-side="5"] { transform: translateY(163%) rotateY(0deg) rotateX(var(--d8-n-angle)) rotateZ(180deg); }
+.d8-face[data-side="6"] { transform: translateY(163%) rotateY(90deg) rotateX(var(--d8-n-angle)) rotateZ(180deg); }
+.d8-face[data-side="7"] { transform: translateY(163%) rotateY(180deg) rotateX(var(--d8-n-angle)) rotateZ(180deg); }
+.d8-face[data-side="8"] { transform: translateY(163%) rotateY(270deg) rotateX(var(--d8-n-angle)) rotateZ(180deg); }
+.battle-die[data-rolled="1"] { transform: rotateX(var(--d8-n-angle)) rotateY(0deg) rotateZ(0deg); }
+.battle-die[data-rolled="2"] { transform: rotateX(var(--d8-n-angle)) rotateY(-90deg) rotateZ(0deg); }
+.battle-die[data-rolled="3"] { transform: rotateX(var(--d8-n-angle)) rotateY(180deg) rotateZ(0deg); }
+.battle-die[data-rolled="4"] { transform: rotateX(var(--d8-n-angle)) rotateY(90deg) rotateZ(0deg); }
+.battle-die[data-rolled="5"] { transform: rotateX(var(--d8-na-angle)) rotateY(180deg) rotateZ(0deg); }
+.battle-die[data-rolled="6"] { transform: rotateX(var(--d8-na-angle)) rotateY(90deg) rotateZ(0deg); }
+.battle-die[data-rolled="7"] { transform: rotateX(var(--d8-na-angle)) rotateY(0deg) rotateZ(0deg); }
+.battle-die[data-rolled="8"] { transform: rotateX(var(--d8-na-angle)) rotateY(-90deg) rotateZ(0deg); }
+.battle-dice-tray.holding .d8-face {
+  filter:
+    drop-shadow(0 0 6px rgba(242, 193, 78, 0.38))
+    drop-shadow(0 5px 6px rgba(0, 0, 0, 0.52));
 }
-.dice[data-rolled="1"] { transform: rotateX(var(--d8-n-angle)) rotateY(0deg) rotateZ(0deg); }
-.dice[data-rolled="2"] { transform: rotateX(var(--d8-n-angle)) rotateY(-90deg) rotateZ(0deg); }
-.dice[data-rolled="3"] { transform: rotateX(var(--d8-n-angle)) rotateY(180deg) rotateZ(0deg); }
-.dice[data-rolled="4"] { transform: rotateX(var(--d8-n-angle)) rotateY(90deg) rotateZ(0deg); }
-.dice[data-rolled="5"] { transform: rotateX(var(--d8-na-angle)) rotateY(180deg) rotateZ(0deg); }
-.dice[data-rolled="6"] { transform: rotateX(var(--d8-na-angle)) rotateY(90deg) rotateZ(0deg); }
-.dice[data-rolled="7"] { transform: rotateX(var(--d8-na-angle)) rotateY(0deg) rotateZ(0deg); }
-.dice[data-rolled="8"] { transform: rotateX(var(--d8-na-angle)) rotateY(-90deg) rotateZ(0deg); }
-.battle-dice-tray.holding .dice { filter: drop-shadow(0 0 14px rgba(242, 193, 78, 0.45)) drop-shadow(0 8px 14px rgba(0, 0, 0, 0.5)); }
 
 .battle-event-log {
   display: flex;
@@ -6912,8 +6957,9 @@ select:focus {
   font-family: Georgia, serif;
   font-size: 18px;
 }
-.battle-intro .dice-stage {
-  --d8-size: 3.9em;
+.battle-intro .battle-die-stage {
+  --d8-size: 4rem;
+  height: 5.7rem;
   animation: introDie 0.75s ease both;
 }
 @keyframes introDie {
@@ -7602,8 +7648,8 @@ select:focus {
   .floating-damage {
     animation-name: overlayIn !important;
   }
-  .dice.rolling {
-    animation-name: overlayIn !important;
+  .battle-die {
+    transition-duration: 0.01ms !important;
   }
 }
 
