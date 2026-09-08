@@ -26,6 +26,7 @@ export type BattleSelection = { loadoutId?: string; mysticIds?: string[]; handle
 export type Binder = { id: string; name: string; cardIds: string[] };
 export type ComicProgress = { pageIndex: number; completed: boolean; updatedAt: string };
 export type PlayerState = {
+  saveRevision: number;
   account: { email: string; username: string } | null;
   profile: PlayerProfile | null;
   level: number;
@@ -52,6 +53,7 @@ export type PlayerState = {
 };
 
 export const initialState: PlayerState = {
+  saveRevision: 0,
   account: null, profile: null, level: 1, xp: 0, coins: 0, premium: 0, ownedCards: [], inventory: [],
   activeBoosts: { xp: null, coins: null }, openings: [], activeOpeningId: null, loadouts: [], binders: [], essence: {},
   campaignWins: [], comicProgress: {}, wins: 0, losses: 0, matches: 0, pity: 0, battle: null, battleRewarded: false, lastRewards: null,

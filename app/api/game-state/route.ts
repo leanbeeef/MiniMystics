@@ -18,6 +18,11 @@ const date = (value: string | undefined) => {
   const parsed = value ? new Date(value) : new Date();
   return Number.isNaN(parsed.valueOf()) ? new Date() : parsed;
 };
+const saveRevision = (value: unknown) => {
+  if (!value || typeof value !== "object") return 0;
+  const revision = (value as { saveRevision?: unknown }).saveRevision;
+  return typeof revision === "number" && Number.isSafeInteger(revision) && revision >= 0 ? revision : 0;
+};
 
 function validState(value: unknown): value is PlayerState {
   if (!value || typeof value !== "object") return false;
@@ -65,8 +70,19 @@ async function synchronizeState(identity: Awaited<ReturnType<typeof requireSupab
   const prisma = getPrisma();
   const user = await findOrCreateUser(identity, state.account?.username ?? "Handler");
   const profileInput = state.profile;
+  state.saveRevision = saveRevision(state);
 
   return prisma.$transaction(async (tx) => {
+    // Multiple tabs or a slow request can deliver an older snapshot after a newer one. Never let
+    // that stale write replace the canonical blob or its normalized profile/pack records.
+    const currentSave = await tx.playerGameState.findFirst({
+      where: { profile: { userId: user.id } },
+      select: { state: true, version: true, updatedAt: true },
+    });
+    if (currentSave && saveRevision(currentSave.state) > state.saveRevision) {
+      return { version: currentSave.version, updatedAt: currentSave.updatedAt };
+    }
+
     const profile = await tx.playerProfile.upsert({
       where: { userId: user.id },
       create: {

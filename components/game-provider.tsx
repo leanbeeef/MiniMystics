@@ -10,6 +10,7 @@ import { orderAdvantagePercent } from "@/lib/game/order-matchups";
 import { getSupabaseClient } from "@/lib/supabase";
 import { ensurePlayerProfile, getPlayerProfile, savePlayerProfile, validateHandlerName, type ProfileInput } from "@/lib/player-profile";
 import { loadCloudGameState, queueCloudGameState, type GameActivityType } from "@/lib/game-sync-client";
+import { selectHydratedGameState } from "@/lib/game-state-merge";
 
 type Accounts = Record<string, { passwordHash?: string; state: PlayerState }>;
 type GameContextValue = {
@@ -90,6 +91,7 @@ function isTemporaryProfileSyncFailure(cause: unknown) {
  */
 function migrateLegacyState(saved: PlayerState): boolean {
   let changed = false;
+  if (!Number.isSafeInteger(saved.saveRevision) || saved.saveRevision < 0) { saved.saveRevision = 0; changed = true; }
   if (!Array.isArray(saved.campaignWins)) { saved.campaignWins = []; changed = true; }
   if (!saved.comicProgress || typeof saved.comicProgress !== "object") { saved.comicProgress = {}; changed = true; }
   if ((saved as Partial<PlayerState>).profile === undefined) { saved.profile = null; changed = true; }
@@ -128,12 +130,25 @@ function restoreProfile(user: User) {
   return saved;
 }
 
+function saveLocalState(state: PlayerState) {
+  const email = state.account?.email;
+  if (!email) return;
+  const accounts = getAccounts();
+  accounts[email] = { ...accounts[email], state };
+  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+}
+
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PlayerState>(initialState);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const stateRef = useRef<PlayerState>(initialState);
   const localRevision = useRef(0);
   const router = useRouter();
+  const replaceState = useCallback((next: PlayerState) => {
+    stateRef.current = next;
+    setState(next);
+  }, []);
 
   useEffect(() => {
     try {
@@ -144,14 +159,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         if (user) {
           const startingRevision = localRevision.current;
           const restored = restoreProfile(user);
-          setState(restored);
+          replaceState(structuredClone(restored));
           // The local save renders immediately while the PostgreSQL-backed API hydrates durable state.
           setReady(true);
           let cloudState: PlayerState | null = null;
           try { cloudState = await loadCloudGameState(); } catch { /* The local save remains available while the API recovers. */ }
-          const hydrated = cloudState ?? restored;
+          const cloudNeededMigration = Boolean(cloudState) && migrateLegacyState(cloudState!);
+          const selection = selectHydratedGameState(restored, cloudState);
+          const hydrated = selection.state;
           hydrated.account = restored.account;
-          const cloudNeededMigration = Boolean(cloudState) && migrateLegacyState(hydrated);
           try {
             const profile = await getPlayerProfile(user.id)
               ?? await ensurePlayerProfile(user, hydrated.account?.username);
@@ -162,13 +178,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             setError(isTemporaryProfileSyncFailure(cause) ? null : authMessage(cause));
           }
           if (!active || currentSequence !== sequence || localRevision.current !== startingRevision) return;
-          setState(structuredClone(hydrated));
-          if (!cloudState || cloudNeededMigration) {
+          saveLocalState(hydrated);
+          replaceState(structuredClone(hydrated));
+          if (selection.cloudNeedsUpdate || cloudNeededMigration) {
             void queueCloudGameState(hydrated, "SESSION_STARTED").catch((cause) => {
               if (active && currentSequence === sequence) setError(cause instanceof Error ? cause.message : "Could not save game progress.");
             });
           }
-        } else { localStorage.removeItem(CURRENT_KEY); setState(initialState); setReady(true); }
+        } else { localStorage.removeItem(CURRENT_KEY); replaceState(initialState); setReady(true); }
       };
       const { data: { subscription } } = getSupabaseClient().auth.onAuthStateChange((_event, session) => {
         const userId = session?.user.id ?? null;
@@ -185,25 +202,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setError(authMessage(cause));
       setReady(true);
     }
-  }, []);
+  }, [replaceState]);
 
   const commit = useCallback((mutator: (draft: PlayerState) => void, activity: GameActivityType, payload?: Record<string, unknown>) => {
-    setState((current) => {
-      const draft = structuredClone(current);
-      try { mutator(draft); setError(null); } catch (cause) { setError(cause instanceof Error ? cause.message : "Something went wrong"); return current; }
-      localRevision.current += 1;
-      const email = draft.account?.email;
-      if (email) {
-        const accounts = getAccounts();
-        accounts[email] = { ...accounts[email], state: draft };
-        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
-        void queueCloudGameState(draft, activity, payload).catch((cause) => {
-          setError(cause instanceof Error ? cause.message : "Could not save game progress.");
-        });
-      }
-      return draft;
-    });
-  }, []);
+    const current = stateRef.current;
+    const draft = structuredClone(current);
+    try { mutator(draft); setError(null); } catch (cause) { setError(cause instanceof Error ? cause.message : "Something went wrong"); return; }
+    draft.saveRevision = Math.max(current.saveRevision ?? 0, draft.saveRevision ?? 0) + 1;
+    localRevision.current += 1;
+    replaceState(draft);
+    if (draft.account?.email) {
+      saveLocalState(draft);
+      void queueCloudGameState(draft, activity, payload).catch((cause) => {
+        setError(cause instanceof Error ? cause.message : "Could not save game progress.");
+      });
+    }
+  }, [replaceState]);
 
   const signup = useCallback(async (email: string, username: string, password: string) => {
     const normalized = email.trim().toLowerCase();
@@ -223,12 +237,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       next.account = { email: normalized, username: username.trim() };
       accounts[normalized] = { ...accounts[normalized], state: next };
       localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts)); localStorage.setItem(CURRENT_KEY, normalized);
-      setState(next); setError(null);
+      replaceState(next); setError(null);
       return true;
     } catch (cause) {
       throw new Error(authMessage(cause));
     }
-  }, []);
+  }, [replaceState]);
 
   const login = useCallback(async (email: string, password: string) => {
     const normalized = email.trim().toLowerCase();
@@ -236,9 +250,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const { data, error: loginError } = await getSupabaseClient().auth.signInWithPassword({ email: normalized, password });
       if (loginError) throw loginError;
       if (!data.user) throw new Error("Supabase did not return an authenticated user.");
-      setState(restoreProfile(data.user)); setError(null);
+      replaceState(restoreProfile(data.user)); setError(null);
     } catch (cause) { throw new Error(authMessage(cause)); }
-  }, []);
+  }, [replaceState]);
 
   const loginWithGoogle = useCallback(async () => {
     try {
@@ -299,7 +313,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   }, [commit]);
 
-  const logout = useCallback(async () => { await getSupabaseClient().auth.signOut(); localStorage.removeItem(CURRENT_KEY); setState(initialState); router.push("/"); }, [router]);
+  const logout = useCallback(async () => { await getSupabaseClient().auth.signOut(); localStorage.removeItem(CURRENT_KEY); replaceState(initialState); router.push("/"); }, [replaceState, router]);
 
   const saveComicProgress = useCallback((volumeId: string, pageIndex: number, completed = false) => commit((draft) => {
     draft.comicProgress ??= {};
