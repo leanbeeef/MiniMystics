@@ -10,7 +10,7 @@
     "build:cloudflare": "opennextjs-cloudflare build && node scripts/copy-prisma-wasm.mjs",
     "preview:cloudflare": "npm run build:cloudflare && opennextjs-cloudflare preview",
     "deploy:cloudflare": "npm run build:cloudflare && npm run cloudflare:release",
-    "cloudflare:release": "node --env-file-if-exists=.env.local scripts/cloudflare-release.mjs deploy",
+    "cloudflare:release": "npm run db:deploy && node --env-file-if-exists=.env.local scripts/cloudflare-release.mjs deploy",
     "cloudflare:upload": "node --env-file-if-exists=.env.local scripts/cloudflare-release.mjs upload",
     "admin:cloudflare:check": "wrangler deploy --config wrangler.admin.jsonc --dry-run --containers-rollout=none",
     "admin:cloudflare:deploy": "wrangler deploy --config wrangler.admin.jsonc",
@@ -22,7 +22,8 @@
     "data:import": "tsx scripts/import-cards.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "db:deploy": "node --env-file-if-exists=.env.local scripts/database-deploy.mjs"
   },
   "dependencies": {
     "@pixi/particle-emitter": "^5.0.10",

@@ -224,7 +224,15 @@ async function synchronizeState(identity: Awaited<ReturnType<typeof requireSupab
       if (cardIds.length) await tx.customCollectionCard.createMany({ data: cardIds.map((ownedCardId) => ({ collectionId: binder.id, ownedCardId })) });
     }
 
-    for (const opponentId of state.campaignWins) {
+    // A client can briefly be newer than the database during a staged rollout. Preserve the
+    // durable state blob instead of rolling the entire transaction back on CampaignProgress's
+    // opponent foreign key; the next save backfills progress after definitions are deployed.
+    const requestedOpponentIds = [...new Set(state.campaignWins)];
+    const knownOpponentIds = new Set((await tx.campaignOpponent.findMany({
+      where: { id: { in: requestedOpponentIds } },
+      select: { id: true },
+    })).map(({ id }) => id));
+    for (const opponentId of requestedOpponentIds.filter((id) => knownOpponentIds.has(id))) {
       await tx.campaignProgress.upsert({ where: { profileId_opponentId: { profileId: profile.id, opponentId } }, create: { profileId: profile.id, opponentId, wins: 1 }, update: {} });
     }
 

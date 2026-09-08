@@ -184,6 +184,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       try { mutator(draft); setError(null); } catch (cause) { setError(cause instanceof Error ? cause.message : "Something went wrong"); return current; }
       const email = draft.account?.email;
       if (email) {
+        const accounts = getAccounts();
+        accounts[email] = { ...accounts[email], state: draft };
+        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
         void queueCloudGameState(draft, activity, payload).catch((cause) => {
           setError(cause instanceof Error ? cause.message : "Could not save game progress.");
         });

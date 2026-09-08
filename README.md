@@ -38,7 +38,7 @@ Existing PostgreSQL player records are linked to Supabase identities by normaliz
 The committed `wrangler.jsonc` and `open-next.config.ts` configure the existing `minimystics` Worker, custom domain, and OpenNext cache bindings. In Cloudflare Workers Builds use:
 
 - Build command: `npm run build:cloudflare`
-- Deploy command: `npm run cloudflare:release`
+- Deploy command: `npm run cloudflare:release` (applies pending Prisma migrations and deterministic seed data before publishing)
 - Version command: `npm run cloudflare:upload`
 - Root directory: `/`
 

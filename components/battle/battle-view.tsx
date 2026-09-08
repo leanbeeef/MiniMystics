@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Activity, ArrowRight, Check, CircleOff, Clock3, Dices, Eye, GripHorizontal, Heart, Info, Maximize2, Minus, ScrollText, Shield, Sparkles, Swords, Target, TrendingUp, Trophy, WandSparkles, X, Zap } from "lucide-react";
+import { Activity, ArrowRight, Check, CircleOff, Clock3, Eye, GripHorizontal, Heart, Info, Maximize2, Minus, ScrollText, Shield, Sparkles, Swords, Target, TrendingUp, Trophy, WandSparkles, X, Zap } from "lucide-react";
 import { useGame } from "../game-provider";
 import { VFXManager, useVFX } from "../vfx/vfx-manager";
 import { BATTLE_ART, ORDER_ART, ORDER_COLORS } from "@/lib/art";
@@ -182,23 +182,26 @@ function BattleExperience() {
   const rollAction = useCallback(() => {
     if (!battle || !selection || selection.kind !== "special" || !target || !actor || rolling) return;
     emitAudioHook("dice_roll");
+    const resolvedFace = Math.floor(Math.random() * 8) + 1;
+    setDieFace(resolvedFace);
     setRolling(true);
     setHoldingRoll(false);
-    const resolvedFace = Math.floor(Math.random() * 8) + 1;
-    let face = 1;
-    const cycle = window.setInterval(() => { face = face % 8 + 1; setDieFace(face); }, 80);
     window.setTimeout(() => {
-      window.clearInterval(cycle);
-      setDieFace(resolvedFace);
+      setRolling(false);
       setHoldingRoll(true);
       window.setTimeout(() => {
         specialAttack(actor.instanceId, target.instanceId, selection.moveIndex, resolvedFace);
         setHoldingRoll(false);
-        setRolling(false);
         setPhase("PLAYER_RESOLVING");
       }, 1000);
-    }, 620);
+    }, 650);
   }, [battle, selection, target, actor, rolling, specialAttack, emitAudioHook]);
+
+  // The die rolls the instant a target is locked in (or the instant a self-targeted move is
+  // chosen, which skips target selection entirely) — no separate "Roll" button to click.
+  useEffect(() => {
+    if (phase === "PLAYER_ROLLING" && !rolling && !holdingRoll) rollAction();
+  }, [phase, rolling, holdingRoll, rollAction]);
 
   if (!battle) return <div className="page battle-empty"><div><Swords /><span>BATTLEFIELD</span><h1>No active battle</h1><p>Choose a campaign opponent to enter the arena.</p><Link href="/campaign" className="button primary">View campaign <ArrowRight /></Link></div></div>;
 
@@ -240,7 +243,7 @@ function BattleExperience() {
       />
     </div>
     <BattleLog events={battle.events} />
-    {phase === "PLAYER_ROLLING" && selectedMove ? <div className="battle-dice-overlay" role="dialog" aria-modal="true" aria-label="Dice roll required" onMouseDown={(event) => event.target === event.currentTarget && !rolling && cancelSelection()}><BattleDiceTray requirement={`${selectedMove.requiredRoll}+`} rolling={rolling} holding={holdingRoll} face={dieFace} onRoll={rollAction} onCancel={cancelSelection} /></div> : null}
+    {phase === "PLAYER_ROLLING" && selectedMove ? <div className="battle-dice-overlay" role="dialog" aria-modal="true" aria-label="Rolling the die" onMouseDown={(event) => event.target === event.currentTarget && !rolling && cancelSelection()}><BattleDiceTray requirement={`${selectedMove.requiredRoll}+`} rolling={rolling} holding={holdingRoll} face={dieFace} /></div> : null}
     {phase === "INTRO" ? <BattleIntroOverlay battle={battle} rolls={rolls} /> : null}
     {aiBanner ? <div className="ai-action-banner" role="status"><span>{battle.ai.name.toUpperCase()}</span><strong>Choosing a Mystic action</strong></div> : null}
     {rollOutcome ? <div className={`battle-roll-result ${rollOutcome.success ? "success" : "failure"}`} role="status"><span>ROLLED {rollOutcome.roll}</span><strong>{rollOutcome.success ? "SUCCESS" : "FAILED"}</strong></div> : null}
@@ -351,11 +354,42 @@ function BattleActionCard({ kind, title, icon, value, detail, available, selecte
   return <button className={`battle-action-card ${kind} ${selected ? "selected" : ""}`} disabled={!available} title={!available ? tooltip : undefined} onClick={onClick}><span className="action-icon">{icon}</span><span><small>{kind === "basic" ? "ATTACK" : "SPECIAL MOVE"}</small><strong>{title}</strong><em>{detail}</em></span><b>{value}</b>{!available && tooltip ? <i><Info />{tooltip}</i> : null}</button>;
 }
 
-function BattleDiceTray({ requirement, rolling, holding, face, onRoll, onCancel }: { requirement: string; rolling: boolean; holding: boolean; face: number; onRoll: () => void; onCancel: () => void }) {
-  return <div className={`battle-dice-tray ${holding ? "holding" : ""}`} aria-live="polite"><div><small>{holding ? "ROLL RESULT" : "ROLL 1D8"}</small><strong>{holding ? `Rolled ${face}` : `Need ${requirement} to succeed`}</strong></div><div className="battle-dice"><BattleDie face={face} rolling={rolling && !holding} /></div><button className="button dice-roll-button" disabled={rolling} onClick={onRoll}><Dices />{holding ? "RESULT" : rolling ? "ROLLING…" : "ROLL"}</button><button className="dice-cancel" disabled={rolling} onClick={onCancel}>Cancel</button></div>;
+function BattleDiceTray({ requirement, rolling, holding, face }: { requirement: string; rolling: boolean; holding: boolean; face: number }) {
+  return <div className={`battle-dice-tray ${holding ? "holding" : ""}`} aria-live="polite">
+    <div><small>{holding ? "ROLL RESULT" : rolling ? "ROLLING…" : "ROLL 1D8"}</small><strong>{holding ? `Rolled ${face}` : `Need ${requirement} to succeed`}</strong></div>
+    <div className="battle-dice"><BattleDie3D face={face} rolling={rolling} /></div>
+  </div>;
 }
 
-function BattleDie({ face, rolling }: { face: number; rolling: boolean }) { return <span className={`battle-die ${rolling ? "rolling" : ""}`} aria-label={`Die showing ${face}`}>{face}</span>; }
+/**
+ * A CSS-only 3D octahedron (8-sided die, matching the game's D8) built from eight border-triangle
+ * "faces" arranged around a rotating shell. While rolling, the shell spins continuously via the
+ * `.rolling` keyframes; when it stops, we freeze the mid-spin transform for one frame (via a
+ * direct style read) before handing off to the `data-rolled="N"` resting transform, so the
+ * `transition: transform` on `.dice` settles smoothly onto the landed face instead of snapping.
+ */
+function BattleDie3D({ face, rolling }: { face: number; rolling: boolean }) {
+  const diceRef = useRef<HTMLDivElement>(null);
+  const wasRolling = useRef(rolling);
+
+  useEffect(() => {
+    const node = diceRef.current;
+    if (node && wasRolling.current && !rolling) {
+      const midSpin = window.getComputedStyle(node).transform;
+      node.style.transform = midSpin === "none" ? "" : midSpin;
+      requestAnimationFrame(() => { node.style.transform = ""; });
+    }
+    wasRolling.current = rolling;
+  }, [rolling]);
+
+  return (
+    <div className="dice-stage">
+      <div className={`dice ${rolling ? "rolling" : ""}`} data-rolled={rolling ? undefined : face} ref={diceRef} aria-label={`Die showing ${face}`} role="img">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((side) => <div className="face" data-side={side} key={side}><span className="face-pip">{side}</span></div>)}
+      </div>
+    </div>
+  );
+}
 
 const battleLogInset = 8;
 
@@ -487,7 +521,7 @@ function BattleLog({ events }: { events: BattleEvent[] }) {
 function BattleEventRow({ event }: { event: BattleEvent }) { return <div className={`battle-event event-${event.type}`}><span>T{event.turn}</span><p>{event.message}</p></div>; }
 
 function BattleIntroOverlay({ battle, rolls }: { battle: NonNullable<ReturnType<typeof useGame>["state"]["battle"]>; rolls: { player: number; opponent: number } }) {
-  return <div className="battle-overlay battle-intro"><div className="intro-versus"><section><small>YOUR ROLL</small><BattleDie face={rolls.player} rolling={false} /><strong>{battle.player.name}</strong></section><span>VS</span><section><small>RIVAL ROLL</small><BattleDie face={rolls.opponent} rolling={false} /><strong>{battle.ai.name}</strong></section></div><p>{battle.currentTurn === "player" ? "You act first" : `${battle.ai.name} acts first`}</p></div>;
+  return <div className="battle-overlay battle-intro"><div className="intro-versus"><section><small>YOUR ROLL</small><BattleDie3D face={rolls.player} rolling={false} /><strong>{battle.player.name}</strong></section><span>VS</span><section><small>RIVAL ROLL</small><BattleDie3D face={rolls.opponent} rolling={false} /><strong>{battle.ai.name}</strong></section></div><p>{battle.currentTurn === "player" ? "You act first" : `${battle.ai.name} acts first`}</p></div>;
 }
 
 function BattleInspectOverlay({ mystic, onClose }: { mystic: Combatant; onClose: () => void }) {
