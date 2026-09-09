@@ -7,16 +7,20 @@ export type Rarity = (typeof RARITIES)[number];
 // ---------------------------------------------------------------------------
 
 export type EffectDuration =
+  | { unit: "untilSourceNextTurn" }
+  | { unit: "untilConsumed" }
   | { unit: "turns"; count: number } // "for N turn(s)" — ticks down starting at the owner's next turn
   | { unit: "untilOwnerNextTurn" } // "until your next turn" / "until the start of your next turn" — expires once, at the owner's next turn start
   | { unit: "thisAttackOnly" }; // "for this attack" — folded directly into the current damage calc, never persists
 
-export type EffectSubject = "self" | "target" | "allyAuto" | "allTeam";
+export type EffectSubject = "self" | "target" | "allyAuto" | "allTeam" | "allEnemies";
 
 export type EffectSpec =
   | { kind: "statModifier"; stat: "atk" | "def" | "power"; subject: EffectSubject; percent: number; duration: EffectDuration }
   | { kind: "heal" | "recoil"; subject: "self"; percent: number } // one-time, % of max Power Score
-  | { kind: "cooldownDelta"; subject: "self" | "target"; scope: "longestActive" | "otherMove" | "bothMoves"; amount: number }
+  | { kind: "cooldownDelta"; subject: EffectSubject; scope: "longestActive" | "otherMove" | "bothMoves" | "allActive"; amount: number; order?: string }
+  | { kind: "powerChange"; subject: EffectSubject; amount?: number; percent?: number; basis?: "maximum" | "current"; healing: boolean }
+  | { kind: "blockDefenseBuff"; subject: "target"; duration: EffectDuration }
   | { kind: "markDefenseOnNextHit"; subject: "target"; percent: number }
   | { kind: "retaliateAtkDebuff"; subject: "self"; percent: number }
   | { kind: "silence" | "stun" | "untouchable"; subject: "self" | "target"; duration: EffectDuration }

@@ -156,7 +156,7 @@ describe("buyPack duplicate protection end to end", () => {
     const standard = PACK_DEFINITIONS.find((pack) => pack.id === "standard")!;
     expect(standard.handlerChancePercent).toBeLessThan(100);
     expect(standard.bonusRewardChancePercent).toBeLessThan(100);
-    expect(standard.coinPrice).toBeLessThan(500); // cheaper than the old guaranteed-everything price
+    expect(standard.coinPrice).toBe(500);
   });
 
   it("Handler Pack still guarantees a Handler", () => {
@@ -342,5 +342,33 @@ describe("duplicate management: sell and dismantle", () => {
     const state = structuredClone(initialState);
     state.ownedCards = [owned(definition.id)];
     expect(() => dismantleCard(state, state.ownedCards[0].id)).toThrow();
+  });
+});
+
+
+describe("Apex packs", () => {
+  it("imports all eleven Apex Mystics with distinct artwork and parsed moves", () => {
+    const apex = catalog.mystics.filter(card => card.rarity === "Apex");
+    expect(apex).toHaveLength(11);
+    expect(new Set(apex.map(card => card.image)).size).toBe(11);
+    expect(apex.every(card => card.image?.includes("Apex%20Cards/") && card.moves.every(move => !move.needsReview))).toBe(true);
+    expect(catalog.handlers.find(card => card.name === "Arch, The Fallen")?.image).not.toContain("Arch_apex");
+  });
+  it("charges 15000 for exactly one random Apex without changing pity or bonuses", () => {
+    for (let trial = 0; trial < 30; trial++) {
+      const state = structuredClone(initialState); state.coins = 15000; state.pity = 7;
+      buyPack(state, "apex");
+      expect(state.coins).toBe(0); expect(state.pity).toBe(7);
+      expect(state.openings).toHaveLength(1); expect(state.openings[0].cards).toHaveLength(1);
+      expect(state.openings[0].cards[0]).toMatchObject({ kind: "mystic", rarity: "Apex", revealed: false });
+      expect(state.ownedCards).toHaveLength(1); expect(state.inventory).toHaveLength(0); expect(state.xp).toBe(0);
+      expect(state.ownedCards[0].definitionId).toBe(state.openings[0].cards[0].definitionId);
+    }
+  });
+  it("rejects insufficient coins without altering the account", () => {
+    const state = structuredClone(initialState); state.coins = 14999;
+    const before = structuredClone(state);
+    expect(() => buyPack(state, "apex")).toThrow("Not enough Coins");
+    expect(state).toEqual(before);
   });
 });

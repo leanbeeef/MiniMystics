@@ -126,6 +126,8 @@ export function buyPack(state: PlayerState, packId: string, selectedOrder?: stri
   const pack = PACK_DEFINITIONS.find((item) => item.id === packId);
   if (!pack) throw new Error("Pack not found");
   if (state.coins < pack.coinPrice) throw new Error("Not enough Coins");
+  const apexPool = packId === "apex" ? catalog.mystics.filter((card) => card.rarity === "Apex") : [];
+  if (packId === "apex" && !apexPool.length) throw new Error("No Apex Mystics available");
   state.coins -= pack.coinPrice;
   let cards: RewardCard[] = [];
   if (packId === "standard") {
@@ -135,7 +137,8 @@ export function buyPack(state: PlayerState, packId: string, selectedOrder?: stri
     const bonusReward = Math.random() * 100 < pack.bonusRewardChancePercent ? [createRewardCard()] : [];
     cards = [...mystics.map((m) => cardReward("mystic", m)), ...bonusHandler, ...bonusReward];
     state.pity = nextAlphaPity(state.pity, mystics.map((m) => m.rarity));
-  } else if (packId === "handler") cards = [cardReward("handler", randomOf(catalog.handlers))];
+  } else if (packId === "apex") cards = [cardReward("mystic", randomOf(apexPool))];
+  else if (packId === "handler") cards = [cardReward("handler", randomOf(catalog.handlers))];
   else {
     let pool = catalog.mystics;
     if (packId === "order") pool = pool.filter((m) => m.order === selectedOrder);

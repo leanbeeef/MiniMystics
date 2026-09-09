@@ -73,7 +73,7 @@ function BattleExperience() {
   const target = battle?.ai.mystics.find((mystic) => mystic.instanceId === targetId) ?? battle?.player.mystics.find((mystic) => mystic.instanceId === targetId);
   const selectedMove = selection?.kind === "special" ? actor?.moves[selection.moveIndex] : undefined;
   const isTargeting = phase === "PLAYER_SELECT_TARGET";
-  const targetSide = selection?.kind === "special" && selectedMove?.targetType === "self" ? "player" : "ai";
+  const targetSide = selection?.kind === "special" && selectedMove?.targetType !== "enemy" ? "player" : "ai";
 
   useEffect(() => {
     if (!battle) return;
@@ -285,7 +285,7 @@ function BattleControlDeck({ battle, actor, target, selection, playerCanAct, onA
             const silenced = actor.activeEffects.some((effect) => effect.kind === "silence");
             const blocked = move.needsReview || cooldown > 0 || silenced;
             const previewTarget = move.targetType === "self" ? actor : target;
-            const value = cooldown ? `CD ${cooldown}` : move.targetType !== "self" && previewTarget && actor ? actionDamagePreview(actor, previewTarget, battle.player.synergies, move) ?? `${move.requiredRoll}+` : `${move.requiredRoll}+`;
+            const value = cooldown ? `CD ${cooldown}` : move.targetType === "enemy" && previewTarget && actor ? actionDamagePreview(actor, previewTarget, battle.player.synergies, move) ?? `${move.requiredRoll}+` : `${move.requiredRoll}+`;
             return <BattleActionCard key={move.name} kind="special" title={move.name} icon={<Sparkles />} value={value} detail={move.needsReview ? "Needs rules review" : `${move.rawText.split("|").pop()?.trim() ?? "Special effect"} · D8`} available={playerCanAct && !blocked} selected={selection?.kind === "special" && selection.moveIndex === index} tooltip={move.needsReview ? move.reviewReason : silenced ? "This Mystic is Silenced." : cooldown ? `This move is on cooldown for ${cooldown} more turn${cooldown === 1 ? "" : "s"}.` : `Roll ${move.requiredRoll}+ on one D8.`} onClick={() => onAction({ kind: "special", moveIndex: index })} />;
           })}
         </div>

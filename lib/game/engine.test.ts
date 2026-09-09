@@ -1,3 +1,4 @@
+import { parseMove } from "./move-parser";
 import { describe, expect, it } from "vitest";
 import { calculateDamage, checkVictory, effectiveDefense, endTurn, isMoveSuccessful, performBasicAttack, performSpecial, tickCooldowns } from "./engine";
 import { levelBonusPercent } from "./economy";
@@ -332,5 +333,65 @@ describe("defeated Mystics and victory", () => {
     endTurn(state);
     expect(state.winner).toBe("player");
     expect(state.currentTurn).toBe("player"); // unchanged, no further turn flip
+  });
+});
+
+
+describe("team and chosen-ally Special effects", () => {
+  const parsed = (text: string) => parseMove("Apex test", "3+", "3", text);
+  it("heals the chosen ally, caps healing, and rejects enemy selections before rolling", () => {
+    const caster = fighter("p", { moves: [parsed("Choose 1 allied Mystic. It recovers 15 Power.")] });
+    const ally = fighter("ally", { currentPower: 20 }); const state = battle([caster, ally]);
+    expect(() => performSpecial(state, "player", "p", "a", 0, { rollD8: () => 8 })).toThrow("Choose an allied");
+    expect(caster.cooldowns).toEqual({});
+    performSpecial(state, "player", "p", "ally", 0, { rollD8: () => 8 });
+    expect(ally.currentPower).toBe(30); expect(caster.currentPower).toBe(30); expect(state.ai.mystics[0].currentPower).toBe(30);
+  });
+  it("applies both the team buff and fixed healing from one compound clause", () => {
+    const caster = fighter("p", { currentPower: 5, moves: [parsed("All allied Mystics gain +15% ATK for 2 turns and recover 10 Power.")] });
+    const ally = fighter("ally", { currentPower: 12 }); const state = battle([caster, ally]);
+    performSpecial(state, "player", "p", "p", 0, { rollD8: () => 8 });
+    expect([caster.currentPower, ally.currentPower]).toEqual([15, 22]);
+    for (const m of [caster, ally]) expect(m.activeEffects).toEqual(expect.arrayContaining([expect.objectContaining({ stat: "atk", percent: 15 })]));
+  });
+  it("filters allied cooldown recovery by Order", () => {
+    const caster = fighter("p", { moves: [parsed("Target enemy loses 20% DEF for 2 turns. All allied Worldforge Mystics reduce one active Special cooldown by 1.")] });
+    const ally = fighter("ally", { cooldowns: { Quickstrike: 2 } });
+    const other = fighter("other", { order: "Sunspire", cooldowns: { Quickstrike: 2 } });
+    const state = battle([caster, ally, other]);
+    performSpecial(state, "player", "p", "a", 0, { rollD8: () => 8 });
+    expect(ally.cooldowns.Quickstrike).toBe(1); expect(other.cooldowns.Quickstrike).toBe(2);
+  });
+  it("adjusts only active enemy cooldowns and applies the team debuff", () => {
+    const caster = fighter("p", { moves: [parsed("Increase all active enemy Special cooldowns by 1 and reduce enemy team ATK by 10% for 2 turns.")] });
+    const enemy = fighter("a", { moves: [move(), move({ name: "Ready" })], cooldowns: { Quickstrike: 2, Ready: 0 } });
+    const state = battle([caster], [enemy]);
+    performSpecial(state, "player", "p", "p", 0, { rollD8: () => 8 });
+    // The enemy's normal turn-start tick follows the +1 effect.
+    expect(enemy.cooldowns).toEqual({ Quickstrike: 2, Ready: 0 });
+    expect(enemy.activeEffects).toEqual(expect.arrayContaining([expect.objectContaining({ stat: "atk", percent: -10 })]));
+  });
+  it("blocks new DEF buffs through the enemy turn, then expires on the source turn", () => {
+    const caster = fighter("p", { moves: [parsed("Target enemy loses 20% DEF for 2 turns and cannot receive new DEF buffs until the start of your next turn.")] });
+    const enemy = fighter("a", { moves: [parsed("Self gains +20% DEF for 2 turns.")] });
+    const state = battle([caster], [enemy]);
+    performSpecial(state, "player", "p", "a", 0, { rollD8: () => 8 });
+    expect(enemy.activeEffects.some(e => e.kind === "blockDefenseBuff")).toBe(true);
+    performSpecial(state, "ai", "a", "a", 0, { rollD8: () => 8 });
+    expect(enemy.activeEffects.some(e => e.stat === "def" && e.percent > 0)).toBe(false);
+    expect(enemy.activeEffects.some(e => e.kind === "blockDefenseBuff")).toBe(false);
+  });
+  it("uses current enemy Power for team loss, then resolves fixed caster recoil", () => {
+    const caster = fighter("p", { moves: [parsed("All enemy Mystics lose 12% of their current Power Score and 15% ATK for 2 turns. Arch loses 10 Power after the effect resolves.")] });
+    const enemy = fighter("a", { maxPower: 100, currentPower: 50 }); const state = battle([caster], [enemy]);
+    performSpecial(state, "player", "p", "p", 0, { rollD8: () => 8 });
+    expect(enemy.currentPower).toBe(44); expect(caster.currentPower).toBe(20);
+  });
+  it("makes a selected ally untouchable for exactly one attack", () => {
+    const caster = fighter("p", { moves: [parsed("Choose 1 allied Mystic. The next attack targeting it deals 0 damage, and it gains +15% ATK until the start of your next turn.")] });
+    const ally = fighter("ally"); const state = battle([caster, ally]);
+    performSpecial(state, "player", "p", "ally", 0, { rollD8: () => 8 });
+    expect(calculateDamage(state.ai.mystics[0], ally, null, {}).finalDamage).toBe(0);
+    expect(calculateDamage(state.ai.mystics[0], ally, null, {}).finalDamage).toBeGreaterThan(0);
   });
 });

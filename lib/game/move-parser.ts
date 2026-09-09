@@ -1,3 +1,4 @@
+import { parseTeamMove } from "./team-move-parser";
 import type { EffectDuration, EffectSpec, ParsedMove } from "./types";
 
 const num = (text: string) => Number(text);
@@ -168,6 +169,8 @@ export function parseMove(name: string, rollText: string, cooldownText: string, 
   const rawText = `${name}: ${rollText} | CD ${cooldownText} | ${effectText}`.trim();
   const requiredRoll = Number(rollText.match(/\d+/)?.[0] ?? 8);
   const cooldown = Number(cooldownText.match(/\d+/)?.[0] ?? 1);
+  const compound = parseTeamMove(effectText);
+  if (compound) return { name: name.trim(), requiredRoll, cooldown, rawText, needsReview: false, ...compound };
   let text = effectText.trim();
 
   let damageModifierPercent: number | undefined;

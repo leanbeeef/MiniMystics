@@ -5398,6 +5398,665 @@
         }
       ],
       "image": "/cards/Mystics/order%20of%20the%20star/Starborn.png"
+    },
+    {
+      "id": "MM-APX-001",
+      "name": "Astrael, The First",
+      "order": "Order of the Star",
+      "allegiance": "Ascendant",
+      "rarity": "Apex",
+      "power": 150,
+      "defense": 52,
+      "baseAttack": 55,
+      "moves": [
+        {
+          "name": "Stellar Orbit",
+          "requiredRoll": 3,
+          "cooldown": 1,
+          "rawText": "Stellar Orbit: 3+ | CD 1 | Self gains +20% ATK and +10% DEF for 2 turns.",
+          "needsReview": false,
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "subject": "self",
+              "stat": "atk",
+              "percent": 20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            },
+            {
+              "kind": "statModifier",
+              "subject": "self",
+              "stat": "def",
+              "percent": 10,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ]
+        },
+        {
+          "name": "Celestial Nova",
+          "requiredRoll": 6,
+          "cooldown": 3,
+          "rawText": "Celestial Nova: 6+ | CD 3 | All allied Mystics gain +15% ATK for 2 turns and recover 10 Power.",
+          "needsReview": false,
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "subject": "allTeam",
+              "stat": "atk",
+              "percent": 15,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            },
+            {
+              "kind": "powerChange",
+              "subject": "allTeam",
+              "healing": true,
+              "amount": 10
+            }
+          ]
+        }
+      ],
+      "image": "/cards/Mystics/Apex%20Cards/astrael.png"
+    },
+    {
+      "id": "MM-APX-002",
+      "name": "Archeion, The Crowned",
+      "order": "Sovereign Order",
+      "allegiance": "Ascendant",
+      "rarity": "Apex",
+      "power": 149,
+      "defense": 54,
+      "baseAttack": 52,
+      "moves": [
+        {
+          "name": "Crown Decree",
+          "requiredRoll": 3,
+          "cooldown": 1,
+          "rawText": "Crown Decree: 3+ | CD 1 | Target enemy Mystic loses 15% ATK for 2 turns.",
+          "needsReview": false,
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "subject": "target",
+              "stat": "atk",
+              "percent": -15,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sovereign Starfall",
+          "requiredRoll": 6,
+          "cooldown": 3,
+          "rawText": "Sovereign Starfall: 6+ | CD 3 | All allied Mystics gain +15% DEF for 2 turns and reduce one active Special cooldown by 1.",
+          "needsReview": false,
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "subject": "allTeam",
+              "stat": "def",
+              "percent": 15,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            },
+            {
+              "kind": "cooldownDelta",
+              "subject": "allTeam",
+              "scope": "longestActive",
+              "amount": -1
+            }
+          ]
+        }
+      ],
+      "image": "/cards/Mystics/Apex%20Cards/archeion.png"
+    },
+    {
+      "id": "MM-APX-003",
+      "name": "Solara, The Lightkeeper",
+      "order": "Sunspire",
+      "allegiance": "Ascendant",
+      "rarity": "Apex",
+      "power": 146,
+      "defense": 47,
+      "baseAttack": 57,
+      "moves": [
+        {
+          "name": "Dawnblaze",
+          "requiredRoll": 3,
+          "cooldown": 1,
+          "rawText": "Dawnblaze: 3+ | CD 1 | Self gains +20% ATK until the end of the turn and recovers 8 Power.",
+          "needsReview": false,
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "powerChange",
+              "subject": "self",
+              "healing": true,
+              "amount": 8
+            }
+          ],
+          "damageModifierPercent": 20
+        },
+        {
+          "name": "Solar Ascent",
+          "requiredRoll": 6,
+          "cooldown": 3,
+          "rawText": "Solar Ascent: 6+ | CD 3 | All allied Mystics recover 15 Power and gain +15% DEF until the start of your next turn.",
+          "needsReview": false,
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "powerChange",
+              "subject": "allTeam",
+              "healing": true,
+              "amount": 15
+            },
+            {
+              "kind": "statModifier",
+              "subject": "allTeam",
+              "stat": "def",
+              "percent": 15,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ]
+        }
+      ],
+      "image": "/cards/Mystics/Apex%20Cards/solara.png"
+    },
+    {
+      "id": "MM-APX-004",
+      "name": "Orionyx, The Watcher",
+      "order": "Starwatch",
+      "allegiance": "Ascendant",
+      "rarity": "Apex",
+      "power": 147,
+      "defense": 50,
+      "baseAttack": 51,
+      "moves": [
+        {
+          "name": "Constellation Mark",
+          "requiredRoll": 3,
+          "cooldown": 1,
+          "rawText": "Constellation Mark: 3+ | CD 1 | Target enemy Mystic loses 15% DEF for 2 turns.",
+          "needsReview": false,
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "subject": "target",
+              "stat": "def",
+              "percent": -15,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ]
+        },
+        {
+          "name": "Horizon Eclipse",
+          "requiredRoll": 6,
+          "cooldown": 3,
+          "rawText": "Horizon Eclipse: 6+ | CD 3 | All enemy Mystics lose 10% ATK for 2 turns and have their active Special cooldowns increased by 1.",
+          "needsReview": false,
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "subject": "allEnemies",
+              "stat": "atk",
+              "percent": -10,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            },
+            {
+              "kind": "cooldownDelta",
+              "subject": "allEnemies",
+              "scope": "allActive",
+              "amount": 1
+            }
+          ]
+        }
+      ],
+      "image": "/cards/Mystics/Apex%20Cards/orionyx.png"
+    },
+    {
+      "id": "MM-APX-005",
+      "name": "Veyra, The Lifegiver",
+      "order": "Verdant Dawn",
+      "allegiance": "Ascendant",
+      "rarity": "Apex",
+      "power": 155,
+      "defense": 52,
+      "baseAttack": 48,
+      "moves": [
+        {
+          "name": "Starseed Bloom",
+          "requiredRoll": 3,
+          "cooldown": 1,
+          "rawText": "Starseed Bloom: 3+ | CD 1 | Choose 1 allied Mystic. It recovers 15 Power.",
+          "needsReview": false,
+          "targetType": "ally",
+          "effects": [
+            {
+              "kind": "powerChange",
+              "subject": "target",
+              "healing": true,
+              "amount": 15
+            }
+          ]
+        },
+        {
+          "name": "Genesis Tide",
+          "requiredRoll": 6,
+          "cooldown": 3,
+          "rawText": "Genesis Tide: 6+ | CD 3 | All allied Mystics recover 12% of their maximum Power Score and gain +10% DEF for 2 turns.",
+          "needsReview": false,
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "powerChange",
+              "subject": "allTeam",
+              "healing": true,
+              "percent": 12,
+              "basis": "maximum"
+            },
+            {
+              "kind": "statModifier",
+              "subject": "allTeam",
+              "stat": "def",
+              "percent": 10,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ]
+        }
+      ],
+      "image": "/cards/Mystics/Apex%20Cards/veyra.png"
+    },
+    {
+      "id": "MM-APX-006",
+      "name": "Titanor, The Shaper",
+      "order": "Worldforge",
+      "allegiance": "Ascendant",
+      "rarity": "Apex",
+      "power": 158,
+      "defense": 60,
+      "baseAttack": 47,
+      "moves": [
+        {
+          "name": "Cosmic Anvil",
+          "requiredRoll": 3,
+          "cooldown": 1,
+          "rawText": "Cosmic Anvil: 3+ | CD 1 | Self gains +20% DEF for 2 turns.",
+          "needsReview": false,
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "subject": "self",
+              "stat": "def",
+              "percent": 20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ]
+        },
+        {
+          "name": "Creator's Press",
+          "requiredRoll": 6,
+          "cooldown": 3,
+          "rawText": "Creator's Press: 6+ | CD 3 | Target enemy loses 20% DEF for 2 turns. All allied Worldforge Mystics reduce one active Special cooldown by 1.",
+          "needsReview": false,
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "subject": "target",
+              "stat": "def",
+              "percent": -20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            },
+            {
+              "kind": "cooldownDelta",
+              "subject": "allTeam",
+              "scope": "longestActive",
+              "amount": -1,
+              "order": "Worldforge"
+            }
+          ]
+        }
+      ],
+      "image": "/cards/Mystics/Apex%20Cards/titanor.png"
+    },
+    {
+      "id": "MM-APX-007",
+      "name": "Elyndra, The Dreamer",
+      "order": "Moonveil",
+      "allegiance": "Ascendant",
+      "rarity": "Apex",
+      "power": 144,
+      "defense": 46,
+      "baseAttack": 56,
+      "moves": [
+        {
+          "name": "Dreamthread",
+          "requiredRoll": 3,
+          "cooldown": 1,
+          "rawText": "Dreamthread: 3+ | CD 1 | Target enemy Mystic loses 15% ATK for 2 turns.",
+          "needsReview": false,
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "subject": "target",
+              "stat": "atk",
+              "percent": -15,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lucid Aurora",
+          "requiredRoll": 6,
+          "cooldown": 3,
+          "rawText": "Lucid Aurora: 6+ | CD 3 | Choose 1 allied Mystic. The next attack targeting it deals 0 damage, and it gains +15% ATK until the start of your next turn.",
+          "needsReview": false,
+          "targetType": "ally",
+          "effects": [
+            {
+              "kind": "untouchable",
+              "subject": "target",
+              "duration": {
+                "unit": "untilConsumed"
+              }
+            },
+            {
+              "kind": "statModifier",
+              "subject": "target",
+              "stat": "atk",
+              "percent": 15,
+              "duration": {
+                "unit": "untilOwnerNextTurn"
+              }
+            }
+          ]
+        }
+      ],
+      "image": "/cards/Mystics/Apex%20Cards/elyndra.png"
+    },
+    {
+      "id": "MM-APX-008",
+      "name": "Chronyx, The Keeper of Ages",
+      "order": "Agespire",
+      "allegiance": "Ascendant",
+      "rarity": "Apex",
+      "power": 148,
+      "defense": 53,
+      "baseAttack": 50,
+      "moves": [
+        {
+          "name": "Timeshift Arc",
+          "requiredRoll": 3,
+          "cooldown": 1,
+          "rawText": "Timeshift Arc: 3+ | CD 1 | Choose 1 allied Mystic. Reduce one of its active Special cooldowns by 1, minimum 0.",
+          "needsReview": false,
+          "targetType": "ally",
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": -1
+            }
+          ]
+        },
+        {
+          "name": "Epoch Collapse",
+          "requiredRoll": 6,
+          "cooldown": 3,
+          "rawText": "Epoch Collapse: 6+ | CD 3 | Increase all active enemy Special cooldowns by 1 and reduce enemy team ATK by 10% for 2 turns.",
+          "needsReview": false,
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "cooldownDelta",
+              "subject": "allEnemies",
+              "scope": "allActive",
+              "amount": 1
+            },
+            {
+              "kind": "statModifier",
+              "subject": "allEnemies",
+              "stat": "atk",
+              "percent": -10,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            }
+          ]
+        }
+      ],
+      "image": "/cards/Mystics/Apex%20Cards/chronyx.png"
+    },
+    {
+      "id": "MM-APX-009",
+      "name": "Caelus, The Gatekeeper",
+      "order": "Stargate",
+      "allegiance": "Ascendant",
+      "rarity": "Apex",
+      "power": 147,
+      "defense": 55,
+      "baseAttack": 49,
+      "moves": [
+        {
+          "name": "Astral Key",
+          "requiredRoll": 3,
+          "cooldown": 1,
+          "rawText": "Astral Key: 3+ | CD 1 | Choose 1 allied Mystic. It gains +15% DEF for 2 turns and reduces one active Special cooldown by 1.",
+          "needsReview": false,
+          "targetType": "ally",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "subject": "target",
+              "stat": "def",
+              "percent": 15,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            },
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": -1
+            }
+          ]
+        },
+        {
+          "name": "Gatefall Surge",
+          "requiredRoll": 6,
+          "cooldown": 3,
+          "rawText": "Gatefall Surge: 6+ | CD 3 | Target enemy loses 20% DEF for 2 turns and cannot receive new DEF buffs until the start of your next turn.",
+          "needsReview": false,
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "subject": "target",
+              "stat": "def",
+              "percent": -20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            },
+            {
+              "kind": "blockDefenseBuff",
+              "subject": "target",
+              "duration": {
+                "unit": "untilSourceNextTurn"
+              }
+            }
+          ]
+        }
+      ],
+      "image": "/cards/Mystics/Apex%20Cards/caelus.png"
+    },
+    {
+      "id": "MM-APX-010",
+      "name": "Luminar, The Spark",
+      "order": "First Spark",
+      "allegiance": "Ascendant",
+      "rarity": "Apex",
+      "power": 143,
+      "defense": 44,
+      "baseAttack": 60,
+      "moves": [
+        {
+          "name": "Star Ignition",
+          "requiredRoll": 3,
+          "cooldown": 1,
+          "rawText": "Star Ignition: 3+ | CD 1 | Self gains +25% ATK for this attack.",
+          "needsReview": false,
+          "targetType": "enemy",
+          "effects": [],
+          "damageModifierPercent": 25
+        },
+        {
+          "name": "Radiant Flashburst",
+          "requiredRoll": 6,
+          "cooldown": 3,
+          "rawText": "Radiant Flashburst: 6+ | CD 3 | All allied Mystics gain +15% ATK for 2 turns and reduce one active Special cooldown by 1.",
+          "needsReview": false,
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "subject": "allTeam",
+              "stat": "atk",
+              "percent": 15,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            },
+            {
+              "kind": "cooldownDelta",
+              "subject": "allTeam",
+              "scope": "longestActive",
+              "amount": -1
+            }
+          ]
+        }
+      ],
+      "image": "/cards/Mystics/Apex%20Cards/luminar.png"
+    },
+    {
+      "id": "MM-APX-011",
+      "name": "Arch, The Fallen",
+      "order": "Sovereign Order",
+      "allegiance": "Voidbound",
+      "rarity": "Apex",
+      "power": 160,
+      "defense": 56,
+      "baseAttack": 61,
+      "moves": [
+        {
+          "name": "Void Decree",
+          "requiredRoll": 3,
+          "cooldown": 1,
+          "rawText": "Void Decree: 3+ | CD 1 | Target enemy Mystic loses 20% DEF for 2 turns and one active Special cooldown is increased by 1.",
+          "needsReview": false,
+          "targetType": "enemy",
+          "effects": [
+            {
+              "kind": "statModifier",
+              "subject": "target",
+              "stat": "def",
+              "percent": -20,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            },
+            {
+              "kind": "cooldownDelta",
+              "subject": "target",
+              "scope": "longestActive",
+              "amount": 1
+            }
+          ]
+        },
+        {
+          "name": "Oblivion Collapse",
+          "requiredRoll": 6,
+          "cooldown": 3,
+          "rawText": "Oblivion Collapse: 6+ | CD 3 | All enemy Mystics lose 12% of their current Power Score and 15% ATK for 2 turns. Arch loses 10 Power after the effect resolves.",
+          "needsReview": false,
+          "targetType": "self",
+          "effects": [
+            {
+              "kind": "powerChange",
+              "subject": "allEnemies",
+              "healing": false,
+              "percent": 12,
+              "basis": "current"
+            },
+            {
+              "kind": "statModifier",
+              "subject": "allEnemies",
+              "stat": "atk",
+              "percent": -15,
+              "duration": {
+                "unit": "turns",
+                "count": 2
+              }
+            },
+            {
+              "kind": "powerChange",
+              "subject": "self",
+              "healing": false,
+              "amount": 10
+            }
+          ]
+        }
+      ],
+      "image": "/cards/Mystics/Apex%20Cards/Arch_apex.png"
     }
   ],
   "handlers": [

@@ -136,13 +136,19 @@ function applyEffect(ctx: EffectContext, spec: EffectSpec) {
     ...partial,
   });
 
+  const recipients = (subject: import("./types").EffectSubject) => {
+    if (subject === "allTeam") return casterSide.mystics.filter(m => !m.defeated);
+    if (subject === "allEnemies") return opponentSide.mystics.filter(m => !m.defeated);
+    if (subject === "allyAuto") { const ally = lowestPowerAlly(casterSide, caster.instanceId); return ally ? [ally] : []; }
+    return [subject === "self" ? caster : target];
+  };
   switch (spec.kind) {
     case "statModifier": {
       const label = `${spec.stat.toUpperCase()} ${spec.percent > 0 ? "+" : ""}${spec.percent}%`;
-      const applyTo = (on: Combatant) => { on.activeEffects.push(newEffect({ kind: "statModifier", stat: spec.stat, percent: spec.percent, duration: spec.duration, remainingTurns: spec.duration.unit === "turns" ? spec.duration.count : 0, label }, on)); log(spec.percent >= 0 ? "buff" : "debuff", `${on.name} ${spec.percent >= 0 ? "gains" : "suffers"} ${label}.`); };
+      const applyTo = (on: Combatant) => { if (spec.stat === "def" && spec.percent > 0 && on.activeEffects.some(effect => effect.kind === "blockDefenseBuff")) { log("system", `${on.name} cannot receive new DEF buffs.`); return; } on.activeEffects.push(newEffect({ kind: "statModifier", stat: spec.stat, percent: spec.percent, duration: spec.duration, remainingTurns: spec.duration.unit === "turns" ? spec.duration.count : 0, label }, on)); log(spec.percent >= 0 ? "buff" : "debuff", `${on.name} ${spec.percent >= 0 ? "gains" : "suffers"} ${label}.`); };
       if (spec.subject === "self") applyTo(caster);
       else if (spec.subject === "target") applyTo(target);
-      else if (spec.subject === "allTeam") casterSide.mystics.filter((m) => !m.defeated).forEach(applyTo);
+      else if (spec.subject === "allTeam" || spec.subject === "allEnemies") recipients(spec.subject).forEach(applyTo);
       else if (spec.subject === "allyAuto") { const ally = lowestPowerAlly(casterSide, caster.instanceId); if (ally) applyTo(ally); else log("system", `${caster.name} had no other ally to buff.`); }
       break;
     }
@@ -158,12 +164,28 @@ function applyEffect(ctx: EffectContext, spec: EffectSpec) {
       log("damage", `${caster.name} lost ${amount} Power from recoil.`);
       break;
     }
+    case "powerChange": {
+      for (const on of recipients(spec.subject)) {
+        const amount = spec.amount ?? roundHalfUp((spec.basis === "current" ? on.currentPower : on.maxPower) * (spec.percent ?? 0) / 100);
+        const before = on.currentPower;
+        if (spec.healing) on.currentPower = Math.min(on.maxPower, on.currentPower + amount);
+        else applyDamage(on, amount);
+        log(spec.healing ? "heal" : "damage", `${on.name} ${spec.healing ? "recovered" : "lost"} ${Math.abs(on.currentPower - before)} Power.`);
+      }
+      break;
+    }
     case "cooldownDelta": {
-      const on = spec.subject === "self" ? caster : target;
-      if (spec.scope === "bothMoves") on.moves.forEach((move) => adjustCooldown(on, move.name, spec.amount));
-      else if (spec.scope === "otherMove") { const other = on.moves.find((move) => move.name !== ctx.moveName); if (other) adjustCooldown(on, other.name, spec.amount); }
-      else { const moveName = longestActiveCooldownMove(on); if (moveName) adjustCooldown(on, moveName, spec.amount); else { log("system", `${on.name} had no active Special Move recovery to adjust.`); break; } }
-      log("cooldown", `${on.name}'s Special Move recovery changed by ${spec.amount > 0 ? "+" : ""}${spec.amount} turn(s).`);
+      for (const on of recipients(spec.subject).filter(on => !spec.order || on.order === spec.order)) {
+        if (spec.scope === "bothMoves" || spec.scope === "allActive") on.moves.filter(move => spec.scope === "bothMoves" || (on.cooldowns[move.name] ?? 0) > 0).forEach(move => adjustCooldown(on, move.name, spec.amount));
+        else if (spec.scope === "otherMove") { const other = on.moves.find(move => move.name !== ctx.moveName); if (other) adjustCooldown(on, other.name, spec.amount); }
+        else { const name = longestActiveCooldownMove(on); if (name) adjustCooldown(on, name, spec.amount); else continue; }
+        log("cooldown", `${on.name}'s Special Move recovery changed by ${spec.amount > 0 ? "+" : ""}${spec.amount} turn(s).`);
+      }
+      break;
+    }
+    case "blockDefenseBuff": {
+      target.activeEffects.push(newEffect({ kind: spec.kind, percent: 0, duration: spec.duration, remainingTurns: 0, label: "Cannot gain DEF buffs" }, target));
+      log("debuff", `${target.name} cannot receive new DEF buffs.`);
       break;
     }
     case "markDefenseOnNextHit":
@@ -209,6 +231,7 @@ function applyPerTurnEffects(state: BattleState, mystic: Combatant) {
 }
 
 export function tickCooldowns(state: BattleState, side: BattleSide) {
+  for (const mystic of [...state.player.mystics, ...state.ai.mystics]) mystic.activeEffects = mystic.activeEffects.filter(effect => effect.duration.unit !== "untilSourceNextTurn" || effect.sourceSide !== side.id);
   for (const mystic of side.mystics) {
     for (const key of Object.keys(mystic.cooldowns)) mystic.cooldowns[key] = Math.max(0, mystic.cooldowns[key] - 1);
     applyPerTurnEffects(state, mystic);
@@ -271,6 +294,8 @@ export function performSpecial(state: BattleState, sideId: "player" | "ai", atta
   if (!move || (attacker.cooldowns[move.name] ?? 0) > 0) throw new Error("Move is on cooldown");
   if (attacker.activeEffects.some((e) => e.kind === "silence")) throw new Error("Special Moves are silenced");
 
+  if (move.targetType === "ally" && !side.mystics.includes(defender)) throw new Error("Choose an allied Mystic");
+  if (move.targetType === "enemy" && !opponent.mystics.includes(defender)) throw new Error("Choose an enemy Mystic");
   const roll = dice.rollD8();
   state.lastRoll = roll;
   state.events.push(event(state, "special", `${attacker.name} used ${move.name}.`, { actorId: attackerId, targetId: defenderId, moveIndex }));
@@ -283,7 +308,7 @@ export function performSpecial(state: BattleState, sideId: "player" | "ai", atta
     return { success: false, damage: 0, roll };
   }
 
-  const enemyTarget = move.targetType === "enemy" ? defender : attacker; // "target"-subject effects on a self-only move never fire (data-verified), so this is never read in that case
+  const enemyTarget = move.targetType === "self" ? attacker : defender; // "target"-subject effects on a self-only move never fire (data-verified), so this is never read in that case
   let finalDamage = 0;
   if (move.targetType === "enemy") {
     const result = calculateDamage(attacker, defender, move, side.synergies);

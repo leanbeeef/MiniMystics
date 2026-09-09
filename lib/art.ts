@@ -16,6 +16,7 @@ export const REWARD_ART = {
 
 export const PACK_ART: Record<string, string> = artMap({
   standard: "/art/packs/standard.png",
+  apex: "/art/packs/apex.png",
   "random-order": "/art/packs/random-order.png",
   void: "/art/packs/void.png",
   handler: "/art/packs/handler.png",

@@ -15,6 +15,11 @@ describe("device settings", () => {
     expect(result.visual.reducedMotion).toBe(false);
     expect(result.gameplay.animationMode).toBe("standard");
   });
+  it("adds wrapper animation to older saves and preserves an explicit opt-out", () => {
+    expect(readSettings('{"version":1,"settings":{"audio":{"masterVolume":23}}}').settings).toMatchObject({ packs: { openingAnimation: true }, audio: { masterVolume: 23 } });
+    const settings = defaultSettings(); settings.packs.openingAnimation = false;
+    expect(readSettings(serializeSettings(settings, false)).settings.packs.openingAnimation).toBe(false);
+  });
   it("uses reduced motion and mobile defaults when no explicit choice exists", () => {
     const result = readSettings(null, defaultSettings(true, true));
     expect(result.settings.visual).toMatchObject({ reducedMotion: true, effectsQuality: "medium", cardHoverEffects: false });

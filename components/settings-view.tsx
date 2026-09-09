@@ -16,6 +16,9 @@ const sections: { title: string; controls: Control[] }[] = [
     { group: "gameplay", key: "confirmEndTurn", label: "Confirm End Turn", description: "Unavailable: turns currently end when an action resolves; there is no manual End Turn.", disabled: true },
     { group: "gameplay", key: "showDamageDetails", label: "Show Damage Details", description: "Show the existing damage preview and contributing bonuses in the action deck." },
   ] },
+  { title: "Packs", controls: [
+    { group: "packs", key: "openingAnimation", label: "Pack Opening Animation", description: "Watch the wrapper tear open before revealing your cards." },
+  ] },
   { title: "Audio", controls: [
     ...["master", "music", "sfx"].map((kind) => ({ group: "audio" as const, key: `${kind}Volume`, label: kind === "sfx" ? "Sound Effects Volume" : `${kind === "master" ? "Master" : "Music"} Volume`, description: kind === "master" ? "Overall audio level." : `Adjust ${kind === "sfx" ? "sound effects" : "music"} independently.` })),
     ...[["musicEnabled", "Music", "Loop music in menus and the arena."], ["sfxEnabled", "Sound Effects", "Battle, pack, and interface sound effects."], ["uiSoundsEnabled", "UI Sounds", "Interface clicks and hover sounds; battle sounds stay enabled."], ["battleMusicEnabled", "Music During Battle", "Play the battle theme during active matches."]].map(([key, label, description]) => ({ group: "audio" as const, key, label, description })),

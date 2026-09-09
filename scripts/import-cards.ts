@@ -38,8 +38,8 @@ const imageFiles = [
   ...walk(path.join(root, "public", "cards", "Handlers")),
 ].filter((file) => /\.(png|jpe?g|webp)$/i.test(file));
 const imageMap = new Map(imageFiles.map((file) => [normalize(path.basename(file, path.extname(file)).replace(/the.*$/i, "")), file]));
-const findImage = (name: string, filename?: string) => {
-  const requested = assetAliases[name] || filename;
+const findImage = (name: string, filename?: string, preferFilename = false) => {
+  const requested = preferFilename ? filename : assetAliases[name] || filename;
   const exact = requested ? imageFiles.find((file) => path.basename(file).toLowerCase() === requested.toLowerCase()) : undefined;
   const source = exact ?? imageMap.get(normalize(name));
   if (!source) return null;
@@ -73,7 +73,8 @@ const mystics: MysticDefinition[] = readCsv<MysticRow>("mini_mystics.csv").map((
     parseMove(row["Move 2 Name"], row["Move 2 Roll"], row["Move 2 Cooldown"], row["Move 2 Effect"]),
   ];
   moves.filter((move) => move.needsReview).forEach((move) => warnings.push(`${row["MM #"]} ${row.Name} — ${move.rawText}: ${move.reviewReason}`));
-  const image = findImage(row.Name);
+  const apexFilename = row.Rarity === "Apex" ? (row.Name === "Arch, The Fallen" ? "Arch_apex.png" : `${row.Name.split(",")[0].toLowerCase()}.png`) : undefined;
+  const image = findImage(row.Name, apexFilename, !!apexFilename);
   if (!image) warnings.push(`${row["MM #"]} ${row.Name} — image not found`);
   return { id: row["MM #"], name: row.Name, order: row.Order, allegiance: row.Allegiance, rarity: row.Rarity as Rarity, power: Number(row.Power), defense: Number(row.Def), baseAttack: Number(row["Base Attack"]), moves, image };
 });

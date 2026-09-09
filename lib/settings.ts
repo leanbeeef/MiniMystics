@@ -2,6 +2,7 @@ export const SETTINGS_VERSION = 1;
 export const SETTINGS_KEY = "mini-mystics.settings";
 export type GameSettings = {
   gameplay: { animationMode: "minimal" | "standard" | "cinematic"; battleSpeed: "fast" | "normal" | "deliberate"; autoAdvance: boolean; confirmEndTurn: boolean; showDamageDetails: boolean };
+  packs: { openingAnimation: boolean };
   audio: { masterVolume: number; musicVolume: number; sfxVolume: number; musicEnabled: boolean; sfxEnabled: boolean; uiSoundsEnabled: boolean; battleMusicEnabled: boolean };
   visual: { screenShake: boolean; reducedMotion: boolean; particleEffects: "off" | "reduced" | "full"; effectsQuality: "low" | "medium" | "high"; floatingCombatText: boolean; cardHoverEffects: boolean };
   interface: { tooltips: boolean; tutorialTips: boolean; compactBattleUI: boolean; showBattleStats: boolean };
@@ -10,6 +11,7 @@ export type GameSettings = {
 export function defaultSettings(reducedMotion = false, mobile = false): GameSettings {
   return {
     gameplay: { animationMode: "standard", battleSpeed: "normal", autoAdvance: true, confirmEndTurn: false, showDamageDetails: false },
+    packs: { openingAnimation: true },
     audio: { masterVolume: 80, musicVolume: 45, sfxVolume: 75, musicEnabled: true, sfxEnabled: true, uiSoundsEnabled: true, battleMusicEnabled: true },
     visual: { screenShake: true, reducedMotion, particleEffects: "full", effectsQuality: mobile ? "medium" : "high", floatingCombatText: true, cardHoverEffects: !mobile },
     interface: { tooltips: true, tutorialTips: true, compactBattleUI: false, showBattleStats: true },

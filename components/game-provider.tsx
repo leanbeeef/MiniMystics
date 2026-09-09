@@ -388,7 +388,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const specialChance = profile === "aggressive" ? 0.8 : profile === "defensive" ? 0.5 : 0.62;
     const choice = lethal ?? (hasAdvantage && bestDamage ? bestDamage : available.length && Math.random() < specialChance ? [...available].sort((a, b) => (b.move.damageModifierPercent ?? 0) - (a.move.damageModifierPercent ?? 0))[0] : null);
 
-    if (choice) performSpecial(battle, "ai", actor.instanceId, target.instanceId, choice.index);
+    if (choice) {
+      const specialTarget = choice.move.targetType === "ally" ? [...battle.ai.mystics].filter(m => !m.defeated).sort((a, b) => a.currentPower / a.maxPower - b.currentPower / b.maxPower)[0] : choice.move.targetType === "self" ? actor : target;
+      performSpecial(battle, "ai", actor.instanceId, specialTarget.instanceId, choice.index);
+    }
     else performBasicAttack(battle, "ai", actor.instanceId, target.instanceId);
     finalize(draft);
   }, "AI_TURN"), [commit]);

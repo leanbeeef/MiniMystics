@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { ALL_CAMPAIGN_STAGES, buyPack, catalog, createBattle, initialState, type PlayerState } from "../../lib/client-state";
 import { defaultSettings, serializeSettings } from "../../lib/settings";
 const email = "presentation@example.test";
-async function fixture(page: Page, mode: "minimal" | "standard" | "cinematic" = "cinematic") {
+async function fixture(page: Page, mode: "minimal" | "standard" | "cinematic" = "cinematic", prepare?: (state: PlayerState) => void) {
   const state = structuredClone(initialState);
   state.account = { email, username: "Presentation Test" }; state.coins = 10000;
   const definition = catalog.mystics.find((card) => card.moves.some((move) => move.targetType === "enemy" && !move.needsReview && move.requiredRoll > 1))!;
@@ -10,9 +10,10 @@ async function fixture(page: Page, mode: "minimal" | "standard" | "cinematic" = 
   buyPack(state, "standard");
   createBattle(state, ALL_CAMPAIGN_STAGES.find((stage) => stage.size === 3)!.id, { mysticIds: state.ownedCards.slice(0, 3).map((card) => card.id) });
   state.battle!.currentTurn = "player";
-  // The current catalog has no Apex entries; exercise the reserved presentation tier in this isolated fixture.
+  // Exercise Apex presentation on a controlled move in this isolated fixture.
   state.battle!.player.mystics[0].rarity = "Apex";
   state.battle!.ai.mystics[0].currentPower = 1;
+  prepare?.(state);
   const settings = defaultSettings(); settings.gameplay.animationMode = mode; settings.gameplay.autoAdvance = false;
   const user = { id: "00000000-0000-4000-8000-000000000001", email, aud: "authenticated", role: "authenticated", app_metadata: {}, user_metadata: { display_name: "Presentation Test" }, created_at: "2026-01-01T00:00:00Z" };
   const payload = Buffer.from(JSON.stringify({ sub: user.id, exp: 4102444800, role: "authenticated" })).toString("base64url");
@@ -22,7 +23,7 @@ async function fixture(page: Page, mode: "minimal" | "standard" | "cinematic" = 
   await page.addInitScript(({ state, settings, session, email }) => {
     localStorage.setItem("mini-mystics.accounts.v1", JSON.stringify({ [email]: { state } }));
     localStorage.setItem("sb-presentation-test-auth-token", JSON.stringify(session));
-    localStorage.setItem("mini-mystics.settings", settings);
+    if (!localStorage.getItem("mini-mystics.settings")) localStorage.setItem("mini-mystics.settings", settings);
     Math.random = () => .01;
   }, { state, settings: serializeSettings(settings, true), session, email });
   return state;
@@ -102,6 +103,7 @@ test("self-targeted Specials show the same committed die roll and success result
 test("pack reveals remain functional in Minimal mode", async ({ page }) => {
   const state = await fixture(page, "minimal");
   await page.goto("/open");
+  await page.getByRole("button", { name: "OPEN PACK", exact: true }).click();
   await page.getByRole("button", { name: "Reveal all" }).click();
   await expect(page.getByText("Pack complete", { exact: true })).toBeVisible({ timeout: 15000 });
   const after = await savedState(page);
@@ -129,4 +131,96 @@ test("successful Apex Special presents applied buffs and can be reduced immediat
   await expect(page.locator(".apex-sequence")).toHaveCount(0);
   await expect(page.locator(".mm-battle")).toHaveAttribute("aria-busy", "false");
   expect((await savedState(page)).battle).toEqual(committed.battle);
+});
+
+
+test("wrapper waits, tears once and hands unchanged cards to the reveal grid", async ({ page }, testInfo) => {
+  const state = await fixture(page, "standard");
+  await page.goto("/open");
+  await expect(page.getByRole("button", { name: "OPEN PACK", exact: true })).toBeVisible();
+  await expect(page.locator(".reveal-grid")).toHaveCount(0);
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: testInfo.outputPath("booster-ready.png") });
+  const before = (await savedState(page)).openings;
+  await page.getByRole("button", { name: "OPEN PACK", exact: true }).click();
+  await expect(page.getByRole("button", { name: "SKIP", exact: true })).toBeVisible();
+  await page.waitForTimeout(650);
+  await page.screenshot({ path: testInfo.outputPath("booster-tear.png") });
+  await expect(page.locator(".reveal-grid")).toBeVisible();
+  expect((await savedState(page)).openings).toEqual(before);
+  expect(before[0].cards.map(card => card.id)).toEqual(state.openings[0].cards.map(card => card.id));
+  await expect(page.locator(".booster-stage")).toHaveCount(0);
+});
+
+for (const mode of ["skip", "off", "reduced"] as const) {
+  test(`wrapper ${mode} preserves rewards in mobile landscape`, async ({ page }, testInfo) => {
+    await fixture(page, "standard");
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.goto("/settings");
+    if (mode === "off") await page.getByLabel("Pack Opening Animation", { exact: true }).uncheck();
+    if (mode === "reduced") {
+      await page.getByLabel("Reduced Motion", { exact: true }).check();
+      await page.getByLabel("Particle Effects", { exact: true }).selectOption("off");
+      await page.getByLabel("Disable Flash Effects", { exact: true }).check();
+    }
+    await page.goto("/open");
+    if (mode === "off") {
+      await expect(page.locator(".reveal-grid")).toBeVisible();
+      await expect(page.locator(".booster-stage")).toHaveCount(0);
+      expect((await savedState(page)).openings[0].cards.every(card => !card.revealed)).toBe(true);
+      return;
+    }
+    await expect(page.getByRole("button", { name: "OPEN PACK", exact: true })).toBeVisible();
+    await page.waitForTimeout(400);
+    const before = (await savedState(page)).openings;
+    const bounds = await page.locator(".booster-display").boundingBox();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(844);
+    expect(bounds!.height).toBeLessThan(390);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath(`booster-${mode}-landscape.png`), fullPage: true });
+    await page.getByRole("button", { name: "OPEN PACK", exact: true }).click();
+    if (mode === "skip") await page.getByRole("button", { name: "SKIP", exact: true }).click();
+    await expect(page.locator(".reveal-grid")).toBeVisible();
+    expect((await savedState(page)).openings).toEqual(before);
+    await expect(page.locator(".booster-stage")).toHaveCount(0);
+  });
+}
+
+
+test("buys one Apex for 15000 coins and reveals it through its own wrapper", async ({ page }, testInfo) => {
+  await fixture(page, "minimal", state => { state.coins = 20000; });
+  await page.goto("/packs");
+  const pack = page.locator(".pack-product").filter({ has: page.getByRole("heading", { name: "Apex Pack", exact: true }) });
+  await expect(pack.locator("img")).toHaveAttribute("src", /packs\/apex\.webp$/);
+  await pack.getByRole("button").click();
+  await expect(page.getByRole("heading", { name: "Apex Pack", exact: true })).toBeVisible();
+  await expect(page.locator(".booster-tear")).toHaveAttribute("src", /packs\/apex\.webp$/);
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: testInfo.outputPath("apex-pack.png") });
+  await page.getByRole("button", { name: "OPEN PACK", exact: true }).click();
+  await page.getByRole("button", { name: "SKIP", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Reveal card", exact: true })).toHaveCount(1);
+  const state = await savedState(page);
+  expect(state.coins).toBe(5000);
+  const opening = state.openings.find(item => item.id === state.activeOpeningId)!;
+  expect(opening.cards).toHaveLength(1); expect(opening.cards[0].rarity).toBe("Apex");
+  await page.getByRole("button", { name: "Reveal card", exact: true }).click();
+  await expect(page.getByText("Pack complete", { exact: true })).toBeVisible();
+  const image = page.locator(".card-front img");
+  expect(await image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+});
+
+test("Apex ally heal targets a teammate rather than an enemy", async ({ page }) => {
+  const state = await fixture(page, "minimal", state => {
+    const card = catalog.mystics.find(card => card.id === "MM-APX-005")!;
+    state.battle!.player.mystics[0].moves = structuredClone(card.moves);
+    state.battle!.player.mystics[1].currentPower = 20;
+  });
+  await page.goto("/battle"); await page.getByRole("button", { name: "Continue battle" }).click();
+  await page.evaluate(() => { Math.random = () => .99; });
+  await page.getByRole("button", { name: "Minimize battle log", exact: true }).click();
+  await page.locator(".battle-action-card.special").filter({ has: page.getByText("Starseed Bloom", { exact: true }) }).click();
+  await page.locator(`[data-vfx-id="${state.battle!.player.mystics[1].instanceId}"]`).click();
+  await expect.poll(async () => (await savedState(page)).battle!.player.mystics[1].currentPower).toBe(35);
 });

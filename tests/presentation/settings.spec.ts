@@ -9,6 +9,7 @@ test("settings work without login, persist, preview and reset", async ({ page },
   await expect(page.getByLabel("Battle Animation", { exact: true })).toBeEnabled();
   await page.getByLabel("Battle Animation", { exact: true }).selectOption("cinematic");
   await page.getByLabel("Master Volume", { exact: true }).fill("37");
+  await page.getByLabel("Pack Opening Animation", { exact: true }).uncheck();
   await page.getByLabel("High Contrast UI", { exact: true }).check();
   await page.getByLabel("Reduced Motion", { exact: true }).check();
   await expect(page.locator("html")).toHaveAttribute("data-reduced-motion", "true");
@@ -16,6 +17,7 @@ test("settings work without login, persist, preview and reset", async ({ page },
   await page.reload();
   await expect(page.getByLabel("Battle Animation", { exact: true })).toHaveValue("cinematic");
   await expect(page.getByLabel("Master Volume", { exact: true })).toHaveValue("37");
+  await expect(page.getByLabel("Pack Opening Animation", { exact: true })).not.toBeChecked();
   await expect(page.getByLabel("High Contrast UI", { exact: true })).toBeChecked();
   await page.getByRole("button", { name: "Preview impact" }).click();
   await page.getByRole("button", { name: "Reset to Defaults", exact: true }).click();
@@ -25,6 +27,7 @@ test("settings work without login, persist, preview and reset", async ({ page },
   await page.getByRole("alertdialog").getByRole("button", { name: "Reset to Defaults" }).click();
   await expect(page.getByLabel("Battle Animation", { exact: true })).toHaveValue("standard");
   await expect(page.getByLabel("Confirm End Turn", { exact: true })).toBeDisabled();
+  await expect(page.getByLabel("Pack Opening Animation", { exact: true })).toBeChecked();
   await page.screenshot({ path: testInfo.outputPath("settings-desktop.png"), fullPage: true });
   await page.setViewportSize({ width: 844, height: 390 });
   await page.getByLabel("Larger Interface Text", { exact: true }).check();
