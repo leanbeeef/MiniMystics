@@ -3,6 +3,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from "react";
 import { BATTLE_VFX, PACK_VFX, type BattleEffectName, type PackEffectName, type VfxIntensity, type VfxPreset } from "@/lib/vfx/presets";
 
+import { useSettings } from "../settings-provider";
+import { effectDuration } from "@/lib/animations/config";
+
 export type VfxOptions = {
   targetId?: string;
   position?: { x: number; y: number };
@@ -33,13 +36,17 @@ const intensityCount: Record<VfxIntensity, number> = { low: 7, medium: 13, high:
 
 export function VFXManager({ scope, children }: { scope: "battle" | "pack"; children: React.ReactNode }) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const scopeRef = useRef<HTMLDivElement>(null);
+  const { config } = useSettings();
+  const configRef = useRef(config); configRef.current = config;
+  const activeEffects = useRef(0);
   const runtimeRef = useRef<PixiRuntime | null>(null);
 
   useEffect(() => {
     let active = true;
     let app: import("pixi.js").Application | undefined;
     const host = hostRef.current;
-    if (!host) return;
+    if (!host || config.particles === 0) return;
 
     void Promise.all([import("pixi.js"), import("@pixi/particle-emitter")]).then(([pixi, particles]) => {
       if (!active || !hostRef.current) return;
@@ -49,34 +56,36 @@ export function VFXManager({ scope, children }: { scope: "battle" | "pack"; chil
       canvas.setAttribute("aria-hidden", "true");
       hostRef.current.appendChild(canvas);
       runtimeRef.current = { app, Emitter: particles.Emitter, Texture: pixi.Texture, Graphics: pixi.Graphics };
-    });
+    }).catch(() => { /* WebGL is optional; DOM feedback remains available. */ });
 
     return () => {
       active = false;
       runtimeRef.current = null;
+      activeEffects.current = 0;
       app?.destroy(true, { children: true, texture: false, baseTexture: false });
     };
-  }, []);
+  }, [config.particles, config.maxEffects]);
 
   const play = useCallback((preset: VfxPreset, options: VfxOptions = {}) => {
     const runtime = runtimeRef.current;
     const host = hostRef.current;
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const preferences = configRef.current;
+    const reducedMotion = preferences.reduced;
     const requestedIntensity = options.intensity ?? options.revealIntensity ?? preset.revealIntensity;
-    const duration = reducedMotion ? Math.min(280, preset.duration) : preset.duration;
+    const duration = effectDuration(preset.duration, preferences);
     const audioHook = options.audioHook;
     if (audioHook) window.dispatchEvent(new CustomEvent("mini-mystics:audio", { detail: { event: audioHook } }));
-    if (!runtime || !host) return duration;
+    if (!runtime || !host || preferences.particles === 0 || activeEffects.current >= preferences.maxEffects) return duration;
 
     const hostRect = host.getBoundingClientRect();
-    const target = options.targetId ? [...host.querySelectorAll<HTMLElement>("[data-vfx-id]")].find((element) => element.dataset.vfxId === options.targetId) : null;
+    const target = options.targetId ? [...(scopeRef.current ?? host).querySelectorAll<HTMLElement>("[data-vfx-id]")].find((element) => element.dataset.vfxId === options.targetId) : null;
     const targetRect = target?.getBoundingClientRect();
     const point = options.position ?? {
       x: targetRect ? targetRect.left - hostRect.left + targetRect.width / 2 : hostRect.width / 2,
       y: targetRect ? targetRect.top - hostRect.top + targetRect.height / 2 : hostRect.height / 2,
     };
     const accent = (options.accentColor || preset.accentColor || "#f2c14e").replace("#", "");
-    const count = reducedMotion ? Math.min(4, intensityCount[requestedIntensity]) : intensityCount[requestedIntensity];
+    const count = Math.max(1, Math.round(intensityCount[requestedIntensity] * preferences.particles));
     const speed = reducedMotion ? [8, 24] as [number, number] : preset.speed;
 
     const emitter = new runtime.Emitter(runtime.app.stage, {
@@ -98,9 +107,10 @@ export function VFXManager({ scope, children }: { scope: "battle" | "pack"; chil
         { type: "textureSingle", config: { texture: runtime.Texture.WHITE } },
       ],
     });
-    emitter.playOnceAndDestroy();
+    activeEffects.current += 1;
+    emitter.playOnceAndDestroy(() => { activeEffects.current = Math.max(0, activeEffects.current - 1); });
 
-    const backgroundEffect = reducedMotion ? "glow" : options.backgroundEffect ?? preset.backgroundEffect;
+    const backgroundEffect = !preferences.flash ? "none" : options.backgroundEffect ?? preset.backgroundEffect;
     if (backgroundEffect !== "none") {
       const graphic = new runtime.Graphics();
       const color = Number.parseInt(accent, 16);
@@ -136,7 +146,7 @@ export function VFXManager({ scope, children }: { scope: "battle" | "pack"; chil
   const emitAudioHook = useCallback((event: string) => window.dispatchEvent(new CustomEvent("mini-mystics:audio", { detail: { event } })), []);
   const value = useMemo(() => ({ playBattleEffect, playPackEffect, emitAudioHook }), [playBattleEffect, playPackEffect, emitAudioHook]);
 
-  return <VfxContext.Provider value={value}><div className={`vfx-scope vfx-scope-${scope}`}><div className="vfx-content">{children}</div><div ref={hostRef} className="vfx-layer" /></div></VfxContext.Provider>;
+  return <VfxContext.Provider value={value}><div ref={scopeRef} className={`vfx-scope vfx-scope-${scope}`}><div className="vfx-content">{children}</div><div ref={hostRef} className="vfx-layer" /></div></VfxContext.Provider>;
 }
 
 export function useVFX() { return useContext(VfxContext); }

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Archive, ArrowRight, Backpack, Boxes, Check, ChevronRight, Coins, Crown, Filter, ImageOff, Layers3, LockKeyhole, MonitorCog, PackageOpen, ScrollText, Shield, Sparkles, Star, Swords, Target, Trophy, UsersRound, WandSparkles, Zap } from "lucide-react";
+import { useSettings } from "./settings-provider";
+import { effectDuration } from "@/lib/animations/config";
 import { useGame } from "./game-provider";
 import { CardTile } from "./card-tile";
 import { CardInspectModal } from "./card-inspect-modal";
@@ -124,6 +126,7 @@ export function OpeningView() {
 function OpeningExperience() {
   const { state, reveal } = useGame();
   const { playPackEffect } = useVFX();
+  const { config } = useSettings();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [revealingAll, setRevealingAll] = useState(false);
   const opening = state.openings.find((item) => item.id === state.activeOpeningId) ?? state.openings[0];
@@ -141,13 +144,13 @@ function OpeningExperience() {
     setPendingId(card.id);
     playPackEffect("shimmer", { targetId: card.id, intensity: "low", audioHook: "card_flip" });
     const preDelay = card.rarity === "Apex" ? 380 : card.rarity === "Alpha" ? 230 : 120;
-    await new Promise((resolve) => window.setTimeout(resolve, preDelay));
+    await new Promise((resolve) => window.setTimeout(resolve, effectDuration(preDelay, config)));
     reveal(opening.id, card.id);
     await new Promise((resolve) => window.setTimeout(resolve, 30));
     const effect = RARITY_PACK_EFFECT[card.rarity];
     playPackEffect(effect, { targetId: card.id, audioHook: effect.replace("-", "_") });
     const settleDelay = card.rarity === "Apex" ? 1500 : card.rarity === "Alpha" ? 850 : card.rarity === "Prime" ? 560 : 300;
-    await new Promise((resolve) => window.setTimeout(resolve, settleDelay));
+    await new Promise((resolve) => window.setTimeout(resolve, effectDuration(settleDelay, config)));
     setPendingId(null);
   };
 
@@ -183,15 +186,7 @@ export function ProfileView() {
   return <div className="page"><PageHead eyebrow="HANDLER RECORD" title={state.account?.username ?? "Profile"} copy={state.account?.email} /><div className="profile-card"><div className="profile-avatar">{state.account?.username.slice(0, 2).toUpperCase()}</div><div><span>LEVEL {state.level}</span><h2>{state.account?.username}</h2><p>Joined the First Convergence · Unranked</p></div><div className="profile-xp"><strong>{state.xp} XP</strong><span>Next level: {xpForLevel(state.level)}</span></div></div><div className="profile-stats"><article><Trophy /><strong>{state.wins}</strong><span>Wins</span></article><article><Swords /><strong>{state.matches}</strong><span>Matches</span></article><article><Target /><strong>{winRate}%</strong><span>Win rate</span></article><article><Layers3 /><strong>{unique}/109</strong><span>Unique cards</span></article><article><Coins /><strong>{state.coins}</strong><span>Coins</span></article></div></div>;
 }
 
-export function SettingsView() {
-  return <div className="page"><PageHead eyebrow="SYSTEM" title="Settings" copy="Presentation and accessibility preferences for this device." />
-    <div className="settings-grid">
-      <section className="panel settings-panel"><div className="settings-icon"><MonitorCog /></div><div><h2>Display</h2><p>The Mini Mystics interface follows your device motion preference and scales responsively from desktop to mobile.</p></div></section>
-      <section className="panel settings-panel"><div className="settings-icon"><Sparkles /></div><div><h2>Visual identity</h2><p>Official card, Order, pack, reward, opponent, and environment artwork is loaded directly from the project asset library.</p></div><span className="status-chip success"><Check /> Asset library active</span></section>
-      <section className="panel settings-panel"><div className="settings-icon"><Shield /></div><div><h2>Account security</h2><p>This prototype stores its demo account and game progress locally in this browser.</p></div><span className="status-chip warning">Prototype mode</span></section>
-    </div>
-  </div>;
-}
+export { SettingsView } from "./settings-view";
 
 export function ComingSoonView({ kind }: { kind: "Marketplace" | "Trading" }) { return <div className="page coming-page" style={{ backgroundImage: `linear-gradient(rgba(7,16,24,.78), rgba(7,16,24,.94)), url("${COMING_SOON_ART[kind]}")` }}><div className="coming-glyph">{kind === "Marketplace" ? <Coins /> : <UsersRound />}</div><span className="eyebrow">FUTURE CONVERGENCE</span><h1>{kind} — Coming Soon</h1><p>{kind === "Marketplace" ? "Player-set listings, completed sales, and price history will arrive in a later release. No rarity-based price floors or ceilings." : "Direct card-for-card offers with two-party confirmation and atomic settlement are planned for a later release."}</p><Link href="/game" className="button primary">Return to command</Link></div>; }
 

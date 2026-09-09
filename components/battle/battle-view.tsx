@@ -1,6 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "motion/react";
+import { useSettings } from "../settings-provider";
+import { useBattlePresentation, CombatText, SpecialAnnouncement } from "./battle-animation-controller";
+import type { CombatFeedback } from "@/lib/animations/battle-events";
+import { diceSettleDuration } from "@/lib/animations/config";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Activity, ArrowRight, Check, CircleOff, Clock3, Eye, GripHorizontal, Heart, Info, Maximize2, Minus, ScrollText, Shield, Sparkles, Swords, Target, TrendingUp, Trophy, WandSparkles, X, Zap } from "lucide-react";
@@ -9,19 +14,17 @@ import { VFXManager, useVFX } from "../vfx/vfx-manager";
 import { BATTLE_ART, ORDER_ART, ORDER_COLORS } from "@/lib/art";
 import { catalog } from "@/lib/client-state";
 import type { BattleEvent, BattleSide, Combatant, HandlerDefinition, ParsedMove } from "@/lib/game/types";
-import { effectiveDefense, previewDamage } from "@/lib/game/engine";
+import { effectiveDefense, previewDamage, sumStatPercent } from "@/lib/game/engine";
 import { orderAdvantagePercent } from "@/lib/game/order-matchups";
-import { ORDER_BATTLE_EFFECT } from "@/lib/vfx/presets";
 import { BattleSetup } from "./battle-setup";
 
 type BattleUiPhase = "INTRO" | "PLAYER_SELECT_ACTOR" | "PLAYER_SELECT_ACTION" | "PLAYER_SELECT_TARGET" | "PLAYER_ROLLING" | "PLAYER_RESOLVING" | "ENEMY_THINKING" | "ENEMY_ACTION" | "TURN_TRANSITION" | "VICTORY" | "DEFEAT";
 type ActionSelection = { kind: "basic" } | { kind: "special"; moveIndex: number };
-type DamageFx = Record<string, { amount: number; key: number }>;
 
 const stateCopy: Record<BattleUiPhase, string> = {
   INTRO: "The starting roll decides who acts first.",
   PLAYER_SELECT_ACTOR: "Choose a surviving Mystic.",
-  PLAYER_SELECT_ACTION: "Choose an action or Handler.",
+  PLAYER_SELECT_ACTION: "Choose a Basic Attack or Special Move.",
   PLAYER_SELECT_TARGET: "Choose a highlighted target.",
   PLAYER_ROLLING: "Roll the die to resolve this action.",
   PLAYER_RESOLVING: "Resolving your action…",
@@ -52,20 +55,19 @@ function BattleExperience() {
   const { state, basicAttack, specialAttack, aiTurn } = useGame();
   const { playBattleEffect, emitAudioHook } = useVFX();
   const battle = state.battle;
+  const { settings, config } = useSettings();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const presentation = useBattlePresentation(battle, rootRef);
+  const shownBattle = presentation.display ?? battle;
   const [phase, setPhase] = useState<BattleUiPhase>("INTRO");
   const [actorId, setActorId] = useState("");
   const [targetId, setTargetId] = useState("");
   const [selection, setSelection] = useState<ActionSelection | null>(null);
   const [inspect, setInspect] = useState<Combatant | null>(null);
-  const [rolling, setRolling] = useState(false);
-  const [holdingRoll, setHoldingRoll] = useState(false);
-  const [dieFace, setDieFace] = useState(1);
-  const [damageFx, setDamageFx] = useState<DamageFx>({});
   const [aiBanner, setAiBanner] = useState(false);
   const [showEnd, setShowEnd] = useState(true);
   const [feedback, setFeedback] = useState("");
-  const [rollOutcome, setRollOutcome] = useState<{ roll: number; success: boolean } | null>(null);
-  const previousPower = useRef<Record<string, number>>({});
+  const presentedResult = useRef<string | null>(null);
 
   const actor = battle?.player.mystics.find((mystic) => mystic.instanceId === actorId);
   const target = battle?.ai.mystics.find((mystic) => mystic.instanceId === targetId) ?? battle?.player.mystics.find((mystic) => mystic.instanceId === targetId);
@@ -82,76 +84,48 @@ function BattleExperience() {
     setInspect(null);
     setShowEnd(true);
     setFeedback("");
-    setRollOutcome(null);
     setPhase("INTRO");
-    previousPower.current = Object.fromEntries([...battle.player.mystics, ...battle.ai.mystics].map((mystic) => [mystic.instanceId, mystic.currentPower]));
-    const timer = window.setTimeout(() => setPhase(battle.currentTurn === "player" ? "PLAYER_SELECT_ACTION" : "ENEMY_THINKING"), 1850);
-    return () => window.clearTimeout(timer);
   }, [battle?.id]);
 
   useEffect(() => {
-    if (!battle) return;
-    const next: DamageFx = {};
-    const recentAction = [...battle.events].reverse().find((event) => event.type === "special" || event.type === "attack");
-    const source = [...battle.player.mystics, ...battle.ai.mystics].find((mystic) => recentAction?.message.startsWith(mystic.name));
-    for (const mystic of [...battle.player.mystics, ...battle.ai.mystics]) {
-      const before = previousPower.current[mystic.instanceId];
-      if (before !== undefined && mystic.currentPower < before) {
-        next[mystic.instanceId] = { amount: before - mystic.currentPower, key: Date.now() };
-        const effect = recentAction?.type === "special" && source ? ORDER_BATTLE_EFFECT[source.order] ?? "impact" : "impact";
-        playBattleEffect(effect, { targetId: mystic.instanceId, accentColor: source ? ORDER_COLORS[source.order] : undefined, audioHook: recentAction?.type === "special" ? "special" : "damage" });
-        if (mystic.defeated) window.setTimeout(() => playBattleEffect("ko", { targetId: mystic.instanceId, intensity: "high", audioHook: "ko" }), 170);
-      }
-      if (before !== undefined && mystic.currentPower > before) playBattleEffect("heal", { targetId: mystic.instanceId, audioHook: "heal" });
-      previousPower.current[mystic.instanceId] = mystic.currentPower;
-    }
-    if (Object.keys(next).length) {
-      setDamageFx(next);
-      const timer = window.setTimeout(() => setDamageFx({}), 720);
-      return () => window.clearTimeout(timer);
-    }
-  }, [battle?.events.length, playBattleEffect]);
+    if (!battle || phase !== "INTRO" || !settings.gameplay.autoAdvance) return;
+    const timer = window.setTimeout(() => setPhase(battle.currentTurn === "player" ? "PLAYER_SELECT_ACTION" : "ENEMY_THINKING"), config.special + config.gap);
+    return () => window.clearTimeout(timer);
+  }, [battle?.id, phase, settings.gameplay.autoAdvance, config.special, config.gap]);
 
   useEffect(() => {
-    if (!battle || battle.winner) return;
+    if (!battle || battle.winner || presentation.busy) return;
     if (battle.currentTurn === "ai" && (phase === "PLAYER_RESOLVING" || phase === "TURN_TRANSITION")) {
-      const timer = window.setTimeout(() => setPhase("ENEMY_THINKING"), 220);
+      const timer = window.setTimeout(() => setPhase("ENEMY_THINKING"), config.gap);
       return () => window.clearTimeout(timer);
     }
     if (battle.currentTurn === "player" && phase === "ENEMY_ACTION") {
-      const timer = window.setTimeout(() => { setAiBanner(false); setTargetId(""); setSelection(null); setPhase("PLAYER_SELECT_ACTION"); }, 300);
+      const timer = window.setTimeout(() => { setAiBanner(false); setTargetId(""); setSelection(null); setPhase("PLAYER_SELECT_ACTION"); }, config.gap);
       return () => window.clearTimeout(timer);
     }
-  }, [battle?.currentTurn, battle?.turnNumber, battle?.winner, phase]);
+  }, [battle?.currentTurn, battle?.turnNumber, battle?.winner, phase, presentation.busy, config.gap]);
 
   useEffect(() => {
-    if (!battle || phase !== "ENEMY_THINKING" || battle.currentTurn !== "ai" || battle.winner) return;
+    if (!battle || phase !== "ENEMY_THINKING" || battle.currentTurn !== "ai" || battle.winner || !settings.gameplay.autoAdvance || presentation.busy) return;
     setAiBanner(true);
-    const timer = window.setTimeout(() => { setPhase("ENEMY_ACTION"); aiTurn(); }, 720);
+    const timer = window.setTimeout(() => { setPhase("ENEMY_ACTION"); aiTurn(); }, config.gap);
     return () => window.clearTimeout(timer);
-  }, [battle, phase, aiTurn]);
+  }, [battle, phase, aiTurn, settings.gameplay.autoAdvance, presentation.busy, config.gap]);
 
   useEffect(() => {
-    if (!battle?.winner) return;
+    if (!battle?.winner || presentation.busy) return;
     setSelection(null);
     setPhase(battle.winner === "player" ? "VICTORY" : "DEFEAT");
-    playBattleEffect(battle.winner === "player" ? "celestial-impact" : "void-impact", { intensity: "high", audioHook: battle.winner === "player" ? "victory" : "defeat" });
-  }, [battle?.winner, playBattleEffect]);
-
-  useEffect(() => {
-    if (!battle?.lastRoll || phase === "INTRO") return;
-    const recent = battle.events.slice(-5);
-    const specialResult = [...recent].reverse().find((event) => event.type === "special" && typeof event.data?.success === "boolean");
-    const success = specialResult ? Boolean(specialResult.data?.success) : true;
-    setRollOutcome({ roll: battle.lastRoll, success });
-    const timer = window.setTimeout(() => setRollOutcome(null), 920);
-    return () => window.clearTimeout(timer);
-  }, [battle?.lastRoll, battle?.events.length]);
+    if (presentedResult.current === battle.id) return;
+    presentedResult.current = battle.id;
+    window.dispatchEvent(new CustomEvent("mini-mystics:battle-result", { detail: { winner: battle.winner } }));
+    const champion = battle[battle.winner].mystics.find((mystic) => !mystic.defeated && mystic.rarity === "Apex") ?? battle[battle.winner].mystics.find((mystic) => !mystic.defeated);
+    playBattleEffect(battle.winner === "player" ? "celestial-impact" : "void-impact", { intensity: champion?.rarity === "Apex" ? "apex" : "high", accentColor: champion ? ORDER_COLORS[champion.order] : undefined });
+  }, [battle?.id, battle?.winner, playBattleEffect, presentation.busy]);
 
   const cancelSelection = useCallback(() => {
     setSelection(null);
     setTargetId("");
-    setRolling(false);
     setFeedback("");
     setPhase("PLAYER_SELECT_ACTION");
   }, []);
@@ -167,58 +141,50 @@ function BattleExperience() {
     setTargetId(mystic.instanceId);
     if (selection.kind === "basic") {
       setPhase("PLAYER_RESOLVING");
-      window.setTimeout(() => basicAttack(actor.instanceId, mystic.instanceId), 170);
+      basicAttack(actor.instanceId, mystic.instanceId);
     } else setPhase("PLAYER_ROLLING");
   }, [battle, selection, actor, targetSide, basicAttack, emitAudioHook]);
 
   const selectMystic = useCallback((mystic: Combatant, side: "player" | "ai") => {
     if (isTargeting) { resolveTarget(mystic, side); return; }
-    if (side === "player" && battle?.currentTurn === "player" && !battle.winner) {
+    if (!presentation.busy && ["PLAYER_SELECT_ACTION", "PLAYER_SELECT_ACTOR"].includes(phase) && side === "player" && battle?.currentTurn === "player" && !battle.winner) {
       if (actorId === mystic.instanceId) { setInspect(mystic); return; }
       if (!mystic.defeated) { emitAudioHook("card_select"); setActorId(mystic.instanceId); setSelection(null); setTargetId(""); setPhase("PLAYER_SELECT_ACTION"); }
     } else setInspect(mystic);
-  }, [isTargeting, resolveTarget, battle, actorId, emitAudioHook]);
+  }, [isTargeting, resolveTarget, battle, actorId, emitAudioHook, phase, presentation.busy]);
 
   const rollAction = useCallback(() => {
-    if (!battle || !selection || selection.kind !== "special" || !target || !actor || rolling) return;
+    if (!battle || !selection || selection.kind !== "special" || !target || !actor || battle.currentTurn !== "player" || battle.winner) return;
     emitAudioHook("dice_roll");
     const resolvedFace = Math.floor(Math.random() * 8) + 1;
-    setDieFace(resolvedFace);
-    setRolling(true);
-    setHoldingRoll(false);
-    window.setTimeout(() => {
-      setRolling(false);
-      setHoldingRoll(true);
-      window.setTimeout(() => {
-        specialAttack(actor.instanceId, target.instanceId, selection.moveIndex, resolvedFace);
-        setHoldingRoll(false);
-        setPhase("PLAYER_RESOLVING");
-      }, 1000);
-    }, 1100);
-  }, [battle, selection, target, actor, rolling, specialAttack, emitAudioHook]);
+    specialAttack(actor.instanceId, target.instanceId, selection.moveIndex, resolvedFace);
+    setPhase("PLAYER_RESOLVING");
+  }, [battle, selection, target, actor, specialAttack, emitAudioHook]);
 
   // The die rolls the instant a target is locked in (or the instant a self-targeted move is
   // chosen, which skips target selection entirely) — no separate "Roll" button to click.
   useEffect(() => {
-    if (phase === "PLAYER_ROLLING" && !rolling && !holdingRoll) rollAction();
-  }, [phase, rolling, holdingRoll, rollAction]);
+    if (phase === "PLAYER_ROLLING") rollAction();
+  }, [phase, rollAction]);
 
-  if (!battle) return <div className="page battle-empty"><div><Swords /><span>BATTLEFIELD</span><h1>No active battle</h1><p>Choose a campaign opponent to enter the arena.</p><Link href="/campaign" className="button primary">View campaign <ArrowRight /></Link></div></div>;
+  if (!battle || !shownBattle) return <div className="page battle-empty"><div><Swords /><span>BATTLEFIELD</span><h1>No active battle</h1><p>Choose a campaign opponent to enter the arena.</p><Link href="/campaign" className="button primary">View campaign <ArrowRight /></Link></div></div>;
 
   const encounterArt = BATTLE_ART[battle.ai.name];
   const battleStyle = { "--battle-art": encounterArt ? `url("${encounterArt}")` : "none" } as React.CSSProperties;
   const rolls = startingRolls(battle.events[0]?.message);
-  const playerCanAct = battle.currentTurn === "player" && !battle.winner && ["PLAYER_SELECT_ACTOR", "PLAYER_SELECT_ACTION", "PLAYER_SELECT_TARGET"].includes(phase);
+  const playerCanAct = !presentation.busy && battle.currentTurn === "player" && !battle.winner && ["PLAYER_SELECT_ACTOR", "PLAYER_SELECT_ACTION", "PLAYER_SELECT_TARGET"].includes(phase);
 
-  return <div className={`mm-battle phase-${phase.toLowerCase()} format-${battle.size}`} style={battleStyle} data-audio-hooks="card-select target-select dice-roll special damage ko victory">
+  return <div ref={rootRef} aria-busy={presentation.busy} className={`mm-battle phase-${phase.toLowerCase()} format-${battle.size}`} style={battleStyle} data-audio-hooks="card-select target-select dice-roll special damage ko victory">
     <div className="arena-vignette" />
+    {config.ambient ? <div className="arena-ambient" aria-hidden="true">{Array.from({ length: Math.ceil(config.particles * 6) }, (_, index) => <i key={index} style={{ left: `${12 + index * 13}%`, animationDelay: `${index * -2}s`, background: ORDER_COLORS[battle.player.mystics[index % battle.player.mystics.length]?.order] }} />)}</div> : null}
+    <SpecialAnnouncement action={presentation.roll ? null : presentation.action} />
     <div className="battle-layout">
       <div className="battle-board-column">
         <BattleTurnBar battle={battle} phase={phase} />
         <main className="battle-arena">
-          <BattleMysticRow side="ai" team={battle.ai} format={battle.size} selectedId={targetId} targeting={isTargeting && targetSide === "ai"} actorOrder={actor?.order} damageFx={damageFx} onSelect={(mystic) => selectMystic(mystic, "ai")} />
+          <BattleMysticRow side="ai" team={shownBattle.ai} format={battle.size} selectedId={targetId} targeting={isTargeting && targetSide === "ai"} actorOrder={actor?.order} feedback={presentation.feedback} onSelect={(mystic) => selectMystic(mystic, "ai")} />
           <div className="battle-center"><i /><span>VS</span><i /></div>
-          <BattleMysticRow side="player" team={battle.player} format={battle.size} selectedId={battle.currentTurn === "player" ? actorId : ""} targetId={targetId} targeting={isTargeting && targetSide === "player"} damageFx={damageFx} onSelect={(mystic) => selectMystic(mystic, "player")} />
+          <BattleMysticRow side="player" team={shownBattle.player} format={battle.size} selectedId={battle.currentTurn === "player" ? actorId : ""} targetId={targetId} targeting={isTargeting && targetSide === "player"} feedback={presentation.feedback} onSelect={(mystic) => selectMystic(mystic, "player")} />
         </main>
         <div className={`battle-step ${feedback ? "has-feedback" : ""}`} aria-live="polite"><span>{feedback || stateCopy[phase]}</span>{selection && playerCanAct ? <button onClick={cancelSelection}><X />Cancel selection</button> : null}</div>
       </div>
@@ -243,12 +209,13 @@ function BattleExperience() {
       />
     </div>
     <BattleLog events={battle.events} />
-    {phase === "PLAYER_ROLLING" && selectedMove ? <div className="battle-dice-overlay" role="dialog" aria-modal="true" aria-label="Rolling the die" onMouseDown={(event) => event.target === event.currentTarget && !rolling && cancelSelection()}><BattleDiceTray requirement={`${selectedMove.requiredRoll}+`} rolling={rolling} holding={holdingRoll} face={dieFace} /></div> : null}
+    {!settings.gameplay.autoAdvance && !presentation.busy && (phase === "INTRO" || phase === "ENEMY_THINKING") ? <button className="button primary battle-continue" onClick={() => { if (phase === "INTRO") setPhase(battle.currentTurn === "player" ? "PLAYER_SELECT_ACTION" : "ENEMY_THINKING"); else { setAiBanner(true); setPhase("ENEMY_ACTION"); aiTurn(); } }}>Continue battle <ArrowRight /></button> : null}
+    {presentation.roll ? <div className="battle-dice-overlay" role="dialog" aria-modal="true" aria-label="Special Move die roll"><BattleDiceTray requirement={`${presentation.roll.required}+`} rolling={presentation.roll.stage === "rolling"} holding={presentation.roll.stage === "holding"} face={presentation.roll.face} outcome={presentation.roll.success} /></div> : null}
     {phase === "INTRO" ? <BattleIntroOverlay battle={battle} rolls={rolls} /> : null}
     {aiBanner ? <div className="ai-action-banner" role="status"><span>{battle.ai.name.toUpperCase()}</span><strong>Choosing a Mystic action</strong></div> : null}
-    {rollOutcome ? <div className={`battle-roll-result ${rollOutcome.success ? "success" : "failure"}`} role="status"><span>ROLLED {rollOutcome.roll}</span><strong>{rollOutcome.success ? "SUCCESS" : "FAILED"}</strong></div> : null}
+
     {inspect ? <BattleInspectOverlay mystic={inspect} onClose={() => setInspect(null)} /> : null}
-    {battle.winner && showEnd ? <BattleEndModal battle={battle} rewards={state.lastRewards} boosts={state.activeBoosts} onSummary={() => setShowEnd(false)} /> : null}
+    {battle.winner && showEnd && !presentation.busy && (phase === "VICTORY" || phase === "DEFEAT") ? <BattleEndModal battle={battle} rewards={state.lastRewards} boosts={state.activeBoosts} onSummary={() => setShowEnd(false)} /> : null}
   </div>;
 }
 
@@ -262,12 +229,13 @@ function BattleTurnBar({ battle, phase }: { battle: NonNullable<ReturnType<typeo
   </header>;
 }
 
-function BattleMysticRow({ side, team, format, selectedId, targetId, targeting, actorOrder, damageFx, onSelect }: { side: "player" | "ai"; team: BattleSide; format: 3 | 5 | 8; selectedId: string; targetId?: string; targeting: boolean; actorOrder?: string; damageFx: DamageFx; onSelect: (mystic: Combatant) => void }) {
+function BattleMysticRow({ side, team, format, selectedId, targetId, targeting, actorOrder, feedback, onSelect }: { side: "player" | "ai"; team: BattleSide; format: 3 | 5 | 8; selectedId: string; targetId?: string; targeting: boolean; actorOrder?: string; feedback: CombatFeedback[]; onSelect: (mystic: Combatant) => void }) {
   const portrait = side === "ai" ? ORDER_ART[team.mystics[0]?.order ?? ""] : undefined;
   return <section className={`battle-side battle-side-${side}`}>
-    <BattleSideLabel side={side} name={team.name} portrait={portrait} />
+    <div className="battle-side-heading"><BattleSideLabel side={side} name={team.name} portrait={portrait} />
+    <div className="order-synergies" aria-label={`${team.name} Order bonuses`}>{Object.entries(team.synergies).filter(([, bonus]) => bonus > 0).map(([order, bonus]) => <motion.span key={order} initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ borderColor: ORDER_COLORS[order] }}>? {order} ? +{bonus}% ATK</motion.span>)}</div></div>
     <div className="battle-mystic-row" role="list" aria-label={`${team.name} lineup`}>
-      {team.mystics.map((mystic) => <BattleMysticCard key={mystic.instanceId} mystic={mystic} side={side} format={format} selected={selectedId === mystic.instanceId} targetSelected={targetId === mystic.instanceId} validTarget={targeting && !mystic.defeated} synergyPercent={team.synergies[mystic.order]} advantage={side === "ai" && actorOrder ? orderAdvantagePercent(actorOrder, mystic.order) : 0} damage={damageFx[mystic.instanceId]} onSelect={() => onSelect(mystic)} />)}
+      {team.mystics.map((mystic) => <BattleMysticCard key={mystic.instanceId} mystic={mystic} side={side} format={format} selected={selectedId === mystic.instanceId} targetSelected={targetId === mystic.instanceId} validTarget={targeting && !mystic.defeated} synergyPercent={team.synergies[mystic.order]} advantage={side === "ai" && actorOrder ? orderAdvantagePercent(actorOrder, mystic.order) : 0} feedback={feedback.filter((item) => item.targetId === mystic.instanceId)} onSelect={() => onSelect(mystic)} />)}
     </div>
   </section>;
 }
@@ -276,33 +244,35 @@ function BattleSideLabel({ side, name, portrait }: { side: "player" | "ai"; name
   return <div className="battle-side-label">{portrait ? <img src={portrait} alt="" /> : null}<div><span>{side === "ai" ? "OPPONENT" : "YOUR LINEUP"}</span><strong>{name}</strong><small>{side === "ai" ? "RIVAL HANDLER" : "ACTIVE FORMATION"}</small></div></div>;
 }
 
-function BattleMysticCard({ mystic, side, format, selected, targetSelected, validTarget, synergyPercent, advantage, damage, onSelect }: { mystic: Combatant; side: "player" | "ai"; format: 3 | 5 | 8; selected: boolean; targetSelected?: boolean; validTarget: boolean; synergyPercent?: number; advantage?: number; damage?: { amount: number; key: number }; onSelect: () => void }) {
+function BattleMysticCard({ mystic, side, format, selected, targetSelected, validTarget, synergyPercent, advantage, feedback, onSelect }: { mystic: Combatant; side: "player" | "ai"; format: 3 | 5 | 8; selected: boolean; targetSelected?: boolean; validTarget: boolean; synergyPercent?: number; advantage?: number; feedback: CombatFeedback[]; onSelect: () => void }) {
+  const { config, settings } = useSettings();
   const power = Math.max(0, Math.round(mystic.currentPower / mystic.maxPower * 100));
   const color = ORDER_COLORS[mystic.order] ?? "#D7A93B";
-  return <button role="listitem" data-vfx-id={mystic.instanceId} className={`battle-mystic-card side-${side} size-${format} ${selected ? "actor-selected" : ""} ${targetSelected ? "target-selected" : ""} ${validTarget ? "valid-target" : ""} ${damage ? "taking-damage" : ""} ${mystic.defeated ? "is-defeated" : ""}`} style={{ "--order-color": color } as React.CSSProperties} onClick={onSelect} disabled={mystic.defeated && !selected} aria-label={`${mystic.name}, ${mystic.currentPower} Power`}>
+  return <motion.button whileHover={settings.visual.cardHoverEffects && !config.reduced ? { y: -5 } : undefined} initial={mystic.rarity === "Apex" ? { opacity: 0 } : false} animate={{ y: selected && !config.reduced ? -4 : 0, scale: selected && !config.reduced ? 1.025 : 1, opacity: mystic.defeated ? .35 : 1 }} transition={{ duration: config.ui / 1000 }} role="listitem" data-vfx-id={mystic.instanceId} className={`battle-mystic-card side-${side} size-${format} ${selected ? "actor-selected" : ""} ${targetSelected ? "target-selected" : ""} ${validTarget ? "valid-target" : ""} ${mystic.defeated ? "is-defeated" : ""}`} style={{ "--order-color": color } as React.CSSProperties} onClick={onSelect} disabled={mystic.defeated && !selected} aria-label={`${mystic.name}, ${mystic.currentPower} Power`}>
     {validTarget ? <span className="target-indicator"><Target />TARGET</span> : null}
     {selected && side === "player" ? <span className="acting-indicator"><Swords />ACTING</span> : null}
     {advantage ? <span className="advantage-indicator" title={`Order Advantage: +${advantage}% ATK`}><TrendingUp />+{advantage}%</span> : null}
-    {damage ? <FloatingDamage key={damage.key} amount={damage.amount} /> : null}
+    <CombatText feedback={feedback} />
     <span className="battle-card-frame"><img src={mystic.image ?? ""} alt={`${mystic.name} card`} />{mystic.activeEffects.length || Object.values(mystic.cooldowns).some(Boolean) ? <span className="battle-card-effects"><BattleStatusIcons mystic={mystic} /></span> : null}</span>
     <span className="battle-card-hud"><strong>{mystic.name}<small className="battle-card-level">Lv.{mystic.level}</small></strong><BattlePowerBar percent={power} /><span><b title="Current / Max Power"><Heart />{mystic.currentPower}/{mystic.maxPower}</b><b title="Effective Defense"><Shield />{effectiveDefense(mystic)}</b><b title="Base Attack"><Swords />{mystic.baseAttack}</b></span></span>
     <span className="battle-card-order">{ORDER_ART[mystic.order] ? <img src={ORDER_ART[mystic.order]} alt="" /> : null}{mystic.order}{synergyPercent ? <em className="synergy-tag" title={`${mystic.order} Order Synergy: +${synergyPercent}% ATK`}>+{synergyPercent}%</em> : null}{mystic.handlerBonuses.sources.length ? <em className="handler-tag" title={`Handler passive: ${mystic.handlerBonuses.sources.join(", ")}`}><WandSparkles /></em> : null}</span>
     {mystic.defeated ? <span className="defeated-mark"><CircleOff />DEFEATED</span> : null}
-  </button>;
+  </motion.button>;
 }
 
 function BattlePowerBar({ percent }: { percent: number }) {
+  const { config } = useSettings();
   const tone = percent > 60 ? "healthy" : percent >= 30 ? "wounded" : "critical";
-  return <span className={`battle-power-bar ${tone}`} title={`${percent}% Power remaining`}><i style={{ width: `${percent}%` }} /></span>;
+  return <span className={`battle-power-bar ${tone}`} title={`${percent}% Power remaining`}><motion.i initial={false} animate={{ width: `${percent}%` }} transition={{ duration: config.basic * .35 / 1000 }} /></span>;
 }
 
 function BattleStatusIcons({ mystic }: { mystic: Combatant }) {
   return <>{mystic.activeEffects.map((effect) => <span key={effect.id} title={`${effect.label}${effect.duration.unit === "turns" ? ` (${effect.remainingTurns} turn${effect.remainingTurns === 1 ? "" : "s"} left)` : ""}`}><Activity /></span>)}{Object.entries(mystic.cooldowns).filter(([, turns]) => turns > 0).map(([name, turns]) => <span className="cooldown-status" key={`${name}-${turns}`} title={`${name}: ${turns} turn${turns === 1 ? "" : "s"} remaining`}><Clock3 />{turns}</span>)}</>;
 }
 
-function FloatingDamage({ amount }: { amount: number }) { return <span className="floating-damage" aria-live="assertive">−{amount}</span>; }
-
 function BattleControlDeck({ battle, actor, target, selection, playerCanAct, onAction, onInspect }: { battle: NonNullable<ReturnType<typeof useGame>["state"]["battle"]>; actor?: Combatant; target?: Combatant; selection: ActionSelection | null; playerCanAct: boolean; onAction: (action: ActionSelection) => void; onInspect: () => void }) {
+  const { settings } = useSettings();
+  const preview = actor && target ? previewDamage(actor, target, selection?.kind === "special" ? actor.moves[selection.moveIndex] : null, battle.player.synergies) : null;
   const equippedHandlers = battle.player.handlers.map((id) => catalog.handlers.find((item) => item.id === id)).filter((item): item is HandlerDefinition => Boolean(item));
   return <section className={`battle-control-deck ${playerCanAct ? "active" : "disabled"}`}>
     <div className="battle-controls-main">
@@ -321,18 +291,20 @@ function BattleControlDeck({ battle, actor, target, selection, playerCanAct, onA
         </div>
       </div>
     </div>
-    <BattleHandlerShowcase handlers={equippedHandlers} activeMystics={battle.player.mystics} />
+    {settings.gameplay.showDamageDetails && actor ? <details className="damage-details" open><summary>Damage details ? current preview</summary><p>Printed ATK {actor.printedBaseAttack} ? leveled ATK {actor.baseAttack} ? Order Advantage +{preview?.advantagePercent ?? 0}% ? Handler passive +{actor.handlerBonuses.atkPercent}% ? move / active ATK modifiers {sumStatPercent(actor, "atk") + (selection?.kind === "special" ? actor.moves[selection.moveIndex]?.damageModifierPercent ?? 0 : 0)}% ? Order Synergy +{battle.player.synergies[actor.order] ?? 0}% ? enemy DEF {target ? effectiveDefense(target) : "?"} ? final estimate {preview?.finalDamage ?? "Choose a target"}</p><small>Read-only estimate from the existing rules. One-use defenses and activation success are resolved by combat.</small></details> : null}
+    <BattleHandlerShowcase handlers={equippedHandlers} activeMystics={battle.player.mystics} activeSources={actor?.handlerBonuses.sources ?? []} turn={battle.turnNumber} />
   </section>;
 }
 
-function BattleHandlerShowcase({ handlers, activeMystics }: { handlers: HandlerDefinition[]; activeMystics: Combatant[] }) {
+function BattleHandlerShowcase({ handlers, activeMystics, activeSources, turn }: { handlers: HandlerDefinition[]; activeMystics: Combatant[]; activeSources: string[]; turn: number }) {
+  const { config } = useSettings();
   if (!handlers.length) return <section className="battle-handler-showcase empty"><WandSparkles /><strong>No Handlers equipped</strong></section>;
   return <section className="battle-handler-showcase">
     <header><span>EQUIPPED HANDLERS</span><small>Passive · always active</small></header>
     <div className="battle-handler-passive-list">
       {handlers.map((handler) => {
         const beneficiaries = activeMystics.filter((mystic) => !mystic.defeated && (mystic.allegiance === handler.allegiance || mystic.order === handler.order)).map((mystic) => mystic.name);
-        return <article key={handler.id} className="battle-handler-passive-card">
+        return <motion.article key={`${handler.id}-${turn}`} initial={{ opacity: activeSources.includes(handler.name) ? .6 : 1 }} animate={{ opacity: 1 }} transition={{ duration: config.special / 1000 }} className="battle-handler-passive-card">
           <div className="battle-handler-art">{handler.image ? <img src={handler.image} alt={`${handler.name} Handler card`} /> : <div className="artwork-needed">Artwork needed</div>}</div>
           <div>
             <strong>{handler.name}</strong>
@@ -340,7 +312,7 @@ function BattleHandlerShowcase({ handlers, activeMystics }: { handlers: HandlerD
             <p><WandSparkles />{handler.orderPassive.name}<em>{handler.orderPassive.rawText}</em></p>
             <small>{beneficiaries.length ? `Active on ${beneficiaries.join(", ")}` : "No fielded Mystic currently benefits"}</small>
           </div>
-        </article>;
+        </motion.article>;
       })}
     </div>
   </section>;
@@ -354,10 +326,11 @@ function BattleActionCard({ kind, title, icon, value, detail, available, selecte
   return <button className={`battle-action-card ${kind} ${selected ? "selected" : ""}`} disabled={!available} title={!available ? tooltip : undefined} onClick={onClick}><span className="action-icon">{icon}</span><span><small>{kind === "basic" ? "ATTACK" : "SPECIAL MOVE"}</small><strong>{title}</strong><em>{detail}</em></span><b>{value}</b>{!available && tooltip ? <i><Info />{tooltip}</i> : null}</button>;
 }
 
-function BattleDiceTray({ requirement, rolling, holding, face }: { requirement: string; rolling: boolean; holding: boolean; face: number }) {
+function BattleDiceTray({ requirement, rolling, holding, face, outcome }: { requirement: string; rolling: boolean; holding: boolean; face: number; outcome?: boolean }) {
   return <div className={`battle-dice-tray ${holding ? "holding" : ""}`} aria-live="polite">
     <div><small>{holding ? "ROLL RESULT" : rolling ? "ROLLING…" : "ROLL 1D8"}</small><strong>{holding ? `Rolled ${face}` : `Need ${requirement} to succeed`}</strong></div>
     <div className="battle-dice"><BattleDie3D face={face} rolling={rolling} /></div>
+    {holding && outcome !== undefined ? <strong className="dice-outcome">{outcome ? "SUCCESS" : "FAILED"}</strong> : null}
   </div>;
 }
 
@@ -368,6 +341,7 @@ function BattleDiceTray({ requirement, rolling, holding, face }: { requirement: 
  * `data-rolled="N"` resting transform.
  */
 function BattleDie3D({ face, rolling }: { face: number; rolling: boolean }) {
+  const { config } = useSettings();
   const diceRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<Animation | null>(null);
   const settleFrameRef = useRef<number | null>(null);
@@ -384,13 +358,13 @@ function BattleDie3D({ face, rolling }: { face: number; rolling: boolean }) {
       animationRef.current?.cancel();
       node.style.transition = "";
       node.style.transform = "";
-      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      if (!config.reduced) {
         animationRef.current = node.animate([
           { transform: "rotateX(0deg) rotateY(0deg) rotateZ(0deg)" },
           { transform: "rotateX(410deg) rotateY(250deg) rotateZ(180deg)" },
           { transform: "rotateX(740deg) rotateY(570deg) rotateZ(500deg)" },
           { transform: "rotateX(1080deg) rotateY(720deg) rotateZ(1080deg)" },
-        ], { duration: 760, iterations: Infinity, easing: "linear" });
+        ], { duration: config.special, iterations: Infinity, easing: "linear" });
       }
       return;
     }
@@ -403,12 +377,12 @@ function BattleDie3D({ face, rolling }: { face: number; rolling: boolean }) {
       node.style.transform = midSpin === "none" ? "" : midSpin;
       void node.offsetWidth;
       settleFrameRef.current = window.requestAnimationFrame(() => {
-        node.style.transition = "";
+        node.style.transition = `transform ${diceSettleDuration(config)}ms ease-out`;
         node.style.transform = "";
         settleFrameRef.current = null;
       });
     }
-  }, [rolling]);
+  }, [rolling, config.reduced, config.special]);
 
   useEffect(() => () => {
     animationRef.current?.cancel();
@@ -563,8 +537,9 @@ function BattleInspectOverlay({ mystic, onClose }: { mystic: Combatant; onClose:
 }
 
 function BattleEndModal({ battle, rewards, boosts, onSummary }: { battle: NonNullable<ReturnType<typeof useGame>["state"]["battle"]>; rewards: { xp: number; coins: number; won: boolean } | null; boosts: { xp: { matches: number; multiplier: 2 } | null; coins: { matches: number; multiplier: 2 } | null }; onSummary: () => void }) {
+  const { config } = useSettings();
   const victory = battle.winner === "player";
   const defeated = battle.ai.mystics.filter((mystic) => mystic.defeated).length;
   const survivors = battle.player.mystics.filter((mystic) => !mystic.defeated).length;
-  return <div className="battle-overlay end-overlay"><section className={`battle-end-modal ${victory ? "victory" : "defeat"}`} role="dialog" aria-modal="true"><span>{victory ? <Trophy /> : <Shield />}</span><small>MATCH COMPLETE</small><h2>{victory ? "VICTORY" : "DEFEAT"}</h2><p>{victory ? `${battle.ai.name}'s formation has fallen.` : "Your formation was defeated, but the archive records every battle."}</p><div className="battle-rewards"><div><Sparkles /><b>+{rewards?.xp ?? 0}</b><small>XP EARNED{boosts.xp ? " · 2× ACTIVE" : ""}</small></div><div><Zap /><b>+{rewards?.coins ?? 0}</b><small>COINS{boosts.coins ? " · 2× ACTIVE" : ""}</small></div><div><Swords /><b>{defeated}</b><small>MYSTICS DEFEATED</small></div><div><Heart /><b>{survivors}</b><small>SURVIVORS</small></div></div><div className="battle-end-actions"><Link href="/campaign" className="button primary">Continue <ArrowRight /></Link><button className="button ghost" onClick={onSummary}>View match summary</button></div></section></div>;
+  return <div className="battle-overlay end-overlay"><motion.section initial={{ opacity: 0, scale: config.reduced ? 1 : config.cinematic ? .85 : .98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: (config.cinematic ? config.apex : config.special) / 1000 }} className={`battle-end-modal ${victory ? "victory" : "defeat"}`} role="dialog" aria-modal="true"><span>{victory ? <Trophy /> : <Shield />}</span><small>MATCH COMPLETE</small><h2>{victory ? "VICTORY" : "DEFEAT"}</h2><p>{victory ? `${battle.ai.name}'s formation has fallen.` : "Your formation was defeated, but the archive records every battle."}</p><div className="battle-rewards"><div><Sparkles /><b>+{rewards?.xp ?? 0}</b><small>XP EARNED{boosts.xp ? " · 2× ACTIVE" : ""}</small></div><div><Zap /><b>+{rewards?.coins ?? 0}</b><small>COINS{boosts.coins ? " · 2× ACTIVE" : ""}</small></div><div><Swords /><b>{defeated}</b><small>MYSTICS DEFEATED</small></div><div><Heart /><b>{survivors}</b><small>SURVIVORS</small></div></div><div className="battle-end-actions"><Link href="/campaign" className="button primary">Continue <ArrowRight /></Link><button className="button ghost" onClick={onSummary}>View match summary</button></div></motion.section></div>;
 }

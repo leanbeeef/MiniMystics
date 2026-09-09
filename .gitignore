@@ -11,3 +11,6 @@ coverage
 .data
 .optimized/
 public/optimized/
+test-results/
+playwright-report/
+.next-presentation/

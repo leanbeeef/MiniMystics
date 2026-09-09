@@ -132,7 +132,7 @@ function AuthenticatedPanel({ username }: { username: string }) {
 
 function AuthExperience({ username }: { username?: string }) {
   const [returningSession] = useState(Boolean(username));
-  return <main className="auth-page"><div className="auth-scene-shade" /><div className="auth-portal-glow" aria-hidden="true" /><div className="auth-stage">{returningSession && username ? <AuthenticatedPanel username={username} /> : <AuthPanel />}</div><footer className="auth-footer"><span>MINI MYSTICS</span><span aria-hidden="true">✦</span><span>THE FIRST CONVERGENCE</span><Link href="/rules">HOW TO PLAY</Link></footer></main>;
+  return <main className="auth-page"><div className="auth-scene-shade" /><div className="auth-portal-glow" aria-hidden="true" /><div className="auth-stage">{returningSession && username ? <AuthenticatedPanel username={username} /> : <AuthPanel />}</div><footer className="auth-footer"><span>MINI MYSTICS</span><span aria-hidden="true">✦</span><span>THE FIRST CONVERGENCE</span><Link href="/rules">HOW TO PLAY</Link><Link href="/settings">SETTINGS</Link></footer></main>;
 }
 
 export function AuthView() {

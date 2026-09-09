@@ -253,7 +253,7 @@ export function performBasicAttack(state: BattleState, sideId: "player" | "ai", 
   const { finalDamage, advantagePercent, untouchable } = calculateDamage(attacker, defender, null, side.synergies);
   if (advantagePercent) state.events.push(event(state, "advantage", `${attacker.order} has Order Advantage against ${defender.order}: +${advantagePercent}% ATK.`));
   applyDamage(defender, finalDamage);
-  state.events.push(event(state, "attack", `${attacker.name} made a Basic Attack.`));
+  state.events.push(event(state, "attack", `${attacker.name} made a Basic Attack.`, { actorId: attackerId, targetId: defenderId, untouchable }));
   state.events.push(event(state, "damage", untouchable ? `${defender.name} was Untouchable — 0 damage taken.` : `${attacker.name} dealt ${finalDamage} damage to ${defender.name}.`, { damage: finalDamage }));
   consumeRetaliate(defender, attacker, state.turnNumber, sideId);
   if (defender.defeated) state.events.push(event(state, "ko", `${defender.name} was defeated.`));
@@ -273,7 +273,7 @@ export function performSpecial(state: BattleState, sideId: "player" | "ai", atta
 
   const roll = dice.rollD8();
   state.lastRoll = roll;
-  state.events.push(event(state, "special", `${attacker.name} used ${move.name}.`));
+  state.events.push(event(state, "special", `${attacker.name} used ${move.name}.`, { actorId: attackerId, targetId: defenderId, moveIndex }));
   state.events.push(event(state, "roll", `Rolled ${roll} (needs ${move.requiredRoll}+).`, { roll }));
   applyHandlerCooldown(attacker, move.name, move.cooldown);
 

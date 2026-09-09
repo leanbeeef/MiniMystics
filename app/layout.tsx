@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { GameProvider } from "@/components/game-provider";
+import { SettingsProvider } from "@/components/settings-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,5 +13,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body suppressHydrationWarning><GameProvider>{children}</GameProvider></body></html>;
+  return <html lang="en"><body suppressHydrationWarning><GameProvider><SettingsProvider>{children}</SettingsProvider></GameProvider></body></html>;
 }

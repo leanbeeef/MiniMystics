@@ -38,9 +38,9 @@ export function GameShell({ view }: { view: string }) {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    if (ready && !state.account) router.replace("/");
+    if (ready && !state.account && view !== "settings") router.replace("/");
     setCollapsed(localStorage.getItem("mini-mystics.nav-collapsed") === "true");
-  }, [ready, state.account, router]);
+  }, [ready, state.account, router, view]);
 
   const toggleCollapsed = () => setCollapsed((current) => {
     localStorage.setItem("mini-mystics.nav-collapsed", String(!current));
@@ -48,6 +48,7 @@ export function GameShell({ view }: { view: string }) {
   });
 
   const pageTitle = useMemo(() => nav.find((item) => item.href === view)?.label ?? (view === "open" ? "Pack Opening" : "Dashboard"), [view]);
+  if (ready && !state.account && view === "settings") return <main><Link href="/" className="button ghost">Back to sign in</Link><SettingsView /></main>;
   if (!ready || !state.account) return <main className="loading-screen"><div className="celestial-loader"><span /></div><p>Preparing your archive…</p></main>;
 
   const content = (() => {
