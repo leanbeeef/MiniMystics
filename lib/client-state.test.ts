@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { stackBoost } from "./game/boosts";
 import { nextAlphaPity, shouldGuaranteeAlpha } from "./game/packs";
 import { LEVEL_UP_ESSENCE_COST, MAX_MYSTIC_LEVEL, RARITY_DISMANTLE_ESSENCE, RARITY_SELL_COINS } from "./game/economy";
-import { ALL_CAMPAIGN_STAGES, buyPack, catalog, combatant, createBattle, dismantleCard, drawUniqueMystics, initialState, levelUpCard, rewardCompletedBattle, sellDuplicateCard, setActiveLoadout, type OwnedCard, type PlayerState } from "./client-state";
+import { ALL_CAMPAIGN_STAGES, buyPack, catalog, combatant, createBattle, dismantleCard, disposableDuplicate, drawUniqueMystics, initialState, levelUpCard, rewardCompletedBattle, sellDuplicateCard, setActiveLoadout, type OwnedCard, type PlayerState } from "./client-state";
 import { PACK_DEFINITIONS, weightedRarity } from "./game/packs";
 import type { MysticDefinition } from "./game/types";
 
@@ -243,6 +243,62 @@ describe("card leveling", () => {
 });
 
 describe("duplicate management: sell and dismantle", () => {
+  for (const [name, action] of [["sell", sellDuplicateCard], ["dismantle", dismantleCard]] as const) {
+    it(`${name} consumes new duplicates while preserving the leveled copy and its references`, () => {
+      const state = structuredClone(initialState);
+      const definition = catalog.mystics[0];
+      const upgraded = owned(definition.id, 5);
+      const duplicates = [owned(definition.id), owned(definition.id)];
+      state.ownedCards = [upgraded, ...duplicates];
+      state.binders = [{ id: "binder", name: "Favorites", cardIds: [upgraded.id] }];
+      state.loadouts = [{ id: "team", name: "Team", size: 3, mysticIds: [upgraded.id], handlerIds: [] }];
+      for (const copy of duplicates) {
+        const target = disposableDuplicate(state.ownedCards, upgraded.id);
+        expect(target?.id).toBe(copy.id);
+        action(state, target!.id);
+      }
+      expect(state.ownedCards).toEqual([upgraded]);
+      expect(upgraded.level).toBe(5);
+      expect(state.binders[0].cardIds).toEqual([upgraded.id]);
+      expect(state.loadouts[0].mysticIds).toEqual([upgraded.id]);
+      expect(disposableDuplicate(state.ownedCards, upgraded.id)).toBeUndefined();
+      expect(state.coins).toBe(name === "sell" ? 2 * RARITY_SELL_COINS[definition.rarity] : 0);
+      expect(state.essence[definition.order] ?? 0).toBe(name === "dismantle" ? 2 * RARITY_DISMANTLE_ESSENCE[definition.rarity] : 0);
+    });
+
+    it(`${name} rejects a leveled target without changing state`, () => {
+      const state = structuredClone(initialState);
+      const upgraded = owned(catalog.mystics[0].id, 5);
+      state.ownedCards = [upgraded, owned(upgraded.definitionId)];
+      const before = structuredClone(state);
+      expect(() => action(state, upgraded.id)).toThrow("Leveled cards are protected");
+      expect(state).toEqual(before);
+    });
+
+    it(`${name} rejects a copy leveled after confirmation opened`, () => {
+      const state = structuredClone(initialState);
+      const definition = catalog.mystics[0];
+      const upgraded = owned(definition.id, 5);
+      state.ownedCards = [upgraded, owned(definition.id)];
+      const target = disposableDuplicate(state.ownedCards, upgraded.id)!;
+      state.essence[definition.order] = 1000;
+      levelUpCard(state, target.id);
+      const before = structuredClone(state);
+      expect(() => action(state, target.id)).toThrow("Leveled cards are protected");
+      expect(state).toEqual(before);
+      expect(disposableDuplicate(state.ownedCards, upgraded.id)).toBeUndefined();
+    });
+  }
+
+  it("only selects an unlevelled duplicate of the inspected definition", () => {
+    const upgraded = owned(catalog.mystics[0].id, 5);
+    const other = owned(catalog.mystics[1].id);
+    expect(disposableDuplicate([upgraded, other], upgraded.id)).toBeUndefined();
+    const first = owned(upgraded.definitionId);
+    const second = owned(upgraded.definitionId);
+    expect(disposableDuplicate([upgraded, first, second], second.id)).toBe(second);
+  });
+
   it("sellDuplicateCard requires at least two owned copies and grants rarity-based Coins", () => {
     const definition = catalog.mystics[0];
     const state = structuredClone(initialState);

@@ -283,12 +283,23 @@ function removeOwnedCopy(state: PlayerState, ownedId: string) {
   state.binders.forEach((binder) => { binder.cardIds = binder.cardIds.filter((cardId) => cardId !== ownedId); });
 }
 
+/** Duplicate actions only consume unlevelled copies, even when inspecting an upgraded copy. */
+export function disposableDuplicate(ownedCards: OwnedCard[], selectedId: string): OwnedCard | undefined {
+  const selected = ownedCards.find((card) => card.id === selectedId);
+  if (!selected) return undefined;
+  const copies = ownedCards.filter((card) => card.definitionId === selected.definitionId);
+  if (copies.length < 2) return undefined;
+  return copies.find((card) => card.id === selectedId && (card.level ?? 1) === 1)
+    ?? copies.find((card) => (card.level ?? 1) === 1);
+}
+
 /** Coins granted for a duplicate Mystic or Handler. Requires owning at least 2 copies of that definition. */
 export function sellDuplicateCard(state: PlayerState, ownedId: string) {
   const owned = state.ownedCards.find((card) => card.id === ownedId);
   if (!owned) throw new Error("Card not found");
   const copies = state.ownedCards.filter((card) => card.definitionId === owned.definitionId);
   if (copies.length < 2) throw new Error("Only duplicate copies can be sold");
+  if ((owned.level ?? 1) > 1) throw new Error("Leveled cards are protected and cannot be sold");
   const definition = definitionFor(owned.definitionId)!;
   removeOwnedCopy(state, ownedId);
   state.coins += RARITY_SELL_COINS[definition.rarity];
@@ -299,6 +310,7 @@ export function dismantleCard(state: PlayerState, ownedId: string) {
   const { owned, mystic } = findOwnedMystic(state, ownedId);
   const copies = state.ownedCards.filter((card) => card.definitionId === owned.definitionId);
   if (copies.length < 2) throw new Error("Only duplicate copies can be dismantled");
+  if ((owned.level ?? 1) > 1) throw new Error("Leveled cards are protected and cannot be dismantled");
   removeOwnedCopy(state, ownedId);
   state.essence[mystic.order] = (state.essence[mystic.order] ?? 0) + RARITY_DISMANTLE_ESSENCE[mystic.rarity];
 }

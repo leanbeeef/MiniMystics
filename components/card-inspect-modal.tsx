@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUp, Clock3, Coins, Dices, Gem, Hammer, Shield, Sparkles, Swords, TriangleAlert, X } from "lucide-react";
-import { definitionFor, type OwnedCard } from "@/lib/client-state";
+import { definitionFor, disposableDuplicate, type OwnedCard } from "@/lib/client-state";
 import { useGame } from "./game-provider";
 import { ALLEGIANCE_ART, ORDER_ART, ORDER_COLORS } from "@/lib/art";
 import { LEVEL_UP_ESSENCE_COST, MAX_MYSTIC_LEVEL, RARITY_DISMANTLE_ESSENCE, RARITY_SELL_COINS, levelBonusPercent } from "@/lib/game/economy";
@@ -20,6 +20,7 @@ export function CardInspectModal({ definitionId, ownedCards, onClose }: { defini
   const [selectedId, setSelectedId] = useState(sorted[0]?.id ?? "");
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const selected = ownedCards.find((owned) => owned.id === selectedId) ?? sorted[0];
+  const duplicate = disposableDuplicate(ownedCards, selected?.id ?? "");
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => event.key === "Escape" && (confirmAction ? setConfirmAction(null) : onClose());
@@ -37,7 +38,7 @@ export function CardInspectModal({ definitionId, ownedCards, onClose }: { defini
   const essenceOwned = mystic ? state.essence[mystic.order] ?? 0 : 0;
   const leveledStat = (printed: number, atLevel: number) => roundHalfUp(printed * (1 + levelBonusPercent(atLevel) / 100));
 
-  const requestConfirm = (kind: "sell" | "dismantle") => { if (selected) setConfirmAction({ kind, ownedId: selected.id, lastCopy: ownedCards.length <= 1 }); };
+  const requestConfirm = (kind: "sell" | "dismantle") => { if (duplicate) setConfirmAction({ kind, ownedId: duplicate.id, lastCopy: false }); };
   const runConfirmed = () => {
     if (!confirmAction) return;
     if (confirmAction.kind === "sell") sellDuplicate(confirmAction.ownedId); else dismantleCard(confirmAction.ownedId);
@@ -99,9 +100,10 @@ export function CardInspectModal({ definitionId, ownedCards, onClose }: { defini
                 </> : <p>This Mystic has reached the maximum level.</p>}
               </div>
               <div className="inspect-duplicate-actions">
-                <button className="button ghost" disabled={ownedCards.length < 2} onClick={() => requestConfirm("sell")}><Coins />Sell duplicate</button>
-                <button className="button ghost" disabled={ownedCards.length < 2} onClick={() => requestConfirm("dismantle")}><Hammer />Dismantle for Essence</button>
+                <button className="button ghost" disabled={!duplicate} onClick={() => requestConfirm("sell")}><Coins />Sell duplicate</button>
+                <button className="button ghost" disabled={!duplicate} onClick={() => requestConfirm("dismantle")}><Hammer />Dismantle for Essence</button>
               </div>
+              <p>Only Level 1 duplicates can be sold or dismantled. Leveled cards are protected.</p>
             </div>
           </div>
         </div> : <div className="inspect-columns">
@@ -114,7 +116,7 @@ export function CardInspectModal({ definitionId, ownedCards, onClose }: { defini
           <div className="inspect-secondary">
             <div className="inspect-actions">
               <div className="inspect-duplicate-actions">
-                <button className="button ghost" disabled={ownedCards.length < 2} onClick={() => requestConfirm("sell")}><Coins />Sell duplicate</button>
+                <button className="button ghost" disabled={!duplicate} onClick={() => requestConfirm("sell")}><Coins />Sell duplicate</button>
               </div>
             </div>
           </div>
@@ -125,6 +127,7 @@ export function CardInspectModal({ definitionId, ownedCards, onClose }: { defini
       <section className="confirm-panel" role="alertdialog" aria-modal="true" aria-label="Confirm action">
         <TriangleAlert />
         <h3>{confirmAction.kind === "sell" ? "Sell this copy?" : "Dismantle this copy?"}</h3>
+        <p>{card.name} — Level 1 duplicate.{mystic ? " Your leveled copies will be kept." : ""}</p>
         <p>{confirmAction.kind === "sell" ? `You'll receive ${RARITY_SELL_COINS[card.rarity]} Coins.` : `You'll receive ${RARITY_DISMANTLE_ESSENCE[card.rarity as keyof typeof RARITY_DISMANTLE_ESSENCE]} ${card.order} Essence.`} This card copy will be permanently removed from your collection.</p>
         {confirmAction.lastCopy ? <p className="confirm-warning">This is your only copy of {card.name}.{referencingLoadouts.length ? ` It's used in: ${referencingLoadouts.map((loadout) => loadout.name).join(", ")}.` : ""}</p> : null}
         <div className="confirm-actions"><button className="button ghost" onClick={() => setConfirmAction(null)}>Cancel</button><button className="button primary" onClick={runConfirmed}>Confirm</button></div>
