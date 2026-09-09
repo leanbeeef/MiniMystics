@@ -6022,6 +6022,8 @@ select:focus {
   line-height: 1.1;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  justify-content: space-between;
 }
 .battle-card-hud > span:last-child {
   display: flex;
