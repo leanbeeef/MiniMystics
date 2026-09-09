@@ -32,7 +32,7 @@ Reduced Motion follows `prefers-reduced-motion` until explicitly changed. The pe
 
 `lib/audio/manager.ts` is the single HTMLAudioElement owner. It provides music/SFX playback, looping, volume controls, mute/unmute, pause/resume and teardown. Effective gain is master × category gain; quieter UI effects receive an additional gain reduction. It unlocks following pointer/keyboard interaction, catches autoplay failures, retries after another interaction, throttles click/hover sounds and caps concurrent voices. Major effects preempt lower-priority voices. Menu/battle changes crossfade over 400 ms. Results stop battle music and begin their stinger after the battle presentation completes. Hidden tabs pause music. The existing `mini-mystics:audio` hooks are mapped centrally by `AudioBridge`.
 
-`lib/audio/registry.ts` contains all paths and hook names. The repository currently ships **no audio assets**, so `AVAILABLE_AUDIO` is empty and the game is silent. Missing slots cause no requests, 404 spam or rejected playback promises. To add music or SFX:
+`lib/audio/registry.ts` contains all paths and hook names. The menu and battle music plus all 23 non-Handler SFX are enabled in `AVAILABLE_AUDIO`. Separate victory/defeat music and active Handler SFX are not supplied; match results use the existing victory/defeat SFX fallback. Missing slots cause no requests, 404 spam or rejected playback promises. To add music or SFX:
 
 1. Obtain appropriately licensed audio.
 2. Put music in `public/audio/music/` and SFX in `public/audio/sfx/`.
@@ -48,6 +48,6 @@ Music slots: `menu-theme.mp3`, `battle-theme-01.mp3`, `victory.mp3`, `defeat.mp3
 - `npx tsc --noEmit --incremental false`: application and test type checks.
 - `npm run test:presentation`: isolated headless Chrome checks for settings refresh/reset, browser motion overrides, immediate committed battle damage, impact/defeat feedback, manual continuation, Special failure, pack reveal and landscape layout. Requires installed Chrome (or change Playwright's channel). Uses port 3100, `.next-presentation`, a test-only public auth configuration and intercepted API requests; no real account or remote game state is modified. Screenshots go to ignored `test-results/`.
 
-Listen to the final mix on desktop/mobile after supplying real files; silent placeholder slots and mocked audio tests cannot verify artistic quality, licensing or loudness. No deployment is performed by these commands.
+Listen to the final mix on desktop/mobile; mocked audio tests cannot verify artistic quality, licensing or loudness. No deployment is performed by these commands.
 
 Library references: [Motion transitions](https://motion.dev/docs/react-transitions), [GSAP timelines](https://gsap.com/docs/v3/GSAP/Timeline/), [Playwright browser configuration](https://playwright.dev/docs/test-use-options).

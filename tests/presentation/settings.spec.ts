@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { AVAILABLE_AUDIO } from "../../lib/audio/registry";
 test("settings work without login, persist, preview and reset", async ({ page }, testInfo) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -29,7 +30,9 @@ test("settings work without login, persist, preview and reset", async ({ page },
   await page.getByLabel("Larger Interface Text", { exact: true }).check();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("settings-landscape.png"), fullPage: true });
-  expect(errors).toEqual([]); expect(audioRequests).toEqual([]);
+  expect(errors).toEqual([]);
+  expect(audioRequests.length).toBeGreaterThan(0);
+  expect(audioRequests.every((url) => AVAILABLE_AUDIO.has(new URL(url).pathname))).toBe(true);
 });
 test("system motion preference follows the browser until explicitly overridden", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
