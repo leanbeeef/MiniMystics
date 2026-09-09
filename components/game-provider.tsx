@@ -11,6 +11,8 @@ import { getSupabaseClient } from "@/lib/supabase";
 import { ensurePlayerProfile, getPlayerProfile, savePlayerProfile, validateHandlerName, type ProfileInput } from "@/lib/player-profile";
 import { loadCloudGameState, queueCloudGameState, type GameActivityType } from "@/lib/game-sync-client";
 import { selectHydratedGameState } from "@/lib/game-state-merge";
+import { claimDailyChallengeFromServer, claimDailyPackFromServer, claimSeasonTierFromServer } from "@/lib/progression-client";
+import { applyProgressEvent, dismissNotification as dismissNotificationRule, emptyProgression, ensureRetentionNotifications } from "@/lib/progression/state";
 
 type Accounts = Record<string, { passwordHash?: string; state: PlayerState }>;
 type GameContextValue = {
@@ -41,6 +43,10 @@ type GameContextValue = {
   basicAttack(attackerId: string, defenderId: string): void;
   specialAttack(attackerId: string, defenderId: string, moveIndex: number, rolledFace?: number): void;
   aiTurn(): void;
+  claimDailyPack(): Promise<void>;
+  claimDailyChallenge(): Promise<void>;
+  claimSeasonTier(tier: number): Promise<void>;
+  dismissNotification(id: string): void;
 };
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -96,6 +102,12 @@ function migrateLegacyState(saved: PlayerState): boolean {
   if (!saved.comicProgress || typeof saved.comicProgress !== "object") { saved.comicProgress = {}; changed = true; }
   if ((saved as Partial<PlayerState>).profile === undefined) { saved.profile = null; changed = true; }
   if (!saved.essence || typeof saved.essence !== "object") { saved.essence = {}; changed = true; }
+  if (!saved.progression || typeof saved.progression !== "object") { saved.progression = emptyProgression(); changed = true; }
+  saved.progression.dailyChallenges ??= {};
+  saved.progression.seasons ??= {};
+  saved.progression.notifications ??= [];
+  if (saved.progression.lastDailyPackClaimAt === undefined) { saved.progression.lastDailyPackClaimAt = null; changed = true; }
+  if (ensureRetentionNotifications(saved)) changed = true;
   for (const owned of saved.ownedCards) if (typeof owned.level !== "number") { owned.level = 1; changed = true; }
   // A battle saved before the D8 rewrite is missing required fields (synergies, activeEffects,
   // handlerBonuses, ...) that the current engine/UI assume are always present. Rather than guess
@@ -353,12 +365,28 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const levelUpCard = useCallback((ownedId: string) => commit((draft) => levelUpCardRule(draft, ownedId), "CARD_LEVELED_UP", { ownedId }), [commit]);
   const startBattle = useCallback((opponentId: string, selection?: BattleSelection) => {
     if (!selection) { router.push(`/battle?opponent=${encodeURIComponent(opponentId)}`); return; }
-    commit((draft) => createBattle(draft, opponentId, selection), "BATTLE_STARTED", { opponentId, loadoutId: selection.loadoutId, random: selection.random });
+    commit((draft) => {
+      createBattle(draft, opponentId, selection);
+      if (draft.battle) applyProgressEvent(draft, { type: "BATTLE_STARTED", battleId: draft.battle.id, teamOrders: draft.battle.player.mystics.map(item => item.order), teamSize: draft.battle.size });
+    }, "BATTLE_STARTED", { opponentId, loadoutId: selection.loadoutId, random: selection.random });
     router.replace("/battle");
   }, [commit, router]);
 
-  const finalize = (draft: PlayerState) => { if (draft.battle?.winner) rewardCompletedBattle(draft); };
-  const basicAttack = useCallback((attackerId: string, defenderId: string) => commit((draft) => { if (!draft.battle) return; performBasicAttack(draft.battle, "player", attackerId, defenderId); finalize(draft); }, "BASIC_ATTACK", { attackerId, defenderId }), [commit]);
+  const recordCompletion = (draft: PlayerState, wasComplete: boolean) => {
+    const battle = draft.battle; if (!battle?.winner || wasComplete) return;
+    const survivors = battle.player.mystics.filter(item => !item.defeated);
+    const shared = { battleId: battle.id, teamOrders: battle.player.mystics.map(item => item.order), teamSize: battle.size, survivors: survivors.length, defeatedAllies: battle.player.mystics.length - survivors.length, maxSurvivorPowerPercent: Math.max(0, ...survivors.map(item => item.currentPower / item.maxPower * 100)), lineupKey: battle.player.mystics.map(item => item.definitionId).sort().join("|") };
+    applyProgressEvent(draft, { type: "BATTLE_COMPLETED", ...shared });
+    applyProgressEvent(draft, { type: battle.winner === "player" ? "BATTLE_WON" : "BATTLE_LOST", ...shared });
+  };
+  const finalize = (draft: PlayerState, wasComplete: boolean) => { recordCompletion(draft, wasComplete); if (draft.battle?.winner) rewardCompletedBattle(draft); };
+  const basicAttack = useCallback((attackerId: string, defenderId: string) => commit((draft) => {
+    if (!draft.battle) return; const battle = draft.battle; const wasComplete = Boolean(battle.winner); const actor = battle.player.mystics.find(item => item.instanceId === attackerId);
+    const result = performBasicAttack(battle, "player", attackerId, defenderId);
+    if (result.finalDamage > 0) { applyProgressEvent(draft, { type: "ATTACK_LANDED", attackKind: "basic", battleId: battle.id }); applyProgressEvent(draft, { type: "DAMAGE_DEALT", battleId: battle.id, value: result.finalDamage, actorOrder: actor?.order }); }
+    if (actor?.handlerBonuses.sources.length) applyProgressEvent(draft, { type: "HANDLER_SUCCEEDED", battleId: battle.id });
+    finalize(draft, wasComplete);
+  }, "BASIC_ATTACK", { attackerId, defenderId }), [commit]);
   const specialAttack = useCallback((attackerId: string, defenderId: string, moveIndex: number, rolledFace?: number) => commit((draft) => {
     if (!draft.battle) return;
     let useProvidedRoll = rolledFace !== undefined;
@@ -366,12 +394,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (useProvidedRoll) { useProvidedRoll = false; return rolledFace; }
       return Math.floor(Math.random() * 8) + 1;
     } };
-    performSpecial(draft.battle, "player", attackerId, defenderId, moveIndex, dice);
-    finalize(draft);
+    const battle = draft.battle; const wasComplete = Boolean(battle.winner); const actor = battle.player.mystics.find(item => item.instanceId === attackerId);
+    applyProgressEvent(draft, { type: "SPECIAL_ATTEMPTED", battleId: battle.id });
+    const result = performSpecial(battle, "player", attackerId, defenderId, moveIndex, dice);
+    if (result.success) applyProgressEvent(draft, { type: "SPECIAL_SUCCEEDED", battleId: battle.id });
+    if (result.damage > 0) { applyProgressEvent(draft, { type: "ATTACK_LANDED", attackKind: "special", battleId: battle.id }); applyProgressEvent(draft, { type: "DAMAGE_DEALT", battleId: battle.id, value: result.damage, actorOrder: actor?.order }); }
+    if (result.success && actor?.handlerBonuses.sources.length) applyProgressEvent(draft, { type: "HANDLER_SUCCEEDED", battleId: battle.id });
+    finalize(draft, wasComplete);
   }, "SPECIAL_ATTACK", { attackerId, defenderId, moveIndex, rolledFace }), [commit]);
 
   const aiTurn = useCallback(() => commit((draft) => {
-    const battle = draft.battle; if (!battle || battle.currentTurn !== "ai" || battle.winner) return;
+    const battle = draft.battle; if (!battle || battle.currentTurn !== "ai" || battle.winner) return; const wasComplete = Boolean(battle.winner);
     const actors = battle.ai.mystics.filter((m) => !m.defeated);
     const enemies = battle.player.mystics.filter((m) => !m.defeated);
     const profile = findStage(ORDER_CAMPAIGNS, battle.campaignId ?? "")?.stage.aiLogicProfile ?? "balanced";
@@ -393,10 +426,33 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       performSpecial(battle, "ai", actor.instanceId, specialTarget.instanceId, choice.index);
     }
     else performBasicAttack(battle, "ai", actor.instanceId, target.instanceId);
-    finalize(draft);
+    finalize(draft, wasComplete);
   }, "AI_TURN"), [commit]);
 
-  const value = useMemo<GameContextValue>(() => ({ state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, setActiveLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, dismantleCard, levelUpCard, startBattle, basicAttack, specialAttack, aiTurn }), [state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, setActiveLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, dismantleCard, levelUpCard, startBattle, basicAttack, specialAttack, aiTurn]);
+  const claimDailyPack = useCallback(async () => {
+    try {
+      const next = await claimDailyPackFromServer(); migrateLegacyState(next); replaceState(next); saveLocalState(next); router.push("/open"); setError(null);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not claim the Daily Pack."); throw cause; }
+  }, [replaceState, router]);
+  const claimDailyChallenge = useCallback(async () => {
+    try {
+      await queueCloudGameState(stateRef.current, "PROGRESSION_SYNC");
+      const next = await claimDailyChallengeFromServer();
+      migrateLegacyState(next); replaceState(next); saveLocalState(next); setError(null);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not claim the Daily Challenge reward."); throw cause; }
+  }, [replaceState]);
+  const claimSeasonTier = useCallback(async (tier: number) => {
+    try {
+      await queueCloudGameState(stateRef.current, "PROGRESSION_SYNC");
+      const next = await claimSeasonTierFromServer(tier);
+      migrateLegacyState(next); replaceState(next); saveLocalState(next); setError(null);
+      const opening = next.openings.find(item => item.id === next.activeOpeningId);
+      if (opening?.source === "season" && !opening.complete) router.push("/open");
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not claim the Season reward."); throw cause; }
+  }, [replaceState, router]);
+  const dismissNotification = useCallback((id: string) => commit(draft => dismissNotificationRule(draft, id), "NOTIFICATION_READ", { id }), [commit]);
+
+  const value = useMemo<GameContextValue>(() => ({ state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, setActiveLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, dismantleCard, levelUpCard, startBattle, basicAttack, specialAttack, aiTurn, claimDailyPack, claimDailyChallenge, claimSeasonTier, dismissNotification }), [state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, setActiveLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, dismantleCard, levelUpCard, startBattle, basicAttack, specialAttack, aiTurn, claimDailyPack, claimDailyChallenge, claimSeasonTier, dismissNotification]);
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }
 

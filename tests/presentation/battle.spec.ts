@@ -224,3 +224,22 @@ test("Apex ally heal targets a teammate rather than an enemy", async ({ page }) 
   await page.locator(`[data-vfx-id="${state.battle!.player.mystics[1].instanceId}"]`).click();
   await expect.poll(async () => (await savedState(page)).battle!.player.mystics[1].currentPower).toBe(35);
 });
+
+
+test("collection stat row updates immediately after leveling an owned card", async ({ page }) => {
+  const state = await fixture(page, "minimal", state => {
+    state.ownedCards.forEach(card => { card.level = 1; });
+    for (const card of catalog.mystics) state.essence[card.order] = 1000;
+  });
+  const definition = catalog.mystics.find(card => card.id === state.ownedCards[0].definitionId)!;
+  await page.goto("/collection");
+  const tile = page.locator(".collection-grid .card-tile").filter({ has: page.getByText(definition.name, { exact: true }) });
+  const row = tile.locator(".stat-row > span");
+  const printed = [definition.power, definition.defense, definition.baseAttack];
+  await expect(row).toHaveText(printed.map(String));
+  await tile.click();
+  await page.getByRole("button", { name: "Level up", exact: true }).click();
+  await page.getByRole("button", { name: "Close card details", exact: true }).click();
+  await expect(tile.locator(".card-level-badge")).toHaveText("Lv.2");
+  await expect(row).toHaveText(printed.map(value => String(Math.floor(value * 1.02 + .5))));
+});

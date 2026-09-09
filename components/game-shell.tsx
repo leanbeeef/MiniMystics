@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Backpack, Bell, BookOpen, BookOpenCheck, ChevronLeft, ChevronRight, Coins, House, Layers3, LogOut, Menu, ScrollText, Settings, ShoppingBag, Swords, Trophy, UserRound, UsersRound, X, Zap } from "lucide-react";
+import { Backpack, BookOpen, BookOpenCheck, CalendarCheck, ChevronLeft, ChevronRight, Coins, House, Layers3, LogOut, Menu, ScrollText, Settings, ShoppingBag, Sparkles, Swords, Trophy, UserRound, UsersRound, X, Zap } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useGame } from "./game-provider";
 import { DashboardView, CollectionView, CampaignView, PacksView, OpeningView, InventoryView, ComingSoonView, BattleView, SettingsView } from "./views";
@@ -13,21 +13,24 @@ import { ProfileView } from "./profile-view";
 import { FriendsView } from "./friends-view";
 import { optimizedAsset } from "@/lib/asset-url";
 import { RulesView } from "./rules-view";
+import { DailyChallengeView, DailyPackModal, NotificationCenter, SeasonPassView } from "./progression-ui";
 
 const nav = [
-  { href: "game", label: "Dashboard", icon: House },
-  { href: "battle", label: "Battle", icon: Swords },
-  { href: "campaign", label: "Campaign", icon: ScrollText },
-  { href: "collection", label: "Collection", icon: Layers3 },
-  { href: "packs", label: "Packs", icon: ShoppingBag },
-  { href: "inventory", label: "Inventory", icon: Backpack },
-  { href: "comics", label: "Comics", icon: BookOpen },
-  { href: "profile", label: "Profile", icon: UserRound },
-  { href: "friends", label: "Friends", icon: UsersRound },
-  { href: "rules", label: "How to Play", icon: BookOpenCheck },
-  { href: "marketplace", label: "Marketplace", icon: Trophy, soon: true },
-  { href: "trading", label: "Trading", icon: UsersRound, soon: true },
-  { href: "settings", label: "Settings", icon: Settings },
+  { href: "game", label: "Dashboard", icon: House, group: "" },
+  { href: "battle", label: "Battle", icon: Swords, group: "PLAY" },
+  { href: "campaign", label: "Campaign", icon: ScrollText, group: "PLAY" },
+  { href: "collection", label: "Collection", icon: Layers3, group: "COLLECTION" },
+  { href: "inventory", label: "Inventory", icon: Backpack, group: "COLLECTION" },
+  { href: "packs", label: "Packs", icon: ShoppingBag, group: "COLLECTION" },
+  { href: "daily-challenge", label: "Daily Challenge", icon: CalendarCheck, group: "PROGRESSION" },
+  { href: "season-pass", label: "Season Pass", icon: Sparkles, group: "PROGRESSION" },
+  { href: "comics", label: "Comics", icon: BookOpen, group: "MORE" },
+  { href: "profile", label: "Profile", icon: UserRound, group: "MORE" },
+  { href: "friends", label: "Friends", icon: UsersRound, group: "MORE" },
+  { href: "rules", label: "How to Play", icon: BookOpenCheck, group: "MORE" },
+  { href: "marketplace", label: "Marketplace", icon: Trophy, group: "MORE", soon: true },
+  { href: "trading", label: "Trading", icon: UsersRound, group: "MORE", soon: true },
+  { href: "settings", label: "Settings", icon: Settings, group: "MORE" },
 ] as const;
 
 export function GameShell({ view }: { view: string }) {
@@ -60,6 +63,8 @@ export function GameShell({ view }: { view: string }) {
       case "packs": return <PacksView />;
       case "open": return <OpeningView />;
       case "inventory": return <InventoryView />;
+      case "daily-challenge": return <DailyChallengeView />;
+      case "season-pass": return <SeasonPassView />;
       case "comics": return <ComicsLibraryPage />;
       case "profile": return <ProfileView />;
       case "friends": return <FriendsView />;
@@ -82,7 +87,7 @@ export function GameShell({ view }: { view: string }) {
           <img className="sidebar-logo" src={LOGO_ART} alt="Mini Mystics" />
           <button className="icon-button close-nav" onClick={() => setMobileOpen(false)} aria-label="Close navigation"><X /></button>
         </div>
-        <nav aria-label="Primary navigation">{nav.map(({ href, label, icon: Icon, ...item }) => <Link key={href} href={`/${href}`} title={collapsed ? label : undefined} aria-current={pathname === `/${href}` ? "page" : undefined} className={pathname === `/${href}` ? "active" : ""} onClick={() => setMobileOpen(false)}><Icon /><span>{label}</span>{"soon" in item && item.soon ? <small>SOON</small> : null}</Link>)}</nav>
+        <nav aria-label="Primary navigation">{nav.map(({ href, label, icon: Icon, group, ...item }, index) => <span className="nav-entry" key={href}>{group && group !== nav[index - 1]?.group ? <b className="nav-group-label">{group}</b> : null}<Link href={`/${href}`} title={collapsed ? label : undefined} aria-current={pathname === `/${href}` ? "page" : undefined} className={pathname === `/${href}` ? "active" : ""} onClick={() => setMobileOpen(false)}><Icon /><span>{label}</span>{"soon" in item && item.soon ? <small>SOON</small> : null}</Link></span>)}</nav>
         <div className="sidebar-footer">
           <button className="collapse-nav" onClick={toggleCollapsed} title={collapsed ? "Expand navigation" : "Collapse navigation"}>{collapsed ? <ChevronRight /> : <ChevronLeft />}<span>{collapsed ? "Expand" : "Collapse"}</span></button>
           <button className="logout" onClick={logout} title="Log out"><LogOut /><span>Log out</span></button>
@@ -97,12 +102,13 @@ export function GameShell({ view }: { view: string }) {
             <div className="resource-counter" title="Coin balance"><Coins /><strong>{state.coins.toLocaleString()}</strong></div>
             {state.activeBoosts.xp ? <div className="top-boost xp"><Zap /><span><strong>2× XP</strong><small>{state.activeBoosts.xp.matches} matches</small></span></div> : null}
             {state.activeBoosts.coins ? <div className="top-boost coins"><Coins /><span><strong>2× Coins</strong><small>{state.activeBoosts.coins.matches} matches</small></span></div> : null}
-            <button className="icon-button notifications" title="Notifications" aria-label="Notifications"><Bell /></button>
+            <NotificationCenter />
             <Link href="/profile" className="profile-chip" title="Profile"><span className="avatar">{state.profile?.avatarPath ? <img src={optimizedAsset(state.profile.avatarPath) ?? state.profile.avatarPath} alt="" decoding="async" /> : state.account.username.slice(0, 2).toUpperCase()}</span><span><strong>{state.profile?.handlerName ?? state.account.username}</strong><small>Handler</small></span></Link>
           </div>
         </header>
         {error ? <div className="toast-error" role="alert">{error}</div> : null}
         <div className="page-transition" key={pathname}>{content}</div>
+        {view === "game" ? <DailyPackModal /> : null}
       </main>
     </div>
   );

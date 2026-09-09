@@ -10,7 +10,7 @@ export function attackTimeline(root: HTMLElement, action: PresentationAction, co
   const total = config[action.durationKind] / 1000;
   const spin = action.roll && !config.reduced ? total * .45 : 0;
   // Let the die finish settling, then give players a full second to read it.
-  const hold = action.roll ? (diceSettleDuration(config) + DICE_RESULT_HOLD_MS) / 2000 : 0;
+  const hold = action.roll ? (diceSettleDuration(config) + DICE_RESULT_HOLD_MS) / 1000 : 0;
   const effectStart = spin + hold;
   const duration = action.roll ? total * (config.reduced ? .6 : .35) : total;
   let projectile: HTMLSpanElement | undefined;

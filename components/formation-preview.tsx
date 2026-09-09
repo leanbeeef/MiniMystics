@@ -1,4 +1,4 @@
-import { definitionFor, type OwnedCard } from "@/lib/client-state";
+import { artworkForOwnedCard, definitionFor, type OwnedCard } from "@/lib/client-state";
 
 type FormationPreviewProps = {
   ownedCards: OwnedCard[];
@@ -11,7 +11,7 @@ type FormationPreviewProps = {
 function PreviewCard({ owned, concealed = false }: { owned?: OwnedCard; concealed?: boolean }) {
   const definition = owned ? definitionFor(owned.definitionId) : null;
   return <span className={`formation-preview-card ${concealed ? "concealed" : ""}`} title={definition?.name}>
-    {concealed ? <img src="/cards/Mystics/back.png" alt="Random card" /> : definition?.image ? <img src={definition.image} alt={definition.name} loading="lazy" decoding="async" /> : <span>Empty</span>}
+    {concealed ? <img src="/cards/Mystics/back.png" alt="Random card" /> : owned && artworkForOwnedCard(owned) ? <img src={artworkForOwnedCard(owned) ?? ""} alt={definition?.name ?? "Mystic"} loading="lazy" decoding="async" /> : <span>Empty</span>}
   </span>;
 }
 

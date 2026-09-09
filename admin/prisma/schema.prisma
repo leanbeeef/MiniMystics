@@ -183,6 +183,7 @@ model PlayerProfile {
   favoriteMysticId       String?
   currentStreak          Int                          @default(0)
   peakStreak             Int                          @default(0)
+  lastDailyPackClaimAt   DateTime?
   user                   User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
   ownedCards             OwnedCard[]
   inventory              InventoryItem[]
@@ -205,7 +206,9 @@ model PlayerProfile {
   multiplayerStats       MultiplayerStatistic[]
   leaderboardRecords     LeaderboardRecord[]
   seasonProgress         PlayerSeasonProgress[]
+  seasonRewardClaims     SeasonPassRewardClaim[]
   challengeAssignments   DailyChallengeAssignment[]
+  dailyRewards           PlayerDailyReward[]
   adminAdjustments       AdminAdjustmentTransaction[]
   gameState              PlayerGameState?
   gameActivity           GameActivity[]
@@ -714,6 +717,7 @@ model Season {
   startsAt            DateTime
   endsAt              DateTime
   active              Boolean                    @default(false)
+  status              String                     @default("UPCOMING")
   artworkPath         String?
   rankedResetConfig   Json
   xpConfig            Json
@@ -722,6 +726,7 @@ model Season {
   updatedAt           DateTime                   @updatedAt
   tiers               SeasonPassTier[]
   progress            PlayerSeasonProgress[]
+  rewardClaims        SeasonPassRewardClaim[]
   challenges          DailyChallengeDefinition[]
   rankHistory         RankHistory[]
   leaderboardRecords  LeaderboardRecord[]
@@ -762,6 +767,20 @@ model PlayerSeasonProgress {
   @@unique([profileId, seasonId])
 }
 
+model SeasonPassRewardClaim {
+  id        String        @id @default(cuid())
+  profileId String
+  seasonId  String
+  tier      Int
+  track     String        @default("FREE")
+  claimedAt DateTime      @default(now())
+  profile   PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  season    Season        @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, seasonId, tier, track])
+  @@index([seasonId, tier])
+}
+
 model DailyChallengeDefinition {
   id                     String                     @id @default(cuid())
   name                   String
@@ -769,6 +788,7 @@ model DailyChallengeDefinition {
   category               String
   eventType              String
   targetValue            Int
+  rotationDay            Int?                       @unique
   filters                Json
   allowedGameModes       Json
   battleSizeRestrictions Json
@@ -777,6 +797,8 @@ model DailyChallengeDefinition {
   rarityRestrictions     Json
   rewardType             String
   rewardAmount           Int
+  seasonXpReward         Int                        @default(150)
+  coinReward             Int                        @default(100)
   difficulty             String
   active                 Boolean                    @default(true)
   seasonId               String?
@@ -796,6 +818,9 @@ model DailyChallengeAssignment {
   definitionId String
   assignedDate DateTime
   progress     Int                      @default(0)
+  progressData Json?
+  completed    Boolean                  @default(false)
+  rewardClaimed Boolean                 @default(false)
   completedAt  DateTime?
   claimedAt    DateTime?
   rerolled     Boolean                  @default(false)
@@ -805,6 +830,18 @@ model DailyChallengeAssignment {
 
   @@unique([profileId, definitionId, assignedDate])
   @@index([profileId, assignedDate])
+}
+
+model PlayerDailyReward {
+  id            String        @id @default(cuid())
+  profileId     String
+  rewardDate    DateTime
+  claimedAt     DateTime      @default(now())
+  packOpeningId String        @unique
+  profile       PlayerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, rewardDate])
+  @@index([profileId, claimedAt])
 }
 
 model MatchParticipant {

@@ -42,6 +42,7 @@ import { VFXManager, useVFX } from "./vfx/vfx-manager";
 import {
   ALL_CAMPAIGN_STAGES,
   ORDER_CAMPAIGNS,
+  artworkForOwnedCard,
   catalog,
   definitionFor,
 } from "@/lib/client-state";
@@ -57,6 +58,7 @@ import {
   REWARD_ART,
 } from "@/lib/art";
 import { RARITY_PACK_EFFECT } from "@/lib/vfx/presets";
+import { DailyChallengeCard, DailyPackCard, SeasonSummary } from "./progression-ui";
 
 const PageHead = ({
   eyebrow,
@@ -151,7 +153,7 @@ export function DashboardView() {
         <div className="featured-stack" aria-label="Featured collection cards">
           {state.ownedCards.slice(0, 3).map((owned, index) => (
             <div className={`stack-card stack-${index}`} key={owned.id}>
-              <CardTile definitionId={owned.definitionId} />
+              <CardTile definitionId={owned.definitionId} level={owned.level} artwork={artworkForOwnedCard(owned)} />
             </div>
           ))}
         </div>
@@ -171,6 +173,7 @@ export function DashboardView() {
           <ArrowRight />
         </Link>
       ) : null}
+      <section className="retention-grid"><DailyPackCard /><DailyChallengeCard /><SeasonSummary /></section>
       <section className="dashboard-grid">
         <div className="panel progress-panel">
           <div className="panel-title">
@@ -478,6 +481,7 @@ export function CollectionView() {
               key={definitionId}
               definitionId={definitionId}
               level={Math.max(...copies.map((owned) => owned.level))}
+              artwork={artworkForOwnedCard(copies.find((owned) => owned.variant === "illustrationRare") ?? copies[0])}
               onClick={() => setInspectId(definitionId)}
               footer={<b>×{copies.length}</b>}
             />
@@ -961,8 +965,8 @@ function OpeningExperience() {
               <small>Rewards redeemed. Cards added to your collection.</small>
             </span>
           </div>
-          <Link href="/collection" className="button primary">
-            Build a lineup <ArrowRight />
+          <Link href={opening.source === "daily" ? "/game" : opening.source === "season" ? "/season-pass" : "/collection"} className="button primary">
+            {opening.source === "daily" ? "Return to dashboard" : opening.source === "season" ? "Return to Season Pass" : "Build a lineup"} <ArrowRight />
           </Link>
         </div>
       ) : null}
@@ -999,6 +1003,10 @@ function RewardFace({
 
 export function InventoryView() {
   const { state, activateBoost } = useGame();
+  const orders = ["Order of the Star", "Sovereign Order", "Sunspire", "Starwatch", "Verdant Dawn", "Worldforge", "Moonveil", "Agespire", "Stargate", "First Spark"];
+  const mysticCount = state.ownedCards.filter(owned => catalog.mystics.some(card => card.id === owned.definitionId)).length;
+  const handlerCount = state.ownedCards.length - mysticCount;
+  const totalEssence = orders.reduce((total, order) => total + (state.essence[order] ?? 0), 0);
   return (
     <div className="page">
       <PageHead
@@ -1006,6 +1014,12 @@ export function InventoryView() {
         title="Boost inventory"
         copy="Boosts last for completed matches. Matching boosts extend duration; they never become 4×."
       />
+      <div className="inventory-sections">
+        <Link href="/collection" className="inventory-summary"><Layers3 /><span><small>MYSTICS</small><b>{mysticCount} owned</b></span><ChevronRight /></Link>
+        <Link href="/collection" className="inventory-summary"><UsersRound /><span><small>HANDLERS</small><b>{handlerCount} owned</b></span><ChevronRight /></Link>
+      </div>
+      <section className="panel essence-panel"><div className="panel-title"><span><Sparkles />ESSENCE</span><b>Total Essence: {totalEssence.toLocaleString()}</b></div><div className="essence-grid">{orders.map(order => <div key={order} style={{ "--order-color": ORDER_COLORS[order] } as React.CSSProperties}>{ORDER_ART[order] ? <img src={ORDER_ART[order]} alt="" /> : <Sparkles />}<span>{order}</span><b>{(state.essence[order] ?? 0).toLocaleString()}</b></div>)}</div></section>
+      <h2 className="inventory-section-title">Boosts / Rewards</h2>
       <div className="active-boost-cards">
         <BoostLine
           label="2× XP"

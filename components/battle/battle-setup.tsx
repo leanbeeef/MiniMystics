@@ -7,7 +7,7 @@ import { useGame } from "../game-provider";
 import { CardTile } from "../card-tile";
 import { FormationPreview } from "../formation-preview";
 import { BATTLE_ART, ORDER_ART } from "@/lib/art";
-import { catalog } from "@/lib/client-state";
+import { artworkForOwnedCard, catalog } from "@/lib/client-state";
 import { ORDER_CAMPAIGNS } from "@/lib/client-state";
 import { findStage } from "@/lib/game/campaigns";
 
@@ -59,7 +59,7 @@ export function BattleSetup({ opponentId }: { opponentId: string }) {
         {mode === "random" ? <div className="battle-random-copy"><Dices /><p><strong>A fresh lineup each battle</strong><span>{opponent.size} Mystics and up to 3 Handlers will be selected from your collection when battle begins.</span></p></div> : null}
         {mode === "custom" ? <div className="battle-custom-picker">
           <div className="battle-picker-heading"><span><Swords />Mystics</span><strong>{customMystics.length}/{opponent.size}</strong></div>
-          <div className="picker-row">{ownedMystics.map((owned) => <CardTile key={owned.id} compact definitionId={owned.definitionId} selected={customMystics.includes(owned.id)} onClick={() => toggle(owned.id, customMystics, opponent.size, setCustomMystics)} />)}</div>
+          <div className="picker-row">{ownedMystics.map((owned) => <CardTile key={owned.id} compact definitionId={owned.definitionId} level={owned.level} artwork={artworkForOwnedCard(owned)} selected={customMystics.includes(owned.id)} onClick={() => toggle(owned.id, customMystics, opponent.size, setCustomMystics)} />)}</div>
           <div className="battle-picker-heading"><span><WandSparkles />Handlers</span><strong>{customHandlers.length}/3</strong></div>
           <div className="picker-row">{ownedHandlers.length ? ownedHandlers.map((owned) => <CardTile key={owned.id} compact definitionId={owned.definitionId} selected={customHandlers.includes(owned.id)} onClick={() => toggle(owned.id, customHandlers, 3, setCustomHandlers)} />) : <p>No Handler cards owned.</p>}</div>
         </div> : null}

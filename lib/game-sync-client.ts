@@ -20,7 +20,11 @@ export type GameActivityType =
   | "BATTLE_STARTED"
   | "BASIC_ATTACK"
   | "SPECIAL_ATTACK"
-  | "AI_TURN";
+  | "AI_TURN"
+  | "PROGRESSION_SYNC"
+  | "DAILY_CHALLENGE_CLAIMED"
+  | "SEASON_REWARD_CLAIMED"
+  | "NOTIFICATION_READ";
 
 async function authorizationHeader() {
   const token = await getSupabaseAccessToken();

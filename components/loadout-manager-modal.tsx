@@ -6,7 +6,7 @@ import { ArrowLeft, Check, Filter, Pencil, Shield, Sparkles, Star, Swords, Trash
 import { useGame } from "./game-provider";
 import { CardTile } from "./card-tile";
 import { FormationPreview } from "./formation-preview";
-import { catalog, definitionFor, type Loadout } from "@/lib/client-state";
+import { artworkForOwnedCard, catalog, definitionFor, type Loadout } from "@/lib/client-state";
 import { computeOrderSynergies, orderCounts } from "@/lib/game/order-matchups";
 import { levelBonusPercent } from "@/lib/game/economy";
 import { roundHalfUp } from "@/lib/game/rounding";
@@ -112,7 +112,7 @@ export function LoadoutManagerModal({ editLoadoutId, onClose }: { editLoadoutId?
               <select value={pickerRarity} onChange={(e) => setPickerRarity(e.target.value)}><option value="all">All rarities</option>{pickerRarities.map((r) => <option key={r}>{r}</option>)}</select>
             </div>
             <div className="card-picker-grid">
-              {pickerPool.length ? pickerPool.map((owned) => <CardTile key={owned.id} definitionId={owned.definitionId} level={picker === "mystic" ? owned.level : undefined} onClick={() => pickCard(picker, owned.id)} />) : <p className="empty-hint">No cards match. Try a different filter, or open a pack to get more.</p>}
+              {pickerPool.length ? pickerPool.map((owned) => <CardTile key={owned.id} definitionId={owned.definitionId} level={picker === "mystic" ? owned.level : undefined} artwork={artworkForOwnedCard(owned)} onClick={() => pickCard(picker, owned.id)} />) : <p className="empty-hint">No cards match. Try a different filter, or open a pack to get more.</p>}
             </div>
           </div>
         ) : (
@@ -121,11 +121,11 @@ export function LoadoutManagerModal({ editLoadoutId, onClose }: { editLoadoutId?
             <div className="builder-top"><label>Loadout name<input value={name} onChange={(e) => setName(e.target.value)} /></label><div><span>Battle size</span><div className="segmented small">{([3, 5, 8] as const).map((value) => <button key={value} className={size === value ? "active" : ""} onClick={() => setSize(value)}>{value}</button>)}</div></div></div>
             <div className="selected-lineup">
               <div className="zone-label"><span>MYSTICS</span><strong>{mystics.length}/{size}</strong></div>
-              <div className="lineup-slots">{Array.from({ length: size }, (_, index) => { const owned = ownedMystics.find((item) => item.id === mystics[index]); return owned ? <CardTile key={owned.id} compact definitionId={owned.definitionId} level={owned.level} selected onClick={() => removeMystic(owned.id)} /> : <button type="button" className="empty-slot" key={index} onClick={() => openPicker("mystic")} aria-label="Add a Mystic">+</button>; })}</div>
+              <div className="lineup-slots">{Array.from({ length: size }, (_, index) => { const owned = ownedMystics.find((item) => item.id === mystics[index]); return owned ? <CardTile key={owned.id} compact definitionId={owned.definitionId} level={owned.level} artwork={artworkForOwnedCard(owned)} selected onClick={() => removeMystic(owned.id)} /> : <button type="button" className="empty-slot" key={index} onClick={() => openPicker("mystic")} aria-label="Add a Mystic">+</button>; })}</div>
             </div>
             <div className="selected-lineup">
               <div className="zone-label"><span>{editingId ? "EDITING FORMATION · HANDLERS" : "HANDLERS"}</span><strong>{handlers.length}/3</strong></div>
-              <div className="lineup-slots">{Array.from({ length: 3 }, (_, index) => { const owned = ownedHandlers.find((item) => item.id === handlers[index]); return owned ? <CardTile key={owned.id} compact definitionId={owned.definitionId} selected onClick={() => removeHandler(owned.id)} /> : <button type="button" className="empty-slot" key={index} onClick={() => openPicker("handler")} aria-label="Add a Handler">+</button>; })}</div>
+              <div className="lineup-slots">{Array.from({ length: 3 }, (_, index) => { const owned = ownedHandlers.find((item) => item.id === handlers[index]); return owned ? <CardTile key={owned.id} compact definitionId={owned.definitionId} artwork={artworkForOwnedCard(owned)} selected onClick={() => removeHandler(owned.id)} /> : <button type="button" className="empty-slot" key={index} onClick={() => openPicker("handler")} aria-label="Add a Handler">+</button>; })}</div>
             </div>
             <div className="builder-actions"><button className="button primary" disabled={mystics.length !== size || !name.trim()} onClick={save}>{editingId ? "Update formation" : "Save formation"} <Check /></button>{editingId ? <button className="button ghost" onClick={resetEditor}>Cancel edit</button> : null}</div>
           </section>

@@ -3,6 +3,8 @@ import { CardKind, CurrencyKind, MatchMode, MatchSide, MatchStatus, MatchTiming,
 import type { PlayerState } from "@/lib/client-state";
 import { requireSupabaseUser } from "@/lib/server/supabase-auth";
 import { getPrisma } from "@/lib/server/prisma";
+import { emptyProgression } from "@/lib/progression/state";
+import { getRuntimeProgressionConfig } from "@/lib/server/progression-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -177,8 +179,8 @@ async function synchronizeState(identity: Awaited<ReturnType<typeof requireSupab
       for (const owned of state.ownedCards) {
         await tx.ownedCard.upsert({
           where: { id: owned.id },
-          create: { id: owned.id, profileId: profile.id, definitionId: owned.definitionId, acquiredAt: date(owned.acquiredAt), acquisition: "GAMEPLAY", level: owned.level ?? 1 },
-          update: { profileId: profile.id, definitionId: owned.definitionId, level: owned.level ?? 1, soldAt: null },
+          create: { id: owned.id, profileId: profile.id, definitionId: owned.definitionId, acquiredAt: date(owned.acquiredAt), acquisition: owned.seasonOrigin ? "SEASON_PASS" : "GAMEPLAY", level: owned.level ?? 1, variant: owned.variant ?? "standard", artworkVariant: owned.artworkVariant ?? "default" },
+          update: { profileId: profile.id, definitionId: owned.definitionId, level: owned.level ?? 1, variant: owned.variant ?? "standard", artworkVariant: owned.artworkVariant ?? "default", soldAt: null },
         });
       }
       await tx.ownedCard.updateMany({ where: { profileId: profile.id, id: { notIn: currentCardIds }, soldAt: null }, data: { soldAt: new Date() } });
@@ -220,7 +222,7 @@ async function synchronizeState(identity: Awaited<ReturnType<typeof requireSupab
     for (const opening of state.openings.filter((item) => knownPacks.has(item.packId))) {
       await tx.packOpening.upsert({
         where: { id: opening.id },
-        create: { id: opening.id, profileId: profile.id, packId: opening.packId, idempotencyKey: `opening:${opening.id}`, currency: opening.packId === "starter" ? null : CurrencyKind.COINS },
+        create: { id: opening.id, profileId: profile.id, packId: opening.packId, idempotencyKey: `opening:${opening.id}`, currency: opening.source === "purchase" || (!opening.source && opening.packId !== "starter") ? CurrencyKind.COINS : null },
         update: {},
       });
       for (const [position, result] of opening.cards.entries()) {
@@ -230,6 +232,30 @@ async function synchronizeState(identity: Awaited<ReturnType<typeof requireSupab
           update: { metadata: { revealed: result.revealed } },
         });
       }
+    }
+
+    for (const progress of Object.values(state.progression?.dailyChallenges ?? {})) {
+      const definition = await tx.dailyChallengeDefinition.findUnique({ where: { id: progress.challengeId }, select: { id: true } });
+      if (!definition) continue;
+      const assignedDate = new Date(`${progress.challengeDate}T00:00:00.000Z`);
+      await tx.dailyChallengeAssignment.upsert({
+        where: { profileId_definitionId_assignedDate: { profileId: profile.id, definitionId: progress.challengeId, assignedDate } },
+        create: { profileId: profile.id, definitionId: progress.challengeId, assignedDate, progress: Math.max(0, ...Object.values(progress.values)), progressData: asJson({ values: progress.values, sets: progress.sets, battleValues: progress.battleValues }), completed: progress.completed, rewardClaimed: progress.rewardClaimed, completedAt: progress.completedAt ? new Date(progress.completedAt) : null, claimedAt: progress.rewardClaimed ? new Date() : null },
+        update: { progress: Math.max(0, ...Object.values(progress.values)), progressData: asJson({ values: progress.values, sets: progress.sets, battleValues: progress.battleValues }), completed: progress.completed, rewardClaimed: progress.rewardClaimed, completedAt: progress.completedAt ? new Date(progress.completedAt) : null, claimedAt: progress.rewardClaimed ? new Date() : undefined },
+      });
+    }
+    for (const seasonProgress of Object.values(state.progression?.seasons ?? {})) {
+      const season = await tx.season.findUnique({ where: { id: seasonProgress.seasonId }, select: { id: true } });
+      if (!season) continue;
+      await tx.playerSeasonProgress.upsert({
+        where: { profileId_seasonId: { profileId: profile.id, seasonId: season.id } },
+        create: { profileId: profile.id, seasonId: season.id, seasonXp: seasonProgress.seasonXp, currentTier: seasonProgress.currentTier, claimedFree: seasonProgress.claimedTiers, claimedPremium: [] },
+        update: { seasonXp: seasonProgress.seasonXp, currentTier: seasonProgress.currentTier, claimedFree: seasonProgress.claimedTiers },
+      });
+      for (const tier of seasonProgress.claimedTiers) await tx.seasonPassRewardClaim.upsert({
+        where: { profileId_seasonId_tier_track: { profileId: profile.id, seasonId: season.id, tier, track: "FREE" } },
+        create: { profileId: profile.id, seasonId: season.id, tier, track: "FREE" }, update: {},
+      });
     }
 
     await tx.savedLoadout.deleteMany({ where: { profileId: profile.id, id: { notIn: state.loadouts.map((loadout) => loadout.id) } } });
@@ -311,10 +337,13 @@ export async function GET(request: Request) {
     const prisma = getPrisma();
     const save = await prisma.playerGameState.findFirst({
       where: { profile: { user: { OR: [{ supabaseAuthId: identity.uid }, { email: identity.email }] } } },
-      include: { profile: { select: { campaign: { select: { opponentId: true } } } } },
+      include: { profile: { select: { lastDailyPackClaimAt: true, campaign: { select: { opponentId: true } } } } },
     });
     if (!save) return NextResponse.json({ error: "No cloud save yet." }, { status: 404 });
     const state = structuredClone(save.state) as unknown as PlayerState;
+    state.progression ??= emptyProgression();
+    state.progression.configuration = await getRuntimeProgressionConfig(prisma);
+    if (save.profile.lastDailyPackClaimAt) state.progression.lastDailyPackClaimAt = save.profile.lastDailyPackClaimAt.toISOString();
     state.campaignWins = [...new Set([
       ...(Array.isArray(state.campaignWins) ? state.campaignWins : []),
       ...save.profile.campaign.map(({ opponentId }) => opponentId),
@@ -334,6 +363,8 @@ export async function POST(request: Request) {
     if (!validState(body.state) || body.state.account?.email.toLowerCase() !== identity.email) {
       return NextResponse.json({ error: "Invalid game state." }, { status: 400 });
     }
+    body.state.progression ??= emptyProgression();
+    body.state.progression.configuration = await getRuntimeProgressionConfig(getPrisma());
     const result = await synchronizeState(identity, body.state, body.activity);
     return NextResponse.json({ ok: true, ...result });
   } catch (cause) {

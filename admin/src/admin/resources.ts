@@ -235,11 +235,13 @@ const specs: ResourceSpec[] = [
   { model: 'MultiplayerStatistic', section: 'Ranked & Leaderboards', options: { actions: accessActions(undefined, true, OPERATIONS_READERS) } },
   { model: 'LeaderboardRecord', section: 'Ranked & Leaderboards', options: { actions: accessActions(undefined, true, OPERATIONS_READERS) } },
 
-  { model: 'Season', section: 'Seasons & Challenges', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS), listProperties: ['number', 'name', 'startsAt', 'endsAt', 'active', 'premiumTrackEnabled'], properties: { artworkPath: imageProperty() } } },
-  { model: 'SeasonPassTier', section: 'Seasons & Challenges', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS), properties: { assetPath: imageProperty() } } },
+  { model: 'Season', section: 'Seasons & Challenges', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS), listProperties: ['number', 'name', 'startsAt', 'endsAt', 'status', 'active', 'premiumTrackEnabled'], editProperties: ['name', 'startsAt', 'endsAt', 'status', 'active', 'xpConfig', 'artworkPath'], properties: { artworkPath: imageProperty() } } },
+  { model: 'SeasonPassTier', section: 'Seasons & Challenges', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS), listProperties: ['seasonId', 'tierNumber', 'xpRequirement', 'freeReward'], editProperties: ['xpRequirement', 'freeReward', 'assetPath', 'rewardMetadata'], properties: { assetPath: imageProperty() } } },
   { model: 'PlayerSeasonProgress', section: 'Seasons & Challenges', options: { actions: accessActions(undefined, true, OPERATIONS_READERS) } },
-  { model: 'DailyChallengeDefinition', section: 'Seasons & Challenges', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS), listProperties: ['name', 'category', 'eventType', 'targetValue', 'rewardType', 'rewardAmount', 'difficulty', 'active'] } },
+  { model: 'SeasonPassRewardClaim', section: 'Seasons & Challenges', options: { actions: accessActions(undefined, false, OPERATIONS_READERS), listProperties: ['profileId', 'seasonId', 'tier', 'track', 'claimedAt'] } },
+  { model: 'DailyChallengeDefinition', section: 'Seasons & Challenges', writeRoles: GAME_ADMINS, options: { actions: accessActions(GAME_ADMINS, true, GAME_ADMINS), listProperties: ['rotationDay', 'name', 'eventType', 'targetValue', 'seasonXpReward', 'coinReward', 'difficulty', 'active'] } },
   { model: 'DailyChallengeAssignment', section: 'Seasons & Challenges', options: { actions: accessActions(undefined, true, OPERATIONS_READERS) } },
+  { model: 'PlayerDailyReward', section: 'Seasons & Challenges', options: { actions: accessActions(undefined, false, OPERATIONS_READERS), listProperties: ['profileId', 'rewardDate', 'claimedAt', 'packOpeningId'] } },
 
   { model: 'SavedLoadout', section: 'Player Collections', options: { actions: accessActions(undefined) } },
   { model: 'SavedLoadoutCard', section: 'Player Collections', options: { actions: accessActions(undefined) } },

@@ -6,6 +6,7 @@ import { RARITY_DISMANTLE_ESSENCE, RARITY_SELL_COINS, LEVEL_UP_ESSENCE_COST } fr
 import { buildOrderCampaigns } from "../lib/game/campaigns";
 import type { CardCatalog } from "../lib/game/types";
 import { PACK_ART } from "../lib/art";
+import { DAILY_CHALLENGES, SEASON_ONE, SEASON_ONE_REWARDS, SEASON_TIER_THRESHOLDS, SEASON_XP_SOURCES } from "../lib/progression/config";
 
 const catalog = catalogData as CardCatalog;
 
@@ -53,6 +54,26 @@ async function main() {
     await prisma.packDefinition.upsert({ where: { id: pack.id }, create: fields, update: fields });
   }
   await prisma.packDefinition.upsert({ where: { id: "starter" }, create: { id: "starter", name: "Starter Pack", description: "The initial account collection grant.", cardCount: 10, poolConfig: {}, rarityWeights: STANDARD_RARITY_WEIGHTS, guaranteedSlots: {}, coinPrice: 0, premiumPrice: null, eligibilityRules: { newAccountOnly: true }, pityRules: {}, theme: "Starter", artwork: null, active: false }, update: { name: "Starter Pack", cardCount: 10, active: false } });
+  const season = await prisma.season.upsert({
+    where: { number: SEASON_ONE.number },
+    create: { id: SEASON_ONE.id, number: SEASON_ONE.number, name: SEASON_ONE.name, startsAt: SEASON_ONE.startsAt, endsAt: SEASON_ONE.endsAt, active: true, status: "ACTIVE", rankedResetConfig: {}, xpConfig: { ...SEASON_XP_SOURCES, dailyChallenge: 150, day30Challenge: 300, targetXp: 15000 }, premiumTrackEnabled: false },
+    update: { name: SEASON_ONE.name, startsAt: SEASON_ONE.startsAt, endsAt: SEASON_ONE.endsAt, active: true, status: "ACTIVE", xpConfig: { ...SEASON_XP_SOURCES, dailyChallenge: 150, day30Challenge: 300, targetXp: 15000 }, premiumTrackEnabled: false },
+  });
+  for (const [index, xpRequirement] of SEASON_TIER_THRESHOLDS.entries()) {
+    const tierNumber = index + 1; const freeReward = SEASON_ONE_REWARDS[index];
+    await prisma.seasonPassTier.upsert({
+      where: { seasonId_tierNumber: { seasonId: season.id, tierNumber } },
+      create: { seasonId: season.id, tierNumber, xpRequirement, freeReward, rewardMetadata: { track: "FREE", replaceablePlaceholder: Boolean(freeReward.placeholderId), transferable: freeReward.type === "illustrationRare" || freeReward.type === "illustrationRarePlaceholder" } },
+      update: { xpRequirement, freeReward, rewardMetadata: { track: "FREE", replaceablePlaceholder: Boolean(freeReward.placeholderId), transferable: freeReward.type === "illustrationRare" || freeReward.type === "illustrationRarePlaceholder" } },
+    });
+  }
+  for (const challenge of DAILY_CHALLENGES) {
+    await prisma.dailyChallengeDefinition.upsert({
+      where: { id: challenge.id },
+      create: { id: challenge.id, name: challenge.name, description: challenge.description, category: "DAILY_ROTATION", eventType: challenge.requirements[0].metric, targetValue: challenge.requirements[0].target, rotationDay: challenge.day, filters: challenge.requirements, allowedGameModes: ["CAMPAIGN"], battleSizeRestrictions: [], orderRestrictions: [], allegianceRestrictions: [], rarityRestrictions: ["Wild", "Hunter", "Predator", "Prime"], rewardType: "SEASON_XP_AND_COINS", rewardAmount: challenge.seasonXp, seasonXpReward: challenge.seasonXp, coinReward: challenge.coins, difficulty: challenge.day === 30 ? "CAPSTONE" : "NORMAL", active: true, seasonId: null },
+      update: { name: challenge.name, description: challenge.description, eventType: challenge.requirements[0].metric, targetValue: challenge.requirements[0].target, rotationDay: challenge.day, filters: challenge.requirements, rewardAmount: challenge.seasonXp, seasonXpReward: challenge.seasonXp, coinReward: challenge.coins, difficulty: challenge.day === 30 ? "CAPSTONE" : "NORMAL", active: true },
+    });
+  }
   const orderCampaigns = buildOrderCampaigns(catalog);
   let campaignSortOrder = 0;
   for (const campaign of orderCampaigns) {

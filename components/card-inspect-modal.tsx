@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUp, Clock3, Coins, Dices, Gem, Hammer, Shield, Sparkles, Swords, TriangleAlert, X } from "lucide-react";
-import { definitionFor, disposableDuplicate, type OwnedCard } from "@/lib/client-state";
+import { artworkForOwnedCard, definitionFor, disposableDuplicate, type OwnedCard } from "@/lib/client-state";
 import { useGame } from "./game-provider";
 import { ALLEGIANCE_ART, ORDER_ART, ORDER_COLORS } from "@/lib/art";
 import { LEVEL_UP_ESSENCE_COST, MAX_MYSTIC_LEVEL, RARITY_DISMANTLE_ESSENCE, RARITY_SELL_COINS, levelBonusPercent } from "@/lib/game/economy";
@@ -56,7 +56,7 @@ export function CardInspectModal({ definitionId, ownedCards, onClose }: { defini
     <section className="card-inspect" role="dialog" aria-modal="true" aria-labelledby="card-inspect-title" style={{ "--order-color": ORDER_COLORS[card.order] ?? "#D7A93B" } as React.CSSProperties}>
       <button className="modal-close icon-button" onClick={onClose} aria-label="Close card details"><X /></button>
       <div className="inspect-art">
-        {card.image ? <img src={card.image} alt={`${card.name} card`} /> : <div className="artwork-needed">Artwork needed</div>}
+        {selected && artworkForOwnedCard(selected) ? <img src={artworkForOwnedCard(selected) ?? ""} alt={`${card.name} card`} /> : <div className="artwork-needed">Artwork needed</div>}
       </div>
       <div className="inspect-details">
         <div className="inspect-heading">
@@ -73,7 +73,7 @@ export function CardInspectModal({ definitionId, ownedCards, onClose }: { defini
         {mystic ? <div className="inspect-columns">
           <div className="inspect-primary">
             {ownedCards.length > 1 ? <div className="inspect-copy-switcher" role="listbox" aria-label="Owned copies">
-              {sorted.map((owned) => <button key={owned.id} type="button" role="option" aria-selected={owned.id === selected?.id} className={owned.id === selected?.id ? "active" : ""} onClick={() => setSelectedId(owned.id)}>Lv.{owned.level}</button>)}
+              {sorted.map((owned) => <button key={owned.id} type="button" role="option" aria-selected={owned.id === selected?.id} className={owned.id === selected?.id ? "active" : ""} onClick={() => setSelectedId(owned.id)}>{owned.variant === "illustrationRare" ? "IR · " : ""}Lv.{owned.level}</button>)}
             </div> : null}
             <div className="inspect-stats">
               <span><Sparkles /><small>POWER</small><strong>{leveledStat(mystic.power, level)}</strong></span>

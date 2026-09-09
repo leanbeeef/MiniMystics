@@ -10,6 +10,7 @@ import { roundHalfUp } from "./game/rounding";
 import { LEVEL_UP_ESSENCE_COST, MAX_MYSTIC_LEVEL, RARITY_DISMANTLE_ESSENCE, RARITY_SELL_COINS, levelBonusPercent } from "./game/economy";
 import type { PlayerProfile } from "./player-profile";
 import { optimizedAsset } from "./asset-url";
+import { emptyProgression, type PlayerProgression } from "./progression/state";
 
 const sourceCatalog = catalogData as CardCatalog;
 export const catalog: CardCatalog = {
@@ -18,9 +19,9 @@ export const catalog: CardCatalog = {
   handlers: sourceCatalog.handlers.map((card) => ({ ...card, image: optimizedAsset(card.image) })),
 };
 
-export type OwnedCard = { id: string; definitionId: string; acquiredAt: string; level: number };
+export type OwnedCard = { id: string; definitionId: string; acquiredAt: string; level: number; variant?: string; artworkVariant?: string; seasonOrigin?: string };
 export type RewardCard = { id: string; kind: "mystic" | "handler" | "xp" | "coins" | "xpBoost" | "coinBoost"; definitionId?: string; rarity: Rarity | "Unassigned"; amount?: number; revealed: boolean };
-export type PackOpening = { id: string; packId: string; name: string; cards: RewardCard[]; complete: boolean };
+export type PackOpening = { id: string; packId: string; name: string; cards: RewardCard[]; complete: boolean; source?: "purchase" | "daily" | "season" | "starter" };
 export type Loadout = { id: string; name: string; size: 3 | 5 | 8; mysticIds: string[]; handlerIds: string[]; active?: boolean };
 export type BattleSelection = { loadoutId?: string; mysticIds?: string[]; handlerIds?: string[]; random?: boolean };
 export type Binder = { id: string; name: string; cardIds: string[] };
@@ -50,6 +51,7 @@ export type PlayerState = {
   battle: BattleState | null;
   battleRewarded: boolean;
   lastRewards: { xp: number; coins: number; won: boolean; campaignBonus?: number } | null;
+  progression: PlayerProgression;
 };
 
 export const initialState: PlayerState = {
@@ -57,6 +59,7 @@ export const initialState: PlayerState = {
   account: null, profile: null, level: 1, xp: 0, coins: 0, premium: 0, ownedCards: [], inventory: [],
   activeBoosts: { xp: null, coins: null }, openings: [], activeOpeningId: null, loadouts: [], binders: [], essence: {},
   campaignWins: [], comicProgress: {}, wins: 0, losses: 0, matches: 0, pity: 0, battle: null, battleRewarded: false, lastRewards: null,
+  progression: emptyProgression(),
 };
 
 const id = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -115,11 +118,26 @@ export function createAccount(email: string, username: string): PlayerState {
   const state: PlayerState = structuredClone(initialState);
   state.account = { email, username };
   const starter: PackOpening = {
-    id: id("opening"), packId: "starter", name: "Starter Pack", complete: false,
+    id: id("opening"), packId: "starter", name: "Starter Pack", complete: false, source: "starter",
     cards: [cardReward("handler", randomOf(catalog.handlers)), ...drawUniqueMystics(5, catalog.mystics, () => weightedRarity()).map((m) => cardReward("mystic", m)), ...Array.from({ length: 4 }, createRewardCard)],
   };
   grantOpening(state, starter);
   return state;
+}
+
+function standardPackCards(state: PlayerState) {
+  const standard = PACK_DEFINITIONS.find(item => item.id === "standard")!;
+  const forceAlpha = shouldGuaranteeAlpha(state.pity);
+  const mystics = drawUniqueMystics(5, catalog.mystics, (index) => (forceAlpha && index === 0 ? "Alpha" : weightedRarity()));
+  const bonusHandler = Math.random() * 100 < standard.handlerChancePercent ? [cardReward("handler", randomOf(catalog.handlers))] : [];
+  const bonusReward = Math.random() * 100 < standard.bonusRewardChancePercent ? [createRewardCard()] : [];
+  state.pity = nextAlphaPity(state.pity, mystics.map((m) => m.rarity));
+  return [...mystics.map((m) => cardReward("mystic", m)), ...bonusHandler, ...bonusReward];
+}
+
+/** Grants the exact Standard Pack pool without charging Coins (daily/Season rewards). */
+export function grantStandardPack(state: PlayerState, source: "daily" | "season", name: string) {
+  grantOpening(state, { id: id("opening"), packId: "standard", name, source, cards: standardPackCards(state), complete: false });
 }
 
 export function buyPack(state: PlayerState, packId: string, selectedOrder?: string) {
@@ -131,12 +149,7 @@ export function buyPack(state: PlayerState, packId: string, selectedOrder?: stri
   state.coins -= pack.coinPrice;
   let cards: RewardCard[] = [];
   if (packId === "standard") {
-    const forceAlpha = shouldGuaranteeAlpha(state.pity);
-    const mystics = drawUniqueMystics(5, catalog.mystics, (index) => (forceAlpha && index === 0 ? "Alpha" : weightedRarity()));
-    const bonusHandler = Math.random() * 100 < pack.handlerChancePercent ? [cardReward("handler", randomOf(catalog.handlers))] : [];
-    const bonusReward = Math.random() * 100 < pack.bonusRewardChancePercent ? [createRewardCard()] : [];
-    cards = [...mystics.map((m) => cardReward("mystic", m)), ...bonusHandler, ...bonusReward];
-    state.pity = nextAlphaPity(state.pity, mystics.map((m) => m.rarity));
+    cards = standardPackCards(state);
   } else if (packId === "apex") cards = [cardReward("mystic", randomOf(apexPool))];
   else if (packId === "handler") cards = [cardReward("handler", randomOf(catalog.handlers))];
   else {
@@ -146,7 +159,7 @@ export function buyPack(state: PlayerState, packId: string, selectedOrder?: stri
     if (packId === "void") pool = pool.filter((m) => m.allegiance.toLowerCase().includes("void"));
     cards = drawUniqueMystics(5, pool, () => weightedRarity()).map((m) => cardReward("mystic", m));
   }
-  grantOpening(state, { id: id("opening"), packId, name: pack.name, cards, complete: false });
+  grantOpening(state, { id: id("opening"), packId, name: pack.name, source: "purchase", cards, complete: false });
 }
 
 function levelUp(state: PlayerState) {
@@ -154,6 +167,9 @@ function levelUp(state: PlayerState) {
 }
 
 export const definitionFor = (definitionId: string) => catalog.mystics.find((m) => m.id === definitionId) ?? catalog.handlers.find((h) => h.id === definitionId);
+export const artworkForOwnedCard = (owned: OwnedCard) => owned.artworkVariant?.startsWith("/")
+  ? optimizedAsset(owned.artworkVariant)
+  : definitionFor(owned.definitionId)?.image ?? null;
 
 /** Handler passives resolved once per Mystic at battle setup — never recomputed turn-to-turn ("not repeatedly compounded"). */
 function resolveHandlerBonuses(mystic: MysticDefinition, handlers: HandlerDefinition[]): HandlerBonuses {
@@ -187,7 +203,7 @@ export function combatant(owned: OwnedCard, index: number, equippedHandlers: Han
   const handlerBonuses = resolveHandlerBonuses(card, equippedHandlers);
   const maxPower = roundHalfUp(card.power * levelMultiplier * (1 + handlerBonuses.powerPercent / 100));
   return {
-    instanceId: `${owned.id}-${index}`, definitionId: card.id, name: card.name, image: card.image, rarity: card.rarity,
+    instanceId: `${owned.id}-${index}`, definitionId: card.id, name: card.name, image: artworkForOwnedCard(owned), rarity: card.rarity,
     order: card.order, allegiance: card.allegiance, level,
     printedPower: card.power, printedDefense: card.defense, printedBaseAttack: card.baseAttack,
     maxPower, currentPower: maxPower,
