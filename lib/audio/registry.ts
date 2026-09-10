@@ -2,7 +2,7 @@ export const MUSIC = {
   menu: "/audio/music/menu-theme.mp3", battle: "/audio/music/battle-theme-01.mp3",
   victory: "/audio/music/victory.mp3", defeat: "/audio/music/defeat.mp3",
 } as const;
-export const SFX_NAMES = ["ui-click", "ui-hover", "card-select", "card-draw", "attack-basic", "attack-hit", "attack-miss", "special-charge", "special-success", "special-fail", "buff", "debuff", "heal", "shield", "cooldown", "order-advantage", "handler-use", "handler-success", "handler-fail", "mystic-defeat", "victory", "defeat", "pack-open", "pack-reveal", "alpha-reveal", "apex-reveal"] as const;
+export const SFX_NAMES = ["ui-click", "card-select", "card-draw", "attack-basic", "attack-hit", "attack-miss", "special-charge", "special-success", "special-fail", "buff", "debuff", "heal", "shield", "cooldown", "order-advantage", "handler-use", "handler-success", "handler-fail", "mystic-defeat", "victory", "defeat", "pack-open", "pack-reveal", "alpha-reveal", "apex-reveal"] as const;
 export type SfxName = typeof SFX_NAMES[number];
 export type MusicName = keyof typeof MUSIC;
 export const SFX = Object.fromEntries(SFX_NAMES.map((name) => [name, `/audio/sfx/${name}.mp3`])) as Record<SfxName, string>;
@@ -10,7 +10,7 @@ export const SFX = Object.fromEntries(SFX_NAMES.map((name) => [name, `/audio/sfx
 // Empty slots are silent and never make failing network requests.
 export const AVAILABLE_AUDIO: ReadonlySet<string> = new Set<string>([
   MUSIC.menu, MUSIC.battle,
-  SFX["ui-click"], SFX["ui-hover"], SFX["card-select"], SFX["card-draw"],
+  SFX["ui-click"], SFX["card-select"], SFX["card-draw"],
   SFX["attack-basic"], SFX["attack-hit"], SFX["attack-miss"],
   SFX["special-charge"], SFX["special-success"], SFX["special-fail"],
   SFX.buff, SFX.debuff, SFX.heal, SFX.shield, SFX.cooldown,
