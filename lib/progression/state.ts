@@ -65,7 +65,7 @@ function notify(state: ProgressionState, kind: PlayerProgression["notifications"
   state.progression.notifications = state.progression.notifications.slice(0, 30);
 }
 function qualifies(requirement: ChallengeRequirement, event: ProgressEvent) {
-  if (requirement.order && event.actorOrder !== requirement.order) return false;
+  if (requirement.order && event.type !== "BATTLE_WON" && event.actorOrder !== requirement.order) return false;
   const orders = event.teamOrders ?? [];
   if (requirement.teamSize && event.teamSize !== requirement.teamSize) return false;
   if (requirement.onlyOrder && (!orders.length || orders.some(order => order !== requirement.onlyOrder))) return false;

@@ -39,7 +39,7 @@ export const DAILY_CHALLENGES: DailyChallenge[] = [
   challenge(7, "Three Wins", "Win 3 battles.", [{ metric: "battleWon", target: 3 }]),
   challenge(8, "Worldforge Strength", "Deal 150 damage using Worldforge Mystics.", [{ metric: "damageDealt", target: 150, order: "Worldforge" }]),
   challenge(9, "Special Success", "Successfully activate 2 Special Moves in a single battle.", [{ metric: "specialSucceeded", target: 2, singleBattle: true }]),
-  winOrder(10, "Starwatch Victory", "Starwatch"),
+  winOrder(10, "Starwatch Victory", "Order of the Star"),
   challenge(11, "Survivor", "Win a battle with at least 2 Mystics still active.", [{ metric: "battleWon", target: 1, minSurvivors: 2 }]),
   challenge(12, "Basic Training", "Successfully land 10 Basic Attacks.", [{ metric: "basicLanded", target: 10 }]),
   winOrder(13, "Moonveil Squad", "Moonveil"),

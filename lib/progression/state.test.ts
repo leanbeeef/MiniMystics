@@ -29,6 +29,16 @@ describe("global Daily Challenge rotation", () => {
     applyProgressEvent(state, { type: "BATTLE_WON", battleId: "five", teamSize: 5, teamOrders: sovereign }, now);
     expect(state.progression.dailyChallenges[utcDateKey(now)].completed).toBe(true);
   });
+  it("recognizes an Order-based win challenge from the completed team", () => {
+    const now = new Date("2026-09-03T10:00:00Z"); const state = stateAt();
+    applyProgressEvent(state, { type: "BATTLE_WON", battleId: "verdant", teamSize: 3, teamOrders: ["Verdant Dawn", "Verdant Dawn", "Verdant Dawn"] }, now);
+    expect(state.progression.dailyChallenges[utcDateKey(now)].completed).toBe(true);
+  });
+  it("recognizes the Day 10 Starwatch challenge using the catalog order name", () => {
+    const now = new Date("2026-09-10T10:00:00Z"); const state = stateAt();
+    applyProgressEvent(state, { type: "BATTLE_WON", battleId: "starwatch", teamSize: 3, teamOrders: ["Order of the Star", "Order of the Star", "Order of the Star"] }, now);
+    expect(state.progression.dailyChallenges[utcDateKey(now)].completed).toBe(true);
+  });
   it("keeps single-battle goals separate and distinct lineup/order sets unique", () => {
     const specialDay = new Date("2026-09-09T10:00:00Z"); const state = stateAt();
     applyProgressEvent(state, { type: "SPECIAL_SUCCEEDED", battleId: "a" }, specialDay);
