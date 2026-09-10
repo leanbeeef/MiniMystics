@@ -9,6 +9,7 @@ import type { ChallengeProgress } from "@/lib/progression/state";
 import type { SeasonReward } from "@/lib/progression/config";
 import { definitionFor } from "@/lib/client-state";
 import { optimizedAsset } from "@/lib/asset-url";
+import { progressionClaimKey } from "@/lib/progression-claim-key";
 import { PACK_ART, REWARD_ART } from "@/lib/art";
 
 function useClock() {
@@ -52,14 +53,16 @@ export function DailyPackCard({ compact = false }: { compact?: boolean }) {
 }
 
 export function DailyChallengeCard({ detailed = false }: { detailed?: boolean }) {
-  const { state, claimDailyChallenge } = useGame(); const now = useClock(); const challenge = challengeForDate(now, progressionConfig(state).challenges); const progress = currentChallengeProgress(state, now);
+  const { state, claimDailyChallenge, pendingClaims } = useGame(); const now = useClock(); const challenge = challengeForDate(now, progressionConfig(state).challenges); const progress = currentChallengeProgress(state, now);
+  const pending = pendingClaims.includes(progressionClaimKey(state));
+  const claimed = progress.rewardClaimed || pending;
   return <section className={`retention-card daily-challenge-card ${progress.completed ? "complete" : ""} ${detailed ? "detailed" : ""}`}>
     <span className="retention-icon"><CalendarCheck /></span><div className="retention-main"><small>{progress.completed ? "DAILY CHALLENGE COMPLETE" : `DAILY CHALLENGE · DAY ${challenge.day}`}</small><h2>{challenge.name}</h2><p>{challenge.description}</p>
       <div className="challenge-requirements">{challenge.requirements.map(requirement => { const value = Math.min(requirement.target, progress.values[requirement.metric] ?? 0); return <div key={requirement.metric}><span><b>{value.toLocaleString()}</b> / {requirement.target.toLocaleString()} {requirement.metric === "distinctOrders" ? "Orders" : ""}</span><div className="progress"><i style={{ width: `${value / requirement.target * 100}%` }} /></div></div>; })}</div>
       <p className="reward-copy"><Coins />{challenge.coins} Coins <Sparkles />{challenge.seasonXp} Season XP</p>
       <p className="next-copy"><Timer />Next Challenge: {countdown(nextUtcDay(now), now)}</p>
     </div>
-    {progress.completed && !progress.rewardClaimed ? <button className="button primary" onClick={() => void claimDailyChallenge().catch(() => undefined)}>Claim reward</button> : progress.rewardClaimed ? <span className="claimed-label"><Check />Claimed</span> : <Link className="button ghost" href="/battle">Battle</Link>}
+    {progress.completed && !claimed ? <button className="button primary" onClick={() => void claimDailyChallenge().catch(() => undefined)}>Claim reward</button> : claimed ? <span className="claimed-label" title={pending ? "Saving reward..." : undefined}><Check />Claimed</span> : <Link className="button ghost" href="/battle">Battle</Link>}
   </section>;
 }
 
@@ -74,14 +77,15 @@ export function DailyChallengeView() {
 }
 
 export function SeasonPassView() {
-  const { state, claimSeasonTier } = useGame(); const now = useClock(); const [claimingTier, setClaimingTier] = useState<number | null>(null); const trackRef = useRef<HTMLDivElement>(null); const config = progressionConfig(state); const progress = state.progression.seasons[config.season.id] ?? { seasonXp: 0, currentTier: 1, claimedTiers: [] };
+  const { state, claimSeasonTier, pendingClaims } = useGame(); const now = useClock(); const trackRef = useRef<HTMLDivElement>(null); const config = progressionConfig(state); const progress = state.progression.seasons[config.season.id] ?? { seasonXp: 0, currentTier: 1, claimedTiers: [] };
   const nextTier = Math.min(config.season.rewards.length, progress.currentTier + 1); const remaining = Math.max(0, Math.ceil((Date.parse(config.season.endsAt) - now.getTime()) / 86_400_000));
   const scrollTrack = (direction: number) => trackRef.current?.scrollBy({ left: direction * trackRef.current.clientWidth * 0.82, behavior: "smooth" });
   return <div className="page progression-page season-page"><section className="season-hero"><span className="eyebrow">SEASON {config.season.number}</span><h1>30-Day Season</h1><div className="season-hero-stats"><span><b>Tier {progress.currentTier}</b><small>Current tier</small></span><span><b>{progress.seasonXp.toLocaleString()} / {config.season.thresholds[nextTier - 1].toLocaleString()}</b><small>Season XP</small></span><span><b>{remaining} days</b><small>Remaining</small></span></div><div className="progress"><i style={{ width: `${progress.seasonXp / config.season.thresholds.at(-1)! * 100}%` }} /></div><p>Next Reward: {config.season.rewards[nextTier - 1]?.label ?? "Season complete"}</p><p className="season-xp-guide"><Sparkles /> Earn Season XP by completing a battle (+{config.season.xpSources.battleComplete}), winning a battle (+{config.season.xpSources.battleWin}), earning the first-battle-of-the-day bonus (+{config.season.xpSources.firstBattleOfDay}), and claiming Daily Challenge rewards.</p></section>
     <div className="season-track-shell"><button className="season-track-arrow" type="button" aria-label="Previous season tiers" title="Previous season tiers" onClick={() => scrollTrack(-1)}><ChevronLeft /></button><div className="season-track" ref={trackRef} role="list" aria-label="Season reward tiers">{config.season.rewards.map((reward, index) => {
       const tier = index + 1;
       const unlocked = progress.currentTier >= tier;
-      const claimed = progress.claimedTiers.includes(tier);
+      const pending = pendingClaims.includes(progressionClaimKey(state, tier));
+      const claimed = progress.claimedTiers.includes(tier) || pending;
       const placeholder = reward.type.endsWith("Placeholder");
       const milestone = tier % 10 === 0;
       const amount = seasonRewardAmount(reward);
@@ -92,9 +96,9 @@ export function SeasonPassView() {
         {amount ? <strong className="season-reward-amount">{amount}</strong> : null}
         <div className="season-tier-copy"><h3>{reward.label}</h3><small>{config.season.thresholds[index].toLocaleString()} XP</small></div>
         {claimed
-          ? <span className="season-claimed-stamp"><Check />CLAIMED</span>
+          ? <span className="season-claimed-stamp" title={pending ? "Saving reward..." : undefined}><Check />CLAIMED</span>
           : unlocked && !placeholder
-            ? <button className="button small season-claim-button" disabled={claimingTier !== null} aria-busy={claimingTier === tier} onClick={() => { setClaimingTier(tier); void claimSeasonTier(tier).catch(() => undefined).finally(() => setClaimingTier(current => current === tier ? null : current)); }}>{claimingTier === tier ? "Claiming..." : "Claim"}</button>
+            ? <button className="button small season-claim-button" onClick={() => void claimSeasonTier(tier).catch(() => undefined)}>Claim</button>
             : <span className="season-locked-stamp"><LockKeyhole />{placeholder ? "Coming soon" : "Locked"}</span>}
       </article>;
     })}</div><button className="season-track-arrow" type="button" aria-label="Next season tiers" title="Next season tiers" onClick={() => scrollTrack(1)}><ChevronRight /></button></div>

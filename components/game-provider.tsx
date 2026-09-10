@@ -11,6 +11,7 @@ import { getSupabaseClient } from "@/lib/supabase";
 import { ensurePlayerProfile, getPlayerProfile, savePlayerProfile, validateHandlerName, type ProfileInput } from "@/lib/player-profile";
 import { loadCloudGameState, queueCloudGameState, type GameActivityType } from "@/lib/game-sync-client";
 import { selectHydratedGameState } from "@/lib/game-state-merge";
+import { progressionClaimKey } from "@/lib/progression-claim-key";
 import { claimDailyChallengeFromServer, claimDailyPackFromServer, claimSeasonTierFromServer } from "@/lib/progression-client";
 import { applyProgressEvent, dismissNotification as dismissNotificationRule, emptyProgression, ensureRetentionNotifications } from "@/lib/progression/state";
 
@@ -19,6 +20,7 @@ type GameContextValue = {
   state: PlayerState;
   ready: boolean;
   error: string | null;
+  pendingClaims: string[];
   signup(email: string, username: string, password: string): Promise<boolean>;
   login(email: string, password: string): Promise<void>;
   loginWithGoogle(): Promise<void>;
@@ -154,6 +156,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PlayerState>(initialState);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingClaims, setPendingClaims] = useState<string[]>([]);
+  const claimRequests = useRef(new Map<string, Promise<void>>());
+  const claimQueue = useRef(Promise.resolve());
   const stateRef = useRef<PlayerState>(initialState);
   const localRevision = useRef(0);
   const router = useRouter();
@@ -436,28 +441,43 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setError(null);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not claim the Daily Pack."); throw cause; }
   }, [replaceState, router]);
-  const claimDailyChallenge = useCallback(async () => {
-    try {
-      await queueCloudGameState(stateRef.current, "PROGRESSION_SYNC");
-      const next = await claimDailyChallengeFromServer();
-      migrateLegacyState(next); replaceState(next); saveLocalState(next); setError(null);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not claim the Daily Challenge reward."); throw cause; }
-  }, [replaceState]);
-  const claimSeasonTier = useCallback(async (tier: number) => {
-    // A hydration request started before this claim must not restore its older snapshot.
+  const claimProgressionReward = useCallback((tier?: number): Promise<void> => {
+    const key = progressionClaimKey(stateRef.current, tier);
+    const existing = claimRequests.current.get(key);
+    if (existing) return existing;
+    // Immediately update every view, without putting an unconfirmed claim in a save.
     localRevision.current += 1;
+    setPendingClaims(current => [...current, key]);
     setError(null);
-    try {
-      await queueCloudGameState(stateRef.current, "PROGRESSION_SYNC");
-      const next = await claimSeasonTierFromServer(tier);
-      migrateLegacyState(next); replaceState(next); saveLocalState(next); setError(null);
-      const opening = next.openings.find(item => item.id === next.activeOpeningId);
-      if (opening?.source === "season" && !opening.complete) router.push("/open");
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not claim the Season reward."); throw cause; }
+    // Confirm rewards in order so rapid claims cannot overwrite each other's rewards.
+    const request = claimQueue.current.catch(() => undefined).then(async () => {
+      const stillCurrent = () => progressionClaimKey(stateRef.current, tier) === key;
+      try {
+        if (!stillCurrent()) return;
+        await queueCloudGameState(stateRef.current, "PROGRESSION_SYNC");
+        if (!stillCurrent()) return;
+        const next = await (tier === undefined ? claimDailyChallengeFromServer() : claimSeasonTierFromServer(tier));
+        if (!stillCurrent()) return;
+        migrateLegacyState(next); replaceState(next); saveLocalState(next); setError(null);
+        const opening = next.openings.find(item => item.id === next.activeOpeningId);
+        if (tier !== undefined && opening?.source === "season" && !opening.complete) router.push("/open");
+      } catch (cause) {
+        if (stillCurrent()) setError(cause instanceof Error ? cause.message : "Could not claim the reward. Please try again.");
+        throw cause;
+      } finally {
+        claimRequests.current.delete(key);
+        setPendingClaims(current => current.filter(item => item !== key));
+      }
+    });
+    claimRequests.current.set(key, request);
+    claimQueue.current = request;
+    return request;
   }, [replaceState, router]);
+  const claimDailyChallenge = useCallback(() => claimProgressionReward(), [claimProgressionReward]);
+  const claimSeasonTier = useCallback((tier: number) => claimProgressionReward(tier), [claimProgressionReward]);
   const dismissNotification = useCallback((id: string) => commit(draft => dismissNotificationRule(draft, id), "NOTIFICATION_READ", { id }), [commit]);
 
-  const value = useMemo<GameContextValue>(() => ({ state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, setActiveLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, dismantleCard, levelUpCard, startBattle, basicAttack, specialAttack, aiTurn, claimDailyPack, claimDailyChallenge, claimSeasonTier, dismissNotification }), [state, ready, error, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, setActiveLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, dismantleCard, levelUpCard, startBattle, basicAttack, specialAttack, aiTurn, claimDailyPack, claimDailyChallenge, claimSeasonTier, dismissNotification]);
+  const value = useMemo<GameContextValue>(() => ({ state, ready, error, pendingClaims, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, setActiveLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, dismantleCard, levelUpCard, startBattle, basicAttack, specialAttack, aiTurn, claimDailyPack, claimDailyChallenge, claimSeasonTier, dismissNotification }), [state, ready, error, pendingClaims, signup, login, loginWithGoogle, requestPasswordReset, linkGoogle, updatePlayerProfile, logout, saveComicProgress, reveal, buyPack, activateBoost, saveLoadout, deleteLoadout, setActiveLoadout, createBinder, renameBinder, toggleBinderCard, sellDuplicate, dismantleCard, levelUpCard, startBattle, basicAttack, specialAttack, aiTurn, claimDailyPack, claimDailyChallenge, claimSeasonTier, dismissNotification]);
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }
 

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { grantStandardPack, initialState, type PlayerState } from "../../lib/client-state";
 import { defaultSettings, serializeSettings } from "../../lib/settings";
+import { challengeForDate, claimDailyChallenge, claimSeasonTier, utcDateKey } from "../../lib/progression/state";
 
 const email = "progression@example.test";
 
@@ -114,7 +115,7 @@ test("an already claimed Season reward is reconciled without showing an error", 
   await expect(tierOne.getByRole("button", { name: "Claim" })).toHaveCount(0);
 });
 
-test("Season claims show progress, award coins, and allow retry after a failure", async ({ page }) => {
+test("Season claims display immediately, award coins, and allow retry after a failure", async ({ page }) => {
   const initial = await progressionFixture(page);
   const claimed = structuredClone(initial);
   claimed.coins += 250;
@@ -132,12 +133,104 @@ test("Season claims show progress, award coins, and allow retry after a failure"
   await page.goto("/season-pass");
   const tier = page.getByRole("list", { name: "Season reward tiers" }).getByRole("listitem").first();
   await tier.getByRole("button", { name: "Claim", exact: true }).click();
-  await expect(tier.getByRole("button", { name: "Claiming...", exact: true })).toBeDisabled();
+  await expect(tier.locator(".season-claimed-stamp")).toHaveText("CLAIMED");
+  await expect(tier.getByRole("button", { name: "Claim", exact: true })).toHaveCount(0);
   release();
   await expect(page.locator(".toast-error")).toHaveText("Please try claiming again.");
   await tier.getByRole("button", { name: "Claim", exact: true }).click();
   await expect(tier.locator(".season-claimed-stamp")).toHaveText("CLAIMED");
   await expect(page.locator(".resource-counter strong")).toHaveText(claimed.coins.toLocaleString());
+  await expect(page.locator(".toast-error")).toHaveCount(0);
+});
+
+test("multiple Season tiers display claimed before a slow save and survive navigation", async ({ page }) => {
+  const initial = await progressionFixture(page, state => {
+    state.progression.seasons["season-01"] = { seasonId: "season-01", seasonXp: 150, currentTier: 2, claimedTiers: [], updatedAt: new Date().toISOString() };
+  });
+  let release!: () => void;
+  const saveReady = new Promise<void>(resolve => { release = resolve; });
+  const saves: PlayerState[] = [];
+  const claims: number[] = [];
+  await page.route("**/api/game-state", async route => {
+    if (route.request().method() === "GET") return route.fulfill({ json: { state: initial } });
+    const body = route.request().postDataJSON();
+    if (body.activity.type === "PROGRESSION_SYNC") {
+      saves.push(body.state);
+      await saveReady;
+    }
+    await route.fulfill({ json: {} });
+  });
+  const confirmed = structuredClone(initial);
+  await page.route("**/api/progression/claim", async route => {
+    const { tier } = route.request().postDataJSON();
+    claims.push(tier);
+    claimSeasonTier(confirmed, tier, () => undefined);
+    await route.fulfill({ json: { state: confirmed } });
+  });
+  await page.goto("/season-pass");
+  const tiers = page.getByRole("list", { name: "Season reward tiers" }).getByRole("listitem");
+  await tiers.nth(0).getByRole("button", { name: "Claim", exact: true }).click();
+  await tiers.nth(1).getByRole("button", { name: "Claim", exact: true }).click();
+  await expect(page.locator(".season-claimed-stamp")).toHaveCount(2);
+  expect(claims).toEqual([]);
+  await page.getByRole("link", { name: "Daily Challenge", exact: true }).click();
+  await page.getByRole("link", { name: "Season Pass", exact: true }).click();
+  await expect(page.locator(".season-claimed-stamp")).toHaveCount(2);
+  release();
+  await expect.poll(() => claims).toEqual([1, 2]);
+  await expect(page.locator('.season-claimed-stamp[title="Saving reward..."]')).toHaveCount(0);
+  expect(saves[0].progression.seasons["season-01"].claimedTiers).toEqual([]);
+  expect(saves[1].progression.seasons["season-01"].claimedTiers).toEqual([1]);
+  await expect(page.locator(".resource-counter strong")).toHaveText(confirmed.coins.toLocaleString());
+});
+
+test("Daily Challenge displays claimed before saving, rolls back on save failure, and retries", async ({ page }) => {
+  const now = new Date();
+  const date = utcDateKey(now);
+  const challenge = challengeForDate(now);
+  const initial = await progressionFixture(page, state => {
+    state.progression.lastDailyPackClaimAt = now.toISOString();
+    state.progression.dailyChallenges[date] = {
+      challengeId: challenge.id, challengeDate: date,
+      values: Object.fromEntries(challenge.requirements.map(item => [item.metric, item.target])),
+      sets: {}, battleValues: {}, completed: true, rewardClaimed: false,
+    };
+  });
+  let release!: () => void;
+  const saveReady = new Promise<void>(resolve => { release = resolve; });
+  let attempts = 0;
+  let claims = 0;
+  await page.route("**/api/game-state", async route => {
+    if (route.request().method() === "GET") return route.fulfill({ json: { state: initial } });
+    const body = route.request().postDataJSON();
+    if (body.activity.type === "PROGRESSION_SYNC") {
+      expect(body.state.progression.dailyChallenges[date].rewardClaimed).toBe(false);
+      attempts += 1;
+      if (attempts === 1) {
+        await saveReady;
+        return route.fulfill({ status: 503, json: { error: "Could not save progress. Try again." } });
+      }
+    }
+    await route.fulfill({ json: {} });
+  });
+  const confirmed = structuredClone(initial);
+  claimDailyChallenge(confirmed, now);
+  await page.route("**/api/progression/claim", route => {
+    claims += 1;
+    return route.fulfill({ json: { state: confirmed } });
+  });
+  await page.goto("/daily-challenge");
+  await page.getByRole("button", { name: "Claim reward", exact: true }).click();
+  await expect(page.locator(".claimed-label")).toHaveText("Claimed");
+  expect(claims).toBe(0);
+  await page.getByRole("link", { name: "Dashboard", exact: true }).click();
+  await expect(page.locator(".daily-challenge-card .claimed-label")).toHaveText("Claimed");
+  release();
+  await expect(page.locator(".toast-error")).toHaveText("Could not save progress. Try again.");
+  await page.getByRole("button", { name: "Claim reward", exact: true }).click();
+  await expect(page.locator(".claimed-label")).toHaveText("Claimed");
+  await expect(page.locator(".resource-counter strong")).toHaveText(confirmed.coins.toLocaleString());
+  expect(claims).toBe(1);
   await expect(page.locator(".toast-error")).toHaveCount(0);
 });
 

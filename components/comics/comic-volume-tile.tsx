@@ -5,6 +5,22 @@ import { ArrowRight, BookOpen } from "lucide-react";
 import type { ComicProgress } from "@/lib/client-state";
 import type { ComicVolume } from "@/lib/comics";
 
+export function UpcomingComicVolumeTile({ volume }: { volume: Pick<ComicVolume, "title" | "volume" | "cover"> }) {
+  return <article className="comic-volume-tile comic-volume-upcoming" aria-label={`Volume ${volume.volume}: ${volume.title}, coming soon`}>
+    <div className="comic-cover-display">
+      <span className="comic-cover-pages" aria-hidden="true" />
+      <img src={volume.cover} alt={`Cover of Mini Mystics Volume ${volume.volume}: ${volume.title}`} />
+      <span className="comic-coming-soon-banner">Coming Soon</span>
+    </div>
+    <div className="comic-volume-meta">
+      <span>VOLUME {volume.volume}</span>
+      <h2>{volume.title}</h2>
+      <p>Not yet released</p>
+      <span className="comic-release-status">Coming soon</span>
+    </div>
+  </article>;
+}
+
 export function ComicVolumeTile({ volume, progress }: { volume: ComicVolume; progress?: ComicProgress }) {
   const started = Boolean(progress && progress.pageIndex > 0 && !progress.completed);
   const page = Math.min(volume.pages.length, Math.max(1, progress?.pageIndex ?? 1));

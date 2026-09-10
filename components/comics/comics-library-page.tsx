@@ -2,8 +2,8 @@
 
 import { BookOpen, Sparkles } from "lucide-react";
 import { useGame } from "@/components/game-provider";
-import { COMIC_VOLUMES } from "@/lib/comics";
-import { ComicVolumeTile } from "./comic-volume-tile";
+import { COMIC_VOLUMES, UPCOMING_COMIC_VOLUMES } from "@/lib/comics";
+import { ComicVolumeTile, UpcomingComicVolumeTile } from "./comic-volume-tile";
 
 export function ComicsLibraryPage() {
   const { state } = useGame();
@@ -16,6 +16,7 @@ export function ComicsLibraryPage() {
     <section className="comic-shelf" aria-label="Comic library">
       <div className="comic-shelf-volumes">
         {COMIC_VOLUMES.map((volume) => <ComicVolumeTile key={volume.id} volume={volume} progress={state.comicProgress?.[volume.id]} />)}
+        {UPCOMING_COMIC_VOLUMES.map((volume) => <UpcomingComicVolumeTile key={volume.id} volume={volume} />)}
       </div>
       <div className="comic-shelf-edge" aria-hidden="true" />
     </section>

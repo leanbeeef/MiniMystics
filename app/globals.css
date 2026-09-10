@@ -9367,6 +9367,7 @@ select:focus {
   position: relative;
   z-index: 1;
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: clamp(2rem, 5vw, 4.5rem);
 }
@@ -9387,6 +9388,39 @@ select:focus {
 }
 .comic-volume-tile {
   width: clamp(260px, 24vw, 312px);
+}
+.comic-coming-soon-banner {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  padding: 1rem 0.5rem;
+  transform: translateY(-50%);
+  color: #fff0bd;
+  background: linear-gradient(90deg, #191020ef, #382448f5, #191020ef);
+  border-block: 2px solid var(--gold);
+  box-shadow: 0 8px 24px #0009;
+  text-align: center;
+  text-transform: uppercase;
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
+  font-weight: 900;
+  letter-spacing: 0.15em;
+}
+.comic-volume-upcoming .comic-cover-display:hover {
+  transform: perspective(1100px) rotateY(-0.5deg);
+  filter: drop-shadow(0 22px 24px rgba(0, 0, 0, 0.55));
+}
+.comic-volume-meta > .comic-release-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  color: var(--muted-2);
+  border: 1px solid rgba(242, 193, 78, 0.16);
+  border-radius: 6px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .comic-cover-display {
   position: relative;
