@@ -73,7 +73,7 @@ export function CardInspectModal({ definitionId, ownedCards, onClose }: { defini
         {mystic ? <div className="inspect-columns">
           <div className="inspect-primary">
             {ownedCards.length > 1 ? <div className="inspect-copy-switcher" role="listbox" aria-label="Owned copies">
-              {sorted.map((owned) => <button key={owned.id} type="button" role="option" aria-selected={owned.id === selected?.id} className={owned.id === selected?.id ? "active" : ""} onClick={() => setSelectedId(owned.id)}>{owned.variant === "illustrationRare" ? "IR · " : ""}Lv.{owned.level}</button>)}
+              {sorted.map((owned) => <button key={owned.id} type="button" role="option" aria-selected={owned.id === selected?.id} className={owned.id === selected?.id ? "active" : ""} onClick={() => setSelectedId(owned.id)}>{owned.variant === "illustrationRare" ? "Ascendant Art · " : ""}Lv.{owned.level}</button>)}
             </div> : null}
             <div className="inspect-stats">
               <span><Sparkles /><small>POWER</small><strong>{leveledStat(mystic.power, level)}</strong></span>

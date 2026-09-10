@@ -15,17 +15,23 @@ export async function POST(request: Request) {
     const identity = await requireSupabaseUser(request);
     const prisma = getPrisma();
     const result = await prisma.$transaction(async tx => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${identity.uid}, 0))`;
       const user = await tx.user.findFirst({ where: { OR: [{ supabaseAuthId: identity.uid }, { email: identity.email }] }, include: { profile: { include: { gameState: true } } } });
       const profile = user?.profile;
       if (!profile?.gameState) throw new Error("PROFILE_NOT_READY");
       // Serialize claims for this profile before checking the timestamp. Retries and double taps
       // cannot both pass eligibility, even when they arrive at different workers.
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${profile.id}, 0))`;
       const fresh = await tx.playerProfile.findUniqueOrThrow({ where: { id: profile.id }, include: { gameState: true } });
       const now = new Date();
       if (!isDailyPackAvailable(fresh.lastDailyPackClaimAt?.toISOString() ?? null, now)) {
+        const state = structuredClone(fresh.gameState!.state) as unknown as PlayerState;
+        state.progression ??= emptyProgression();
+        state.progression.lastDailyPackClaimAt = fresh.lastDailyPackClaimAt!.toISOString();
+        state.progression.notifications.forEach(item => { if (item.kind === "dailyPack") item.read = true; });
+        state.saveRevision = Math.max(0, state.saveRevision ?? 0) + 1;
+        await tx.playerGameState.update({ where: { profileId: fresh.id }, data: { state: asJson(state), version: { increment: 1 } } });
         const next = new Date(fresh.lastDailyPackClaimAt!.getTime() + 86_400_000);
-        return { available: false as const, nextAvailableAt: next.toISOString() };
+        return { granted: false as const, state, nextAvailableAt: next.toISOString() };
       }
       const state = structuredClone(fresh.gameState!.state) as unknown as PlayerState;
       state.progression ??= emptyProgression();
@@ -59,10 +65,9 @@ export async function POST(request: Request) {
       }
       for (const item of inventory.values()) await tx.inventoryItem.create({ data: { profileId: fresh.id, itemType: item.type, rarity: item.rarity, quantity: item.matches.length, metadata: { matches: item.matches } } });
       await tx.pityCounter.upsert({ where: { profileId_packId: { profileId: fresh.id, packId: "standard" } }, create: { profileId: fresh.id, packId: "standard", counter: state.pity }, update: { counter: state.pity } });
-      return { available: true as const, state };
+      return { granted: true as const, state, nextAvailableAt: null };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10_000, timeout: 30_000 });
-    if (!result.available) return NextResponse.json({ error: "Your next Daily Pack is not ready yet.", nextAvailableAt: result.nextAvailableAt }, { status: 409 });
-    return NextResponse.json({ state: result.state }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json(result, { headers: { "Cache-Control": "private, no-store" } });
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : "";
     if (message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

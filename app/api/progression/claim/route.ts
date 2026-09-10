@@ -25,13 +25,13 @@ export async function POST(request: Request) {
     }
 
     const prisma = getPrisma();
-    const state = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${identity.uid}, 0))`;
       const user = await tx.user.findFirst({
         where: { OR: [{ supabaseAuthId: identity.uid }, { email: identity.email }] },
         include: { profile: true },
       });
       if (!user?.profile) throw new Error("PROFILE_NOT_READY");
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${user.profile.id}, 0))`;
       const save = await tx.playerGameState.findUnique({ where: { profileId: user.profile.id } });
       if (!save) throw new Error("PROFILE_NOT_READY");
 
@@ -40,36 +40,43 @@ export async function POST(request: Request) {
       next.progression.configuration = await getRuntimeProgressionConfig(tx);
       const now = new Date();
       let newOpeningId: string | null = null;
+      let alreadyClaimed = false;
       const previousOwnedIds = new Set(next.ownedCards.map((owned) => owned.id));
 
       if (body.kind === "dailyChallenge") {
         const challenge = challengeForDate(now, next.progression.configuration.challenges);
-        const progress = next.progression.dailyChallenges[utcDateKey(now)];
-        if (!progress || progress.challengeId !== challenge.id || !progress.completed) throw new Error("CHALLENGE_INCOMPLETE");
+        const challengeDate = utcDateKey(now);
+        const assignedDate = new Date(`${challengeDate}T00:00:00.000Z`);
+        const progress = next.progression.dailyChallenges[challengeDate];
         const definition = await tx.dailyChallengeDefinition.findUnique({ where: { id: challenge.id }, select: { id: true } });
         if (!definition) throw new Error("PROGRESSION_NOT_READY");
-        const assignedDate = new Date(`${progress.challengeDate}T00:00:00.000Z`);
         const recorded = await tx.dailyChallengeAssignment.findUnique({
           where: { profileId_definitionId_assignedDate: { profileId: user.profile.id, definitionId: challenge.id, assignedDate } },
         });
-        if (!recorded?.completed) throw new Error("CHALLENGE_INCOMPLETE");
-        if (recorded.rewardClaimed || progress.rewardClaimed) throw new Error("REWARD_ALREADY_CLAIMED");
-        claimDailyChallenge(next, now);
-        await tx.dailyChallengeAssignment.upsert({
-          where: { profileId_definitionId_assignedDate: { profileId: user.profile.id, definitionId: challenge.id, assignedDate } },
-          create: {
-            profileId: user.profile.id,
-            definitionId: challenge.id,
-            assignedDate,
-            progress: Math.max(0, ...Object.values(progress.values)),
-            progressData: asJson({ values: progress.values, sets: progress.sets, battleValues: progress.battleValues }),
+        if (recorded?.rewardClaimed || progress?.rewardClaimed) {
+          alreadyClaimed = true;
+          const savedProgress = recorded?.progressData && typeof recorded.progressData === "object" && !Array.isArray(recorded.progressData)
+            ? recorded.progressData as Record<string, unknown>
+            : {};
+          const reconciled = progress ?? {
+            challengeId: challenge.id,
+            challengeDate,
+            values: savedProgress.values && typeof savedProgress.values === "object" ? savedProgress.values as Record<string, number> : Object.fromEntries(challenge.requirements.map((requirement) => [requirement.metric, requirement.target])),
+            sets: savedProgress.sets && typeof savedProgress.sets === "object" ? savedProgress.sets as Record<string, string[]> : {},
+            battleValues: savedProgress.battleValues && typeof savedProgress.battleValues === "object" ? savedProgress.battleValues as Record<string, Record<string, number>> : {},
             completed: true,
             rewardClaimed: true,
-            completedAt: progress.completedAt ? new Date(progress.completedAt) : now,
-            claimedAt: now,
-          },
-          update: { completed: true, rewardClaimed: true, claimedAt: now },
-        });
+            completedAt: recorded?.completedAt?.toISOString() ?? now.toISOString(),
+          };
+          reconciled.completed = true;
+          reconciled.rewardClaimed = true;
+          next.progression.dailyChallenges[challengeDate] = reconciled;
+          if (recorded && !recorded.rewardClaimed) await tx.dailyChallengeAssignment.update({ where: { id: recorded.id }, data: { completed: true, rewardClaimed: true, claimedAt: now } });
+        } else {
+          if (!progress || progress.challengeId !== challenge.id || !progress.completed || !recorded?.completed) throw new Error("CHALLENGE_INCOMPLETE");
+          claimDailyChallenge(next, now);
+          await tx.dailyChallengeAssignment.update({ where: { id: recorded.id }, data: { completed: true, rewardClaimed: true, claimedAt: now } });
+        }
       } else {
         const tier = body.tier!;
         const config = next.progression.configuration.season;
@@ -79,15 +86,21 @@ export async function POST(request: Request) {
         const recorded = await tx.seasonPassRewardClaim.findUnique({
           where: { profileId_seasonId_tier_track: { profileId: user.profile.id, seasonId: config.id, tier, track: "FREE" } },
         });
-        if (recorded) throw new Error("REWARD_ALREADY_CLAIMED");
-        const reward = config.rewards[tier - 1];
-        if ((reward?.type === "mystic" || reward?.type === "illustrationRare") && (!reward.definitionId || !(await tx.cardDefinition.findUnique({ where: { id: reward.definitionId }, select: { id: true } })))) {
-          throw new Error("CARD_REWARD_NOT_READY");
+        const progress = seasonProgressFor(next, now);
+        if (recorded || progress.claimedTiers.includes(tier)) {
+          alreadyClaimed = true;
+          if (!progress.claimedTiers.includes(tier)) progress.claimedTiers.push(tier);
+          if (!recorded) await tx.seasonPassRewardClaim.create({ data: { profileId: user.profile.id, seasonId: config.id, tier, track: "FREE", claimedAt: now } });
+        } else {
+          const reward = config.rewards[tier - 1];
+          if ((reward?.type === "mystic" || reward?.type === "illustrationRare") && (!reward.definitionId || !(await tx.cardDefinition.findUnique({ where: { id: reward.definitionId }, select: { id: true } })))) {
+            throw new Error("CARD_REWARD_NOT_READY");
+          }
+          const beforeOpeningId = next.activeOpeningId;
+          claimSeasonTier(next, tier, () => grantStandardPack(next, "season", "Season Pass Standard Pack"), now, reward);
+          if (next.activeOpeningId !== beforeOpeningId) newOpeningId = next.activeOpeningId;
+          await tx.seasonPassRewardClaim.create({ data: { profileId: user.profile.id, seasonId: config.id, tier, track: "FREE", claimedAt: now } });
         }
-        const beforeOpeningId = next.activeOpeningId;
-        claimSeasonTier(next, tier, () => grantStandardPack(next, "season", "Season Pass Standard Pack"), now, reward);
-        if (next.activeOpeningId !== beforeOpeningId) newOpeningId = next.activeOpeningId;
-        await tx.seasonPassRewardClaim.create({ data: { profileId: user.profile.id, seasonId: config.id, tier, track: "FREE", claimedAt: now } });
       }
 
       next.saveRevision = Math.max(0, next.saveRevision ?? 0) + 1;
@@ -150,9 +163,9 @@ export async function POST(request: Request) {
           update: { counter: next.pity },
         });
       }
-      return next;
+      return { state: next, alreadyClaimed };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10_000, timeout: 30_000 });
-    return NextResponse.json({ state }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json(result, { headers: { "Cache-Control": "private, no-store" } });
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : "";
     if (message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

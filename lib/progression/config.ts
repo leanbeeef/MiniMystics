@@ -93,9 +93,9 @@ const pack = (): SeasonReward => ({ type: "standardPack", label: "Standard Pack"
 const mystic = (definitionId: string, label: string): SeasonReward => ({ type: "mystic", definitionId, label });
 const rare = (definitionId: string, label: string, artworkVariant: string): SeasonReward => ({ type: "illustrationRare", definitionId, artworkVariant, label });
 export const SEASON_ONE_REWARDS: SeasonReward[] = [
-  coins(250), xpBoost(), pack(), coins(250), mystic("MM-030", "Tallus · Alpha Mystic"), coinBoost(), coins(300), pack(), xpBoost(), rare("MM-001", "Swift · Illustration Rare", "/cards/Mystics/illustration%20rares/season_01_ir_01.png"),
-  coins(300), pack(), coinBoost(), coins(400), mystic("MM-050", "Astraleye · Alpha Mystic"), xpBoost(), pack(), coins(400), coinBoost(), rare("MM-002", "Duney · Illustration Rare", "/cards/Mystics/illustration%20rares/season_01_ir_02.png"),
+  coins(250), xpBoost(), pack(), coins(250), mystic("MM-030", "Tallus · Alpha Mystic"), coinBoost(), coins(300), pack(), xpBoost(), rare("MM-001", "Swift · Ascendant Art", "/cards/Mystics/illustration%20rares/season_01_ir_01.png"),
+  coins(300), pack(), coinBoost(), coins(400), mystic("MM-050", "Astraleye · Alpha Mystic"), xpBoost(), pack(), coins(400), coinBoost(), rare("MM-002", "Duney · Ascendant Art", "/cards/Mystics/illustration%20rares/season_01_ir_02.png"),
   coins(500), pack(), xpBoost(), coins(500), mystic("MM-060", "Umbraxis · Alpha Mystic"), coinBoost(), pack(), coins(600), xpBoost(), mystic("MM-075", "Imperius · Alpha Mystic"),
-  coins(600), pack(), coinBoost(), coins(700), mystic("MM-080", "Polaris · Alpha Mystic"), xpBoost(), pack(), coins(700), coinBoost(), rare("MM-003", "Leafo · Illustration Rare", "/cards/Mystics/illustration%20rares/season_01_ir_03.png"),
-  coins(800), pack(), xpBoost(), coins(800), mystic("MM-091", "Briar King · Alpha Mystic"), coinBoost(), pack(), coins(1000), pack(), rare("MM-029", "Ironjaw · Season Finale Illustration Rare", "/cards/Mystics/illustration%20rares/season_01_ir_finale.png"),
+  coins(600), pack(), coinBoost(), coins(700), mystic("MM-080", "Polaris · Alpha Mystic"), xpBoost(), pack(), coins(700), coinBoost(), rare("MM-003", "Leafo · Ascendant Art", "/cards/Mystics/illustration%20rares/season_01_ir_03.png"),
+  coins(800), pack(), xpBoost(), coins(800), mystic("MM-091", "Briar King · Alpha Mystic"), coinBoost(), pack(), coins(1000), pack(), rare("MM-029", "Ironjaw · Season Finale Ascendant Art", "/cards/Mystics/illustration%20rares/season_01_ir_finale.png"),
 ];

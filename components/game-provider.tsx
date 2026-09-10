@@ -431,7 +431,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const claimDailyPack = useCallback(async () => {
     try {
-      const next = await claimDailyPackFromServer(); migrateLegacyState(next); replaceState(next); saveLocalState(next); router.push("/open"); setError(null);
+      const result = await claimDailyPackFromServer(); const next = result.state; migrateLegacyState(next); replaceState(next); saveLocalState(next);
+      if (result.granted) router.push("/open");
+      setError(null);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not claim the Daily Pack."); throw cause; }
   }, [replaceState, router]);
   const claimDailyChallenge = useCallback(async () => {

@@ -1,13 +1,13 @@
 import type { PlayerState } from "./client-state";
 import { getSupabaseAccessToken } from "./supabase";
 
-export async function claimDailyPackFromServer(): Promise<PlayerState> {
+export async function claimDailyPackFromServer(): Promise<{ state: PlayerState; granted: boolean }> {
   const token = await getSupabaseAccessToken();
   if (!token) throw new Error("Sign in before claiming your Daily Pack.");
   const response = await fetch("/api/progression/daily-pack", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-  const body = await response.json().catch(() => null) as { state?: PlayerState; error?: string } | null;
+  const body = await response.json().catch(() => null) as { state?: PlayerState; granted?: boolean; error?: string } | null;
   if (!response.ok || !body?.state) throw new Error(body?.error ?? "Could not claim the Daily Pack.");
-  return body.state;
+  return { state: body.state, granted: body.granted === true };
 }
 
 async function claimProgressionReward(body: { kind: "dailyChallenge" | "seasonTier"; tier?: number }): Promise<PlayerState> {

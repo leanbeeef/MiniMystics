@@ -73,4 +73,28 @@ describe("selectHydratedGameState", () => {
     expect(result.state.campaignWins).toEqual(expect.arrayContaining(["stage-local", "stage-cloud"]));
     expect(result.cloudNeedsUpdate).toBe(true);
   });
+
+  it("keeps authoritative cloud claim markers when the local snapshot has a newer revision", () => {
+    const local = savedState(8);
+    local.progression.lastDailyPackClaimAt = null;
+    local.progression.seasons["season-01"] = {
+      seasonId: "season-01", seasonXp: 500, currentTier: 3, claimedTiers: [], updatedAt: "2026-09-09T12:00:00.000Z",
+    };
+    const cloud = savedState(7);
+    cloud.progression.lastDailyPackClaimAt = "2026-09-09T10:00:00.000Z";
+    cloud.progression.seasons["season-01"] = {
+      seasonId: "season-01", seasonXp: 250, currentTier: 2, claimedTiers: [1, 2], updatedAt: "2026-09-09T11:00:00.000Z",
+    };
+    cloud.progression.dailyChallenges["2026-09-09"] = {
+      challengeId: "daily-01", challengeDate: "2026-09-09", values: { battleWon: 1 }, sets: {}, battleValues: {}, completed: true, rewardClaimed: true,
+    };
+
+    const result = selectHydratedGameState(local, cloud);
+
+    expect(result.state.progression.lastDailyPackClaimAt).toBe("2026-09-09T10:00:00.000Z");
+    expect(result.state.progression.seasons["season-01"].seasonXp).toBe(500);
+    expect(result.state.progression.seasons["season-01"].claimedTiers).toEqual([1, 2]);
+    expect(result.state.progression.dailyChallenges["2026-09-09"].rewardClaimed).toBe(true);
+    expect(result.cloudNeedsUpdate).toBe(true);
+  });
 });

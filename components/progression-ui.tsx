@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarCheck, Check, Coins, Gift, LockKeyhole, PackageOpen, Sparkles, Star, Timer, Trophy, Zap } from "lucide-react";
+import { CalendarCheck, Check, Coins, Gift, LockKeyhole, PackageOpen, Sparkles, Timer, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useGame } from "./game-provider";
 import { challengeForDate, dailyPackAvailableAt, isDailyPackAvailable, nextUtcDay, progressionConfig, utcDateKey } from "@/lib/progression/state";
 import type { ChallengeProgress } from "@/lib/progression/state";
+import type { SeasonReward } from "@/lib/progression/config";
 import { definitionFor } from "@/lib/client-state";
 import { optimizedAsset } from "@/lib/asset-url";
+import { PACK_ART, REWARD_ART } from "@/lib/art";
 
 function useClock() {
   const [now, setNow] = useState(() => new Date());
@@ -22,6 +24,22 @@ function currentChallengeProgress(state: ReturnType<typeof useGame>["state"], no
   const challenge = challengeForDate(now, progressionConfig(state).challenges); const key = utcDateKey(now);
   return state.progression.dailyChallenges[key] ?? { challengeId: challenge.id, challengeDate: key, values: {}, sets: {}, battleValues: {}, completed: false, rewardClaimed: false };
 }
+function seasonRewardArt(reward: SeasonReward) {
+  if (reward.artworkVariant) return optimizedAsset(reward.artworkVariant);
+  if (reward.definitionId) return definitionFor(reward.definitionId)?.image ?? "/cards/Mystics/back.png";
+  if (reward.type === "coins") return REWARD_ART.coins;
+  if (reward.type === "xpBoost") return REWARD_ART.xpBoost;
+  if (reward.type === "coinBoost") return REWARD_ART.coinBoost;
+  if (reward.type === "standardPack") return PACK_ART.standard;
+  return "/cards/Mystics/back.png";
+}
+function seasonRewardAmount(reward: SeasonReward) {
+  if (reward.type === "coins") return `+${(reward.amount ?? 0).toLocaleString()}`;
+  if (reward.type === "xpBoost") return "2× XP";
+  if (reward.type === "coinBoost") return "2× COINS";
+  if (reward.type === "standardPack") return "1 PACK";
+  return null;
+}
 
 export function DailyPackCard({ compact = false }: { compact?: boolean }) {
   const { state, claimDailyPack } = useGame(); const now = useClock(); const last = state.progression.lastDailyPackClaimAt;
@@ -29,7 +47,7 @@ export function DailyPackCard({ compact = false }: { compact?: boolean }) {
   return <section className={`retention-card daily-pack-card ${available ? "ready" : ""} ${compact ? "compact" : ""}`}>
     <span className="retention-icon"><PackageOpen /></span><div><small>DAILY PACK</small><h2>{available ? "Ready" : "Next Pack"}</h2>
     <p>{available ? "A free Standard Pack is waiting." : next ? countdown(next, now) : "Ready now"}</p></div>
-    {available ? <button className="button primary" onClick={() => void claimDailyPack()}>Open now</button> : <span className="retention-timer"><Timer />{next ? countdown(next, now) : "Ready"}</span>}
+    {available ? <button className="button primary" onClick={() => void claimDailyPack().catch(() => undefined)}>Open now</button> : <span className="retention-timer"><Timer />{next ? countdown(next, now) : "Ready"}</span>}
   </section>;
 }
 
@@ -41,7 +59,7 @@ export function DailyChallengeCard({ detailed = false }: { detailed?: boolean })
       <p className="reward-copy"><Coins />{challenge.coins} Coins <Sparkles />{challenge.seasonXp} Season XP</p>
       <p className="next-copy"><Timer />Next Challenge: {countdown(nextUtcDay(now), now)}</p>
     </div>
-    {progress.completed && !progress.rewardClaimed ? <button className="button primary" onClick={() => void claimDailyChallenge()}>Claim reward</button> : progress.rewardClaimed ? <span className="claimed-label"><Check />Claimed</span> : <Link className="button ghost" href="/battle">Battle</Link>}
+    {progress.completed && !progress.rewardClaimed ? <button className="button primary" onClick={() => void claimDailyChallenge().catch(() => undefined)}>Claim reward</button> : progress.rewardClaimed ? <span className="claimed-label"><Check />Claimed</span> : <Link className="button ghost" href="/battle">Battle</Link>}
   </section>;
 }
 
@@ -59,7 +77,26 @@ export function SeasonPassView() {
   const { state, claimSeasonTier } = useGame(); const now = useClock(); const config = progressionConfig(state); const progress = state.progression.seasons[config.season.id] ?? { seasonXp: 0, currentTier: 1, claimedTiers: [] };
   const nextTier = Math.min(config.season.rewards.length, progress.currentTier + 1); const remaining = Math.max(0, Math.ceil((Date.parse(config.season.endsAt) - now.getTime()) / 86_400_000));
   return <div className="page progression-page season-page"><section className="season-hero"><span className="eyebrow">SEASON {config.season.number}</span><h1>30-Day Season</h1><div className="season-hero-stats"><span><b>Tier {progress.currentTier}</b><small>Current tier</small></span><span><b>{progress.seasonXp.toLocaleString()} / {config.season.thresholds[nextTier - 1].toLocaleString()}</b><small>Season XP</small></span><span><b>{remaining} days</b><small>Remaining</small></span></div><div className="progress"><i style={{ width: `${progress.seasonXp / config.season.thresholds.at(-1)! * 100}%` }} /></div><p>Next Reward: {config.season.rewards[nextTier - 1]?.label ?? "Season complete"}</p></section>
-    <div className="season-track" role="list" aria-label="Season reward tiers">{config.season.rewards.map((reward, index) => { const tier = index + 1; const unlocked = progress.currentTier >= tier; const claimed = progress.claimedTiers.includes(tier); const placeholder = reward.type.endsWith("Placeholder"); const milestone = tier % 10 === 0; const artwork = reward.artworkVariant ? optimizedAsset(reward.artworkVariant) : reward.definitionId ? definitionFor(reward.definitionId)?.image : null; return <article role="listitem" key={tier} className={`season-tier ${unlocked ? "unlocked" : "locked"} ${claimed ? "claimed" : ""} ${milestone ? "milestone" : ""} ${tier === config.season.rewards.length ? "finale" : ""}`}><span className="tier-number">TIER {tier}</span><span className={`tier-icon ${artwork ? "card-reward" : ""}`}>{artwork ? <img src={artwork} alt="" /> : reward.type === "coins" ? <Coins /> : reward.type === "standardPack" ? <PackageOpen /> : reward.type.includes("Boost") ? <Zap /> : <Star />}</span><h3>{reward.label}</h3><small>{config.season.thresholds[index].toLocaleString()} XP</small>{claimed ? <span className="claimed-label"><Check />Claimed</span> : <button className="button small" disabled={!unlocked || placeholder} title={placeholder ? "Replace this placeholder in AdminJS before launch." : undefined} onClick={() => void claimSeasonTier(tier)}>{unlocked ? placeholder ? "Coming soon" : "Claim" : <><LockKeyhole />Locked</>}</button>}</article>; })}</div>
+    <div className="season-track" role="list" aria-label="Season reward tiers">{config.season.rewards.map((reward, index) => {
+      const tier = index + 1;
+      const unlocked = progress.currentTier >= tier;
+      const claimed = progress.claimedTiers.includes(tier);
+      const placeholder = reward.type.endsWith("Placeholder");
+      const milestone = tier % 10 === 0;
+      const amount = seasonRewardAmount(reward);
+      return <article role="listitem" key={tier} className={`season-tier ${unlocked ? "unlocked" : "locked"} ${claimed ? "claimed" : ""} ${milestone ? "milestone" : ""} ${tier === config.season.rewards.length ? "finale" : ""}`}>
+        <img className="season-reward-art" src={seasonRewardArt(reward)} alt="" />
+        <span className="season-tier-vignette" />
+        <span className="tier-number">TIER {tier}</span>
+        {amount ? <strong className="season-reward-amount">{amount}</strong> : null}
+        <div className="season-tier-copy"><h3>{reward.label}</h3><small>{config.season.thresholds[index].toLocaleString()} XP</small></div>
+        {claimed
+          ? <span className="season-claimed-stamp"><Check />CLAIMED</span>
+          : unlocked && !placeholder
+            ? <button className="button small season-claim-button" onClick={() => void claimSeasonTier(tier).catch(() => undefined)}>Claim</button>
+            : <span className="season-locked-stamp"><LockKeyhole />{placeholder ? "Coming soon" : "Locked"}</span>}
+      </article>;
+    })}</div>
   </div>;
 }
 

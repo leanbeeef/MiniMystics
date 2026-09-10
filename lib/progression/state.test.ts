@@ -66,14 +66,14 @@ describe("Season Pass", () => {
     expect(() => claimSeasonTier(state, 1, () => undefined, new Date("2026-09-10T00:00:00Z"))).toThrow("already claimed");
     expect(() => claimSeasonTier(state, 5, () => undefined, new Date("2026-09-10T00:00:00Z"), { type: "mysticPlaceholder", placeholderId: "test", label: "Not ready" })).toThrow("coming before Season launch");
   });
-  it("turns a configured Illustration Rare into a transferable owned-card instance", () => {
+  it("turns a configured Ascendant Art reward into a transferable owned-card instance", () => {
     const state = stateAt(); const now = new Date("2026-09-10T00:00:00Z");
     addSeasonXp(state, 300, now);
-    claimSeasonTier(state, 2, () => undefined, now, { type: "illustrationRare", definitionId: "MM-001", artworkVariant: "season-one-ir", label: "Illustration Rare" });
+    claimSeasonTier(state, 2, () => undefined, now, { type: "illustrationRare", definitionId: "MM-001", artworkVariant: "season-one-ir", label: "Ascendant Art" });
     expect(state.ownedCards.at(-1)).toMatchObject({ definitionId: "MM-001", variant: "illustrationRare", artworkVariant: "season-one-ir", seasonOrigin: "season-01", level: 1 });
     expect(state.ownedCards.at(-1)).not.toHaveProperty("accountBound");
   });
-  it("maps the four Illustration Rares to their standard counterparts without changing stats", () => {
+  it("maps the four Ascendant Art cards to their standard counterparts without changing stats", () => {
     const expected = [
       [10, "MM-001", "season_01_ir_01.png"],
       [20, "MM-002", "season_01_ir_02.png"],

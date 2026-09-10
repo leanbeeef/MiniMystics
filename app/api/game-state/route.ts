@@ -14,6 +14,13 @@ type SyncBody = {
   activity?: { type?: string; payload?: Record<string, unknown> };
 };
 
+type PersistedProgression = {
+  lastDailyPackClaimAt: Date | null;
+  seasonProgress: { seasonId: string; seasonXp: number; currentTier: number; claimedFree: Prisma.JsonValue }[];
+  seasonRewardClaims: { seasonId: string; tier: number; track: string }[];
+  challengeAssignments: { definitionId: string; assignedDate: Date; progress: number; progressData: Prisma.JsonValue | null; completed: boolean; rewardClaimed: boolean; completedAt: Date | null }[];
+};
+
 const asJson = (value: unknown) => value as Prisma.InputJsonValue;
 const rarity = (value: string | undefined) => value && value !== "Unassigned" ? value.toUpperCase() as Rarity : null;
 const date = (value: string | undefined) => {
@@ -41,6 +48,54 @@ function validState(value: unknown): value is PlayerState {
     && Array.isArray(state.binders)
     && Array.isArray(state.campaignWins),
   );
+}
+
+function reconcileProgression(state: PlayerState, persisted: PersistedProgression) {
+  state.progression ??= emptyProgression();
+  if (persisted.lastDailyPackClaimAt) state.progression.lastDailyPackClaimAt = persisted.lastDailyPackClaimAt.toISOString();
+  for (const saved of persisted.seasonProgress) {
+    const progress = state.progression.seasons[saved.seasonId] ?? {
+      seasonId: saved.seasonId,
+      seasonXp: 0,
+      currentTier: 1,
+      claimedTiers: [],
+      updatedAt: new Date().toISOString(),
+    };
+    const savedClaims = Array.isArray(saved.claimedFree) ? saved.claimedFree.filter((tier): tier is number => typeof tier === "number") : [];
+    progress.seasonXp = Math.max(progress.seasonXp, saved.seasonXp);
+    progress.currentTier = Math.max(progress.currentTier, saved.currentTier);
+    progress.claimedTiers = [...new Set([...progress.claimedTiers, ...savedClaims])];
+    state.progression.seasons[saved.seasonId] = progress;
+  }
+  for (const claim of persisted.seasonRewardClaims) {
+    if (claim.track !== "FREE") continue;
+    const progress = state.progression.seasons[claim.seasonId] ?? {
+      seasonId: claim.seasonId,
+      seasonXp: 0,
+      currentTier: Math.max(1, claim.tier),
+      claimedTiers: [],
+      updatedAt: new Date().toISOString(),
+    };
+    if (!progress.claimedTiers.includes(claim.tier)) progress.claimedTiers.push(claim.tier);
+    state.progression.seasons[claim.seasonId] = progress;
+  }
+  for (const assignment of persisted.challengeAssignments) {
+    const key = assignment.assignedDate.toISOString().slice(0, 10);
+    const stored = assignment.progressData && typeof assignment.progressData === "object" && !Array.isArray(assignment.progressData)
+      ? assignment.progressData as Record<string, unknown>
+      : {};
+    const existing = state.progression.dailyChallenges[key];
+    state.progression.dailyChallenges[key] = {
+      challengeId: assignment.definitionId,
+      challengeDate: key,
+      values: existing?.values ?? (stored.values && typeof stored.values === "object" ? stored.values as Record<string, number> : { progress: assignment.progress }),
+      sets: existing?.sets ?? (stored.sets && typeof stored.sets === "object" ? stored.sets as Record<string, string[]> : {}),
+      battleValues: existing?.battleValues ?? (stored.battleValues && typeof stored.battleValues === "object" ? stored.battleValues as Record<string, Record<string, number>> : {}),
+      completed: Boolean(existing?.completed || assignment.completed),
+      rewardClaimed: Boolean(existing?.rewardClaimed || assignment.rewardClaimed),
+      completedAt: existing?.completedAt ?? assignment.completedAt?.toISOString(),
+    };
+  }
 }
 
 function safeUsername(value: string, uid: string) {
@@ -117,6 +172,17 @@ async function synchronizeState(identity: Awaited<ReturnType<typeof requireSupab
         favoriteMysticId: profileInput?.favoriteMysticId,
       },
     });
+
+    const persistedProgression = await tx.playerProfile.findUniqueOrThrow({
+      where: { id: profile.id },
+      select: {
+        lastDailyPackClaimAt: true,
+        seasonProgress: { select: { seasonId: true, seasonXp: true, currentTier: true, claimedFree: true } },
+        seasonRewardClaims: { select: { seasonId: true, tier: true, track: true } },
+        challengeAssignments: { select: { definitionId: true, assignedDate: true, progress: true, progressData: true, completed: true, rewardClaimed: true, completedAt: true } },
+      },
+    });
+    reconcileProgression(state, persistedProgression);
 
     const displayName = (profileInput?.handlerName ?? state.account?.username ?? user.username).trim();
     const normalizedName = displayName.toLowerCase();
@@ -337,13 +403,19 @@ export async function GET(request: Request) {
     const prisma = getPrisma();
     const save = await prisma.playerGameState.findFirst({
       where: { profile: { user: { OR: [{ supabaseAuthId: identity.uid }, { email: identity.email }] } } },
-      include: { profile: { select: { lastDailyPackClaimAt: true, campaign: { select: { opponentId: true } } } } },
+      include: { profile: { select: {
+        lastDailyPackClaimAt: true,
+        campaign: { select: { opponentId: true } },
+        seasonProgress: { select: { seasonId: true, seasonXp: true, currentTier: true, claimedFree: true } },
+        seasonRewardClaims: { select: { seasonId: true, tier: true, track: true } },
+        challengeAssignments: { select: { definitionId: true, assignedDate: true, progress: true, progressData: true, completed: true, rewardClaimed: true, completedAt: true } },
+      } } },
     });
     if (!save) return NextResponse.json({ error: "No cloud save yet." }, { status: 404 });
     const state = structuredClone(save.state) as unknown as PlayerState;
     state.progression ??= emptyProgression();
     state.progression.configuration = await getRuntimeProgressionConfig(prisma);
-    if (save.profile.lastDailyPackClaimAt) state.progression.lastDailyPackClaimAt = save.profile.lastDailyPackClaimAt.toISOString();
+    reconcileProgression(state, save.profile);
     state.campaignWins = [...new Set([
       ...(Array.isArray(state.campaignWins) ? state.campaignWins : []),
       ...save.profile.campaign.map(({ opponentId }) => opponentId),

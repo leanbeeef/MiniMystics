@@ -18,6 +18,45 @@ function revealedCards(state: PlayerState) {
   return state.openings.reduce((total, opening) => total + opening.cards.filter((card) => card.revealed).length, 0);
 }
 
+function laterTimestamp(first: string | null, second: string | null) {
+  if (!first) return second;
+  if (!second) return first;
+  return Date.parse(first) >= Date.parse(second) ? first : second;
+}
+
+function mergeAuthoritativeProgression(state: PlayerState, cloud: PlayerState) {
+  state.progression.lastDailyPackClaimAt = laterTimestamp(
+    state.progression.lastDailyPackClaimAt,
+    cloud.progression.lastDailyPackClaimAt,
+  );
+  state.progression.configuration = cloud.progression.configuration ?? state.progression.configuration;
+
+  for (const [seasonId, cloudProgress] of Object.entries(cloud.progression.seasons)) {
+    const progress = state.progression.seasons[seasonId];
+    if (!progress) {
+      state.progression.seasons[seasonId] = structuredClone(cloudProgress);
+      continue;
+    }
+    progress.seasonXp = Math.max(progress.seasonXp, cloudProgress.seasonXp);
+    progress.currentTier = Math.max(progress.currentTier, cloudProgress.currentTier);
+    progress.claimedTiers = [...new Set([...progress.claimedTiers, ...cloudProgress.claimedTiers])];
+    if (cloudProgress.lastBattleBonusDate && (!progress.lastBattleBonusDate || cloudProgress.lastBattleBonusDate > progress.lastBattleBonusDate)) {
+      progress.lastBattleBonusDate = cloudProgress.lastBattleBonusDate;
+    }
+  }
+
+  for (const [challengeDate, cloudProgress] of Object.entries(cloud.progression.dailyChallenges)) {
+    const progress = state.progression.dailyChallenges[challengeDate];
+    if (!progress) {
+      state.progression.dailyChallenges[challengeDate] = structuredClone(cloudProgress);
+      continue;
+    }
+    progress.completed ||= cloudProgress.completed;
+    progress.rewardClaimed ||= cloudProgress.rewardClaimed;
+    progress.completedAt ??= cloudProgress.completedAt;
+  }
+}
+
 /**
  * Selects the newest durable snapshot during sign-in hydration. `saveRevision` handles all new
  * saves; the opening/campaign checks recover progress created by builds that predate revisions.
@@ -48,6 +87,7 @@ export function selectHydratedGameState(local: PlayerState, cloud: PlayerState |
 
   const state = structuredClone(selected);
   state.campaignWins = [...new Set([...cloud.campaignWins, ...local.campaignWins])];
+  mergeAuthoritativeProgression(state, cloud);
   const cloudNeedsUpdate = selected === local
     || state.campaignWins.some((stageId) => !cloud.campaignWins.includes(stageId));
   return { state, cloudNeedsUpdate };

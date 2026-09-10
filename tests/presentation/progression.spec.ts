@@ -50,13 +50,22 @@ test("dashboard presents the Daily Pack, Daily Challenge, and Season Pass", asyn
 
 test("Season Pass renders all fifty tiers and emphasizes the finale", async ({ page }) => {
   await progressionFixture(page, (state) => {
-    state.progression.seasons["season-01"] = { seasonId: "season-01", seasonXp: 15000, currentTier: 50, claimedTiers: [], updatedAt: new Date().toISOString() };
+    state.progression.seasons["season-01"] = { seasonId: "season-01", seasonXp: 15000, currentTier: 50, claimedTiers: [1, 2], updatedAt: new Date().toISOString() };
   });
   await page.goto("/season-pass");
-  await expect(page.getByRole("list", { name: "Season reward tiers" }).getByRole("listitem")).toHaveCount(50);
+  const rewardList = page.getByRole("list", { name: "Season reward tiers" });
+  await expect(rewardList.getByRole("listitem")).toHaveCount(50);
   await expect(page.locator(".season-tier.milestone")).toHaveCount(5);
-  const swiftReward = page.getByRole("listitem").filter({ hasText: "TIER 10" });
-  await expect(swiftReward).toContainText("Swift · Illustration Rare");
+  const coinReward = rewardList.getByRole("listitem").nth(0);
+  const xpReward = rewardList.getByRole("listitem").nth(1);
+  const packReward = rewardList.getByRole("listitem").nth(2);
+  await expect(coinReward.locator("img")).toHaveAttribute("src", /art\/rewards\/coins\.webp$/);
+  await expect(coinReward.locator(".season-reward-amount")).toHaveText("+250");
+  await expect(coinReward.locator(".season-claimed-stamp")).toHaveText("CLAIMED");
+  await expect(xpReward.locator("img")).toHaveAttribute("src", /art\/rewards\/xp-boost\.webp$/);
+  await expect(packReward.locator("img")).toHaveAttribute("src", /art\/packs\/standard\.webp$/);
+  const swiftReward = rewardList.getByRole("listitem").nth(9);
+  await expect(swiftReward).toContainText("Swift · Ascendant Art");
   await expect(swiftReward.locator("img")).toHaveAttribute("src", /season_01_ir_01\.webp$/);
   await expect(page.locator(".season-tier.finale")).toContainText("Season Finale");
   await expect(page.locator(".season-tier.finale img")).toHaveAttribute("src", /season_01_ir_finale\.webp$/);
@@ -77,7 +86,7 @@ test("Daily Pack uses the existing opening flow and returns to the dashboard", a
   const claimed = structuredClone(initial);
   grantStandardPack(claimed, "daily", "Daily Standard Pack");
   claimed.progression.lastDailyPackClaimAt = new Date().toISOString();
-  await page.route("**/api/progression/daily-pack", (route) => route.fulfill({ json: { state: claimed } }));
+  await page.route("**/api/progression/daily-pack", (route) => route.fulfill({ json: { state: claimed, granted: true } }));
   await page.goto("/game");
   await page.getByRole("dialog", { name: "Your Daily Pack is ready" }).getByRole("button", { name: "Open Pack" }).click();
   await expect(page).toHaveURL(/\/open$/);
@@ -87,4 +96,34 @@ test("Daily Pack uses the existing opening flow and returns to the dashboard", a
   await page.getByRole("link", { name: /Return to dashboard/ }).click();
   await expect(page).toHaveURL(/\/game$/);
   await expect(page.getByRole("dialog", { name: "Your Daily Pack is ready" })).toHaveCount(0);
+});
+
+test("an already claimed Season reward is reconciled without showing an error", async ({ page }) => {
+  const initial = await progressionFixture(page, (state) => {
+    state.progression.seasons["season-01"] = { seasonId: "season-01", seasonXp: 0, currentTier: 1, claimedTiers: [], updatedAt: new Date().toISOString() };
+  });
+  const reconciled = structuredClone(initial);
+  reconciled.progression.seasons["season-01"].claimedTiers = [1];
+  await page.route("**/api/progression/claim", (route) => route.fulfill({ json: { state: reconciled, alreadyClaimed: true } }));
+
+  await page.goto("/season-pass");
+  const tierOne = page.getByRole("list", { name: "Season reward tiers" }).getByRole("listitem").filter({ hasText: "TIER 1" });
+  await tierOne.getByRole("button", { name: "Claim" }).click();
+
+  await expect(tierOne.locator(".season-claimed-stamp")).toHaveText("CLAIMED");
+  await expect(tierOne.getByRole("button", { name: "Claim" })).toHaveCount(0);
+});
+
+test("a stale Daily Pack prompt closes when the server says it was already claimed", async ({ page }) => {
+  const initial = await progressionFixture(page);
+  const reconciled = structuredClone(initial);
+  reconciled.progression.lastDailyPackClaimAt = new Date().toISOString();
+  await page.route("**/api/progression/daily-pack", (route) => route.fulfill({ json: { state: reconciled, granted: false } }));
+
+  await page.goto("/game");
+  await page.getByRole("dialog", { name: "Your Daily Pack is ready" }).getByRole("button", { name: "Open Pack" }).click();
+
+  await expect(page).toHaveURL(/\/game$/);
+  await expect(page.getByRole("dialog", { name: "Your Daily Pack is ready" })).toHaveCount(0);
+  await expect(page.locator(".retention-grid .daily-pack-card")).toContainText("Next Pack");
 });

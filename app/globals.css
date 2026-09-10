@@ -11703,19 +11703,28 @@ html[data-reduced-motion="true"] .apex-sequence {
 .season-hero-stats span { display: grid; gap: 3px; }
 .season-hero-stats b { font-size: 18px; }
 .season-hero-stats small { color: #8f96a3; }
-.season-track { display: grid; grid-auto-flow: column; grid-auto-columns: 185px; gap: 10px; margin-top: 22px; padding: 4px 4px 16px; overflow-x: auto; scroll-snap-type: x proximity; }
-.season-tier { position: relative; display: flex; flex-direction: column; min-height: 225px; padding: 16px; opacity: .7; background: #11141b; border: 1px solid #262b35; border-radius: 10px; scroll-snap-align: start; }
-.season-tier.unlocked { opacity: 1; border-color: rgba(242, 193, 78, .34); }
-.season-tier.claimed { background: rgba(58, 72, 57, .35); }
-.season-tier.milestone { box-shadow: inset 0 0 22px rgba(242, 193, 78, .09); }
-.season-tier.finale { border-color: #f2c14e; background: radial-gradient(circle at 50% 20%, rgba(242, 193, 78, .22), transparent 55%), #17130c; }
-.tier-number { color: #b89546; font-size: 9px; font-weight: 800; letter-spacing: .14em; }
-.tier-icon { display: grid; place-items: center; width: 46px; height: 46px; margin: 16px 0 10px; color: var(--gold); border: 1px solid rgba(242, 193, 78, .2); border-radius: 50%; }
-.tier-icon.card-reward { width: 58px; height: 80px; overflow: hidden; border-radius: 5px; }
-.tier-icon.card-reward img { width: 100%; height: 100%; object-fit: cover; }
-.season-tier h3 { flex: 1; margin: 0; font-size: 14px; line-height: 1.35; }
-.season-tier > small { margin: 8px 0; color: #858c99; }
-.season-tier .button.small { min-height: 34px; padding: 6px 10px; font-size: 10px; }
+.season-track { display: grid; grid-auto-flow: column; grid-auto-columns: 204px; gap: 14px; margin-top: 22px; padding: 6px 4px 20px; overflow-x: auto; scroll-snap-type: x proximity; }
+.season-tier { position: relative; aspect-ratio: 2 / 3; min-height: 0; overflow: hidden; color: #fff; background: #090a0e; border: 2px solid #30343d; border-radius: 12px; box-shadow: 0 12px 28px #0008; scroll-snap-align: start; isolation: isolate; }
+.season-reward-art { position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: filter .2s ease, transform .2s ease; }
+.season-tier-vignette { position: absolute; z-index: -1; inset: 0; background: linear-gradient(180deg, #05060a99 0%, transparent 22%, transparent 60%, #05060af2 88%); pointer-events: none; }
+.season-tier.locked .season-reward-art { filter: grayscale(.8) brightness(.42); }
+.season-tier.unlocked { border-color: rgba(242, 193, 78, .72); }
+.season-tier.unlocked:hover .season-reward-art { transform: scale(1.018); }
+.season-tier.claimed { border-color: #6ed49a; box-shadow: 0 0 0 1px #6ed49a55, 0 12px 28px #0008; }
+.season-tier.claimed::after { content: ""; position: absolute; inset: 0; background: rgba(31, 96, 62, .16); pointer-events: none; }
+.season-tier.milestone { box-shadow: 0 0 24px rgba(242, 193, 78, .18), 0 12px 28px #0008; }
+.season-tier.finale { border-color: #f2c14e; box-shadow: 0 0 34px rgba(242, 193, 78, .32), 0 16px 34px #000a; }
+.tier-number { position: absolute; z-index: 2; top: 10px; left: 10px; padding: 5px 8px; color: #fff4ce; background: #08090dcc; border: 1px solid #d9b85688; border-radius: 999px; font-size: 10px; font-weight: 900; letter-spacing: .13em; }
+.season-reward-amount { position: absolute; z-index: 2; top: 28%; left: 50%; min-width: 72%; padding: 6px 8px; transform: translateX(-50%); color: #fff7da; text-align: center; text-shadow: 0 2px 4px #000, 0 0 18px #000; font-family: Georgia, serif; font-size: 24px; line-height: 1; letter-spacing: .04em; }
+.season-tier-copy { position: absolute; z-index: 2; right: 10px; bottom: 48px; left: 10px; padding: 8px; text-align: center; background: #090b11d9; border: 1px solid #c6a34b66; border-radius: 7px; backdrop-filter: blur(3px); }
+.season-tier-copy h3 { margin: 0; font-size: 12px; line-height: 1.25; }
+.season-tier-copy small { display: block; margin-top: 3px; color: #d9cda9; font-size: 10px; }
+.season-claim-button, .season-claimed-stamp, .season-locked-stamp { position: absolute; z-index: 3; right: 10px; bottom: 10px; left: 10px; min-height: 31px; }
+.season-claim-button { width: calc(100% - 20px); padding: 5px 10px; }
+.season-claimed-stamp, .season-locked-stamp { display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 6px; font-size: 10px; font-weight: 900; letter-spacing: .12em; }
+.season-claimed-stamp { color: #d9ffe8; background: #174a31e8; border: 1px solid #6ed49a; }
+.season-locked-stamp { color: #d4d7df; background: #11141be8; border: 1px solid #555c68; }
+.season-claimed-stamp svg, .season-locked-stamp svg { width: 14px; height: 14px; }
 .inventory-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
 .inventory-summary { display: flex; align-items: center; gap: 12px; padding: 15px; color: #e5e1d6; background: #11141b; border: 1px solid #282d36; border-radius: 9px; }
 .inventory-summary > svg:last-child { margin-left: auto; }
