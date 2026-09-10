@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     }
 
     const prisma = getPrisma();
-    const result = await prisma.$transaction(async (tx) => {
+    const runClaim = () => prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${identity.uid}, 0))`;
       const user = await tx.user.findFirst({
         where: { OR: [{ supabaseAuthId: identity.uid }, { email: identity.email }] },
@@ -165,6 +165,15 @@ export async function POST(request: Request) {
       }
       return { state: next, alreadyClaimed };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10_000, timeout: 30_000 });
+    let result;
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        result = await runClaim();
+        break;
+      } catch (cause) {
+        if (!(cause instanceof Prisma.PrismaClientKnownRequestError) || cause.code !== "P2034" || attempt >= 2) throw cause;
+      }
+    }
     return NextResponse.json(result, { headers: { "Cache-Control": "private, no-store" } });
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : "";

@@ -54,6 +54,15 @@ describe("Season Pass", () => {
     const regularMonth = 30 * (6 * 20 + 6 * 30 + 50 + 150); const casualMonth = 10 * (20 + 30 + 50) + 5 * 150;
     expect(regularMonth).toBeGreaterThanOrEqual(15000); expect(tierForXp(casualMonth)).toBeLessThan(15);
   });
+  it("awards the configured Season XP for completed and won battles", () => {
+    const state = stateAt(); const firstBattle = new Date("2026-09-10T10:00:00Z");
+    applyProgressEvent(state, { type: "BATTLE_COMPLETED", battleId: "first" }, firstBattle);
+    expect(seasonProgressFor(state, firstBattle).seasonXp).toBe(70);
+    applyProgressEvent(state, { type: "BATTLE_WON", battleId: "first" }, firstBattle);
+    expect(seasonProgressFor(state, firstBattle).seasonXp).toBe(100);
+    applyProgressEvent(state, { type: "BATTLE_COMPLETED", battleId: "second" }, new Date("2026-09-10T12:00:00Z"));
+    expect(seasonProgressFor(state, firstBattle).seasonXp).toBe(120);
+  });
   it("preserves old progress when a new configured Season starts", () => {
     const state = stateAt(); const first = seasonProgressFor(state, new Date("2026-09-10T00:00:00Z")); first.seasonXp = 900;
     state.progression.configuration = { ...defaultProgressionConfig(), season: { ...defaultProgressionConfig().season, id: "season-02", number: 2, startsAt: "2026-10-01T00:00:00Z", endsAt: "2026-10-31T00:00:00Z" } };

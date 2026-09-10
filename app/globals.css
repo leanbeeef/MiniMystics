@@ -12007,15 +12007,65 @@ html[data-reduced-motion="true"] .apex-sequence {
 .season-hero-stats small {
   color: #8f96a3;
 }
+.season-xp-guide {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 900px;
+  margin: 16px 0 0;
+  color: #d9cda9;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.season-xp-guide svg {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  color: var(--gold);
+}
+.season-track-shell {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+}
 .season-track {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 204px;
   gap: 14px;
-  margin-top: 22px;
   padding: 6px 4px 20px;
   overflow-x: auto;
+  scrollbar-width: none;
   scroll-snap-type: x proximity;
+  scroll-behavior: smooth;
+}
+.season-track::-webkit-scrollbar {
+  display: none;
+}
+.season-track-arrow {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 64px;
+  padding: 0;
+  color: #fff4ce;
+  background: #171b24e8;
+  border: 1px solid rgba(242, 193, 78, 0.52);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.season-track-arrow:hover {
+  color: #11141b;
+  background: var(--gold);
+}
+.season-track-arrow svg {
+  width: 22px;
+  height: 22px;
 }
 .season-tier {
   position: relative;

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarCheck, Check, Coins, Gift, LockKeyhole, PackageOpen, Sparkles, Timer, Trophy } from "lucide-react";
-import { useEffect, useState } from "react";
+import { CalendarCheck, Check, ChevronLeft, ChevronRight, Coins, Gift, LockKeyhole, PackageOpen, Sparkles, Timer, Trophy } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useGame } from "./game-provider";
 import { challengeForDate, dailyPackAvailableAt, isDailyPackAvailable, nextUtcDay, progressionConfig, utcDateKey } from "@/lib/progression/state";
 import type { ChallengeProgress } from "@/lib/progression/state";
@@ -74,10 +74,11 @@ export function DailyChallengeView() {
 }
 
 export function SeasonPassView() {
-  const { state, claimSeasonTier } = useGame(); const now = useClock(); const config = progressionConfig(state); const progress = state.progression.seasons[config.season.id] ?? { seasonXp: 0, currentTier: 1, claimedTiers: [] };
+  const { state, claimSeasonTier } = useGame(); const now = useClock(); const [claimingTier, setClaimingTier] = useState<number | null>(null); const trackRef = useRef<HTMLDivElement>(null); const config = progressionConfig(state); const progress = state.progression.seasons[config.season.id] ?? { seasonXp: 0, currentTier: 1, claimedTiers: [] };
   const nextTier = Math.min(config.season.rewards.length, progress.currentTier + 1); const remaining = Math.max(0, Math.ceil((Date.parse(config.season.endsAt) - now.getTime()) / 86_400_000));
-  return <div className="page progression-page season-page"><section className="season-hero"><span className="eyebrow">SEASON {config.season.number}</span><h1>30-Day Season</h1><div className="season-hero-stats"><span><b>Tier {progress.currentTier}</b><small>Current tier</small></span><span><b>{progress.seasonXp.toLocaleString()} / {config.season.thresholds[nextTier - 1].toLocaleString()}</b><small>Season XP</small></span><span><b>{remaining} days</b><small>Remaining</small></span></div><div className="progress"><i style={{ width: `${progress.seasonXp / config.season.thresholds.at(-1)! * 100}%` }} /></div><p>Next Reward: {config.season.rewards[nextTier - 1]?.label ?? "Season complete"}</p></section>
-    <div className="season-track" role="list" aria-label="Season reward tiers">{config.season.rewards.map((reward, index) => {
+  const scrollTrack = (direction: number) => trackRef.current?.scrollBy({ left: direction * trackRef.current.clientWidth * 0.82, behavior: "smooth" });
+  return <div className="page progression-page season-page"><section className="season-hero"><span className="eyebrow">SEASON {config.season.number}</span><h1>30-Day Season</h1><div className="season-hero-stats"><span><b>Tier {progress.currentTier}</b><small>Current tier</small></span><span><b>{progress.seasonXp.toLocaleString()} / {config.season.thresholds[nextTier - 1].toLocaleString()}</b><small>Season XP</small></span><span><b>{remaining} days</b><small>Remaining</small></span></div><div className="progress"><i style={{ width: `${progress.seasonXp / config.season.thresholds.at(-1)! * 100}%` }} /></div><p>Next Reward: {config.season.rewards[nextTier - 1]?.label ?? "Season complete"}</p><p className="season-xp-guide"><Sparkles /> Earn Season XP by completing a battle (+{config.season.xpSources.battleComplete}), winning a battle (+{config.season.xpSources.battleWin}), earning the first-battle-of-the-day bonus (+{config.season.xpSources.firstBattleOfDay}), and claiming Daily Challenge rewards.</p></section>
+    <div className="season-track-shell"><button className="season-track-arrow" type="button" aria-label="Previous season tiers" title="Previous season tiers" onClick={() => scrollTrack(-1)}><ChevronLeft /></button><div className="season-track" ref={trackRef} role="list" aria-label="Season reward tiers">{config.season.rewards.map((reward, index) => {
       const tier = index + 1;
       const unlocked = progress.currentTier >= tier;
       const claimed = progress.claimedTiers.includes(tier);
@@ -93,10 +94,10 @@ export function SeasonPassView() {
         {claimed
           ? <span className="season-claimed-stamp"><Check />CLAIMED</span>
           : unlocked && !placeholder
-            ? <button className="button small season-claim-button" onClick={() => void claimSeasonTier(tier).catch(() => undefined)}>Claim</button>
+            ? <button className="button small season-claim-button" disabled={claimingTier !== null} onClick={() => { setClaimingTier(tier); void claimSeasonTier(tier).catch(() => undefined).finally(() => setClaimingTier(current => current === tier ? null : current)); }}>Claim</button>
             : <span className="season-locked-stamp"><LockKeyhole />{placeholder ? "Coming soon" : "Locked"}</span>}
       </article>;
-    })}</div>
+    })}</div><button className="season-track-arrow" type="button" aria-label="Next season tiers" title="Next season tiers" onClick={() => scrollTrack(1)}><ChevronRight /></button></div>
   </div>;
 }
 
