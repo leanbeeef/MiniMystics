@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic";
 type SyncBody = {
   state?: PlayerState;
   activity?: { type?: string; payload?: Record<string, unknown> };
+  precedingActivities?: { type?: string; payload?: Record<string, unknown> }[];
 };
 
 type PersistedProgression = {
@@ -123,7 +124,7 @@ async function findOrCreateUser(identity: Awaited<ReturnType<typeof requireSupab
   return user;
 }
 
-async function synchronizeState(identity: Awaited<ReturnType<typeof requireSupabaseUser>>, state: PlayerState, activity: SyncBody["activity"]) {
+async function synchronizeState(identity: Awaited<ReturnType<typeof requireSupabaseUser>>, state: PlayerState, activity: SyncBody["activity"], precedingActivities: NonNullable<SyncBody["precedingActivities"]> = []) {
   const prisma = getPrisma();
   const user = await findOrCreateUser(identity, state.account?.username ?? "Handler");
   const profileInput = state.profile;
@@ -214,9 +215,10 @@ async function synchronizeState(identity: Awaited<ReturnType<typeof requireSupab
       update: { state: asJson(state), version: { increment: 1 } },
     });
 
-    if (activity?.type) {
-      await tx.gameActivity.create({
-        data: { profileId: profile.id, type: activity.type.slice(0, 80), payload: activity.payload ? asJson(activity.payload) : undefined },
+    const activities = [...precedingActivities, activity].filter((item) => typeof item?.type === "string" && item.type);
+    if (activities.length) {
+      await tx.gameActivity.createMany({
+        data: activities.map(item => ({ profileId: profile.id, type: item!.type!.slice(0, 80), payload: item!.payload ? asJson(item!.payload) : undefined })),
       });
     }
 
@@ -437,7 +439,10 @@ export async function POST(request: Request) {
     }
     body.state.progression ??= emptyProgression();
     body.state.progression.configuration = await getRuntimeProgressionConfig(getPrisma());
-    const result = await synchronizeState(identity, body.state, body.activity);
+    if (body.precedingActivities !== undefined && (!Array.isArray(body.precedingActivities) || body.precedingActivities.some(item => !item || typeof item.type !== "string" || item.type === "PACK_PURCHASED"))) {
+      return NextResponse.json({ error: "Invalid game activities." }, { status: 400 });
+    }
+    const result = await synchronizeState(identity, body.state, body.activity, body.precedingActivities);
     return NextResponse.json({ ok: true, ...result });
   } catch (cause) {
     return errorResponse(cause);

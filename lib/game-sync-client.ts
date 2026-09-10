@@ -41,13 +41,15 @@ export async function loadCloudGameState(): Promise<PlayerState | null> {
   return body.state ?? null;
 }
 
-export async function persistCloudGameState(state: PlayerState, type: GameActivityType, payload?: Record<string, unknown>) {
+type Activity = { type: GameActivityType; payload?: Record<string, unknown> };
+
+export async function persistCloudGameState(state: PlayerState, type: GameActivityType, payload?: Record<string, unknown>, precedingActivities: Activity[] = []) {
   const headers = await authorizationHeader();
   if (!headers) throw new Error("Sign in before saving game progress.");
   const response = await fetch("/api/game-state", {
     method: "POST",
     headers: { ...headers, "Content-Type": "application/json" },
-    body: JSON.stringify({ state, activity: { type, payload } }),
+    body: JSON.stringify({ state, activity: { type, payload }, precedingActivities }),
   });
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { error?: string } | null;
@@ -55,12 +57,42 @@ export async function persistCloudGameState(state: PlayerState, type: GameActivi
   }
 }
 
-let syncQueue = Promise.resolve();
+type PendingSave = { state: PlayerState; activities: Activity[]; resolve: () => void; reject: (cause: unknown) => void; promise: Promise<void> };
+const pendingSaves: PendingSave[] = [];
+let saving = false;
+
+async function drainSaves() {
+  if (saving) return;
+  saving = true;
+  try {
+    while (pendingSaves.length) {
+      const save = pendingSaves.shift()!;
+      const activity = save.activities.at(-1)!;
+      try {
+        await persistCloudGameState(save.state, activity.type, activity.payload, save.activities.slice(0, -1));
+        save.resolve();
+      } catch (cause) { save.reject(cause); }
+    }
+  } finally { saving = false; }
+}
 
 export function queueCloudGameState(state: PlayerState, type: GameActivityType, payload?: Record<string, unknown>) {
   const snapshot = structuredClone(state);
-  syncQueue = syncQueue
-    .catch(() => undefined)
-    .then(() => persistCloudGameState(snapshot, type, payload));
-  return syncQueue;
+  const pending = pendingSaves.at(-1);
+  // Purchases need their exact balance/opening snapshot. A progression flush is a
+  // barrier: later gameplay must not replace the snapshot a claim is waiting for.
+  if (pending && pending.state.account?.email === snapshot.account?.email
+      && snapshot.saveRevision >= pending.state.saveRevision
+      && type !== "PACK_PURCHASED"
+      && !pending.activities.some(item => item.type === "PACK_PURCHASED" || item.type === "PROGRESSION_SYNC")) {
+    pending.state = snapshot;
+    pending.activities.push({ type, payload });
+    return pending.promise;
+  }
+  let resolve!: () => void;
+  let reject!: (cause: unknown) => void;
+  const promise = new Promise<void>((done, fail) => { resolve = done; reject = fail; });
+  pendingSaves.push({ state: snapshot, activities: [{ type, payload }], resolve, reject, promise });
+  void drainSaves();
+  return promise;
 }

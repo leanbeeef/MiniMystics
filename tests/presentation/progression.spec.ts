@@ -114,6 +114,33 @@ test("an already claimed Season reward is reconciled without showing an error", 
   await expect(tierOne.getByRole("button", { name: "Claim" })).toHaveCount(0);
 });
 
+test("Season claims show progress, award coins, and allow retry after a failure", async ({ page }) => {
+  const initial = await progressionFixture(page);
+  const claimed = structuredClone(initial);
+  claimed.coins += 250;
+  claimed.progression.seasons["season-01"] = { seasonId: "season-01", seasonXp: 0, currentTier: 1, claimedTiers: [1], updatedAt: new Date().toISOString() };
+  let release!: () => void;
+  const responseReady = new Promise<void>(resolve => { release = resolve; });
+  let attempts = 0;
+  await page.route("**/api/progression/claim", async route => {
+    attempts += 1;
+    if (attempts === 1) {
+      await responseReady;
+      await route.fulfill({ status: 503, json: { error: "Please try claiming again." } });
+    } else await route.fulfill({ json: { state: claimed } });
+  });
+  await page.goto("/season-pass");
+  const tier = page.getByRole("list", { name: "Season reward tiers" }).getByRole("listitem").first();
+  await tier.getByRole("button", { name: "Claim", exact: true }).click();
+  await expect(tier.getByRole("button", { name: "Claiming...", exact: true })).toBeDisabled();
+  release();
+  await expect(page.locator(".toast-error")).toHaveText("Please try claiming again.");
+  await tier.getByRole("button", { name: "Claim", exact: true }).click();
+  await expect(tier.locator(".season-claimed-stamp")).toHaveText("CLAIMED");
+  await expect(page.locator(".resource-counter strong")).toHaveText(claimed.coins.toLocaleString());
+  await expect(page.locator(".toast-error")).toHaveCount(0);
+});
+
 test("a stale Daily Pack prompt closes when the server says it was already claimed", async ({ page }) => {
   const initial = await progressionFixture(page);
   const reconciled = structuredClone(initial);

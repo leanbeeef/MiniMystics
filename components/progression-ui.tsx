@@ -94,7 +94,7 @@ export function SeasonPassView() {
         {claimed
           ? <span className="season-claimed-stamp"><Check />CLAIMED</span>
           : unlocked && !placeholder
-            ? <button className="button small season-claim-button" disabled={claimingTier !== null} onClick={() => { setClaimingTier(tier); void claimSeasonTier(tier).catch(() => undefined).finally(() => setClaimingTier(current => current === tier ? null : current)); }}>Claim</button>
+            ? <button className="button small season-claim-button" disabled={claimingTier !== null} aria-busy={claimingTier === tier} onClick={() => { setClaimingTier(tier); void claimSeasonTier(tier).catch(() => undefined).finally(() => setClaimingTier(current => current === tier ? null : current)); }}>{claimingTier === tier ? "Claiming..." : "Claim"}</button>
             : <span className="season-locked-stamp"><LockKeyhole />{placeholder ? "Coming soon" : "Locked"}</span>}
       </article>;
     })}</div><button className="season-track-arrow" type="button" aria-label="Next season tiers" title="Next season tiers" onClick={() => scrollTrack(1)}><ChevronRight /></button></div>

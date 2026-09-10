@@ -444,6 +444,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not claim the Daily Challenge reward."); throw cause; }
   }, [replaceState]);
   const claimSeasonTier = useCallback(async (tier: number) => {
+    // A hydration request started before this claim must not restore its older snapshot.
+    localRevision.current += 1;
+    setError(null);
     try {
       await queueCloudGameState(stateRef.current, "PROGRESSION_SYNC");
       const next = await claimSeasonTierFromServer(tier);
