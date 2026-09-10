@@ -55,7 +55,7 @@ export const PACK_DEFINITIONS = [
     name: "Void Pack",
     description: "Five Voidbound cards.",
     cardCount: 5,
-    coinPrice: 1000,
+    coinPrice: 5000,
     theme: "Void",
     active: true,
     handlerChancePercent: 0,
