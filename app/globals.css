@@ -164,6 +164,7 @@ svg {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1.1rem;
+  padding: 9px;
 }
 .panel-title > span {
   display: flex;
@@ -11283,7 +11284,7 @@ select:focus {
   }
 }
 .damage-details {
-  display:none;
+  display: none;
   padding: 10px;
   border: 1px solid #c8ae6c44;
   border-radius: 6px;
@@ -11635,115 +11636,688 @@ html[data-reduced-motion="true"] .apex-sequence {
 }
 
 @media (max-height: 550px) and (orientation: landscape) {
- .vfx-scope-battle .battle-mystic-row { gap: 5px; padding-block: 4px; }
- .vfx-scope-battle .battle-mystic-card + .battle-mystic-card { margin-left: 0; }
- .vfx-scope-battle .battle-mystic-card:not(.size-8) .battle-card-frame { aspect-ratio: auto; height: clamp(30px, calc((100dvh - 305px) / 2), 95px); }
- .vfx-scope-battle .battle-mystic-card:not(.size-8) .battle-card-frame > img { object-fit: contain; }
- .vfx-scope-battle .battle-side-heading .battle-side-label span { display: none; }
+  .vfx-scope-battle .battle-mystic-row {
+    gap: 5px;
+    padding-block: 4px;
+  }
+  .vfx-scope-battle .battle-mystic-card + .battle-mystic-card {
+    margin-left: 0;
+  }
+  .vfx-scope-battle .battle-mystic-card:not(.size-8) .battle-card-frame {
+    aspect-ratio: auto;
+    height: clamp(30px, calc((100dvh - 305px) / 2), 95px);
+  }
+  .vfx-scope-battle .battle-mystic-card:not(.size-8) .battle-card-frame > img {
+    object-fit: contain;
+  }
+  .vfx-scope-battle .battle-side-heading .battle-side-label span {
+    display: none;
+  }
 }
 /* Physical booster presentation; all moving layers stay inside the chamber. */
-.booster-stage { --pack-energy: #d7b56d; position: relative; display: grid; justify-items: center; gap: 14px; overflow: hidden; isolation: isolate; padding: 24px 16px; text-align: center; }
-.booster-stage header { z-index: 2; }
-.booster-stage h1 { margin: 6px 0; font-size: clamp(22px, 3vw, 34px); }
-.booster-stage p { color: var(--muted); margin: 0; }
-.booster-display { position: relative; height: min(430px, 52svh); aspect-ratio: 2 / 3; margin-top: 12px; }
-.booster-object { position: absolute; inset: 0; opacity: 0; }
-.booster-wrapper, .booster-piece { position: absolute; inset: 0; width: 100%; height: 100%; }
-.booster-piece { object-fit: contain; }
-.booster-wrapper { z-index: 3; }
-.booster-interior { position: absolute; inset: 14% 8% 4%; background: #100d19; border-radius: 8%; }
-.booster-left { clip-path: polygon(0 15%, 8% 16%, 15% 14%, 23% 16%, 31% 14.5%, 39% 16%, 47% 14%, 51% 15.5%, 51% 100%, 0 100%); }
-.booster-right { clip-path: polygon(49% 15.5%, 55% 14%, 63% 16%, 71% 14%, 79% 16%, 87% 14.5%, 95% 16%, 100% 15%, 100% 100%, 49% 100%); }
-.booster-tear { clip-path: polygon(0 0, 100% 0, 100% 15.3%, 95% 16.3%, 87% 14.8%, 79% 16.3%, 71% 14.3%, 63% 16.3%, 55% 14.3%, 51% 15.8%, 47% 14.3%, 39% 16.3%, 31% 14.8%, 23% 16.3%, 15% 14.3%, 8% 16.3%, 0 15.3%); }
-.booster-glow { position: absolute; inset: -15% -35%; background: radial-gradient(ellipse, var(--pack-energy), transparent 65%); opacity: 0; z-index: 4; pointer-events: none; }
-.booster-cards { position: absolute; inset: 23% 18% 10%; z-index: 2; opacity: 0; }
-.booster-card { position: absolute; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 8px 10px #0008); }
-.booster-particle { position: absolute; left: 50%; top: 15%; width: 4px; height: 7px; background: var(--pack-energy); opacity: 0; z-index: 5; }
-.booster-hit-target { position: absolute; inset: 0; border: 0; background: transparent; cursor: pointer; z-index: 6; border-radius: 10px; }
-.booster-hit-target:focus-visible { outline: 3px solid var(--pack-energy); outline-offset: 5px; }
-.booster-hit-target:disabled { cursor: default; }
-.booster-actions { position: relative; z-index: 7; min-height: 48px; }
-.booster-actions button { min-width: 160px; min-height: 48px; }
-.booster-art-missing { padding: 30px; border: 1px solid var(--pack-energy); }
-.pack-reveal-entry { animation: pack-reveal-arrive .25s ease-out both; }
-@keyframes pack-reveal-arrive { from { opacity: 0; } to { opacity: 1; } }
+.booster-stage {
+  --pack-energy: #d7b56d;
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  overflow: hidden;
+  isolation: isolate;
+  padding: 24px 16px;
+  text-align: center;
+}
+.booster-stage header {
+  z-index: 2;
+}
+.booster-stage h1 {
+  margin: 6px 0;
+  font-size: clamp(22px, 3vw, 34px);
+}
+.booster-stage p {
+  color: var(--muted);
+  margin: 0;
+}
+.booster-display {
+  position: relative;
+  height: min(430px, 52svh);
+  aspect-ratio: 2 / 3;
+  margin-top: 12px;
+}
+.booster-object {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+.booster-wrapper,
+.booster-piece {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.booster-piece {
+  object-fit: contain;
+}
+.booster-wrapper {
+  z-index: 3;
+}
+.booster-interior {
+  position: absolute;
+  inset: 14% 8% 4%;
+  background: #100d19;
+  border-radius: 8%;
+}
+.booster-left {
+  clip-path: polygon(
+    0 15%,
+    8% 16%,
+    15% 14%,
+    23% 16%,
+    31% 14.5%,
+    39% 16%,
+    47% 14%,
+    51% 15.5%,
+    51% 100%,
+    0 100%
+  );
+}
+.booster-right {
+  clip-path: polygon(
+    49% 15.5%,
+    55% 14%,
+    63% 16%,
+    71% 14%,
+    79% 16%,
+    87% 14.5%,
+    95% 16%,
+    100% 15%,
+    100% 100%,
+    49% 100%
+  );
+}
+.booster-tear {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 15.3%,
+    95% 16.3%,
+    87% 14.8%,
+    79% 16.3%,
+    71% 14.3%,
+    63% 16.3%,
+    55% 14.3%,
+    51% 15.8%,
+    47% 14.3%,
+    39% 16.3%,
+    31% 14.8%,
+    23% 16.3%,
+    15% 14.3%,
+    8% 16.3%,
+    0 15.3%
+  );
+}
+.booster-glow {
+  position: absolute;
+  inset: -15% -35%;
+  background: radial-gradient(ellipse, var(--pack-energy), transparent 65%);
+  opacity: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+.booster-cards {
+  position: absolute;
+  inset: 23% 18% 10%;
+  z-index: 2;
+  opacity: 0;
+}
+.booster-card {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 10px #0008);
+}
+.booster-particle {
+  position: absolute;
+  left: 50%;
+  top: 15%;
+  width: 4px;
+  height: 7px;
+  background: var(--pack-energy);
+  opacity: 0;
+  z-index: 5;
+}
+.booster-hit-target {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  z-index: 6;
+  border-radius: 10px;
+}
+.booster-hit-target:focus-visible {
+  outline: 3px solid var(--pack-energy);
+  outline-offset: 5px;
+}
+.booster-hit-target:disabled {
+  cursor: default;
+}
+.booster-actions {
+  position: relative;
+  z-index: 7;
+  min-height: 48px;
+}
+.booster-actions button {
+  min-width: 160px;
+  min-height: 48px;
+}
+.booster-art-missing {
+  padding: 30px;
+  border: 1px solid var(--pack-energy);
+}
+.pack-reveal-entry {
+  animation: pack-reveal-arrive 0.25s ease-out both;
+}
+@keyframes pack-reveal-arrive {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 @media (max-height: 500px) and (orientation: landscape) {
-  .booster-stage { grid-template-columns: 1fr 1fr 1fr; width: 100%; min-height: 240px; padding: 12px; gap: 10px; }
-  .booster-display { height: min(240px, 65svh); margin: 0; }
-  .booster-stage header { max-width: 200px; }
-  .booster-actions button { min-width: 110px; }
+  .booster-stage {
+    grid-template-columns: 1fr 1fr 1fr;
+    width: 100%;
+    min-height: 240px;
+    padding: 12px;
+    gap: 10px;
+  }
+  .booster-display {
+    height: min(240px, 65svh);
+    margin: 0;
+  }
+  .booster-stage header {
+    max-width: 200px;
+  }
+  .booster-actions button {
+    min-width: 110px;
+  }
 }
 
 /* Player retention: daily loop, challenge progress, and Season reward track. */
-.nav-entry { display: contents; }
-.nav-group-label { padding: 13px 12px 3px; color: #726d63; font-size: 8px; letter-spacing: .18em; }
-.nav-collapsed .nav-group-label { height: 1px; padding: 0; overflow: hidden; color: transparent; border-top: 1px solid rgba(230, 203, 122, .1); }
-.retention-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }
-.retention-card { position: relative; display: flex; align-items: center; gap: 14px; min-width: 0; padding: 18px; overflow: hidden; background: linear-gradient(145deg, rgba(24, 27, 35, .96), rgba(12, 14, 19, .96)); border: 1px solid rgba(230, 203, 122, .14); border-radius: 12px; }
-.retention-card.ready, .retention-card.complete { border-color: rgba(242, 193, 78, .45); box-shadow: inset 0 0 28px rgba(242, 193, 78, .05); }
-.retention-icon { display: grid; flex: 0 0 42px; place-items: center; width: 42px; height: 42px; color: var(--gold); background: rgba(242, 193, 78, .08); border: 1px solid rgba(242, 193, 78, .18); border-radius: 50%; }
-.retention-icon svg { width: 20px; }
-.retention-main, .retention-card > div { flex: 1; min-width: 0; }
-.retention-card small { color: #b89546; font-size: 9px; font-weight: 800; letter-spacing: .13em; }
-.retention-card h2 { margin: 4px 0; font-size: 18px; }
-.retention-card p { margin: 3px 0; color: #aeb4bf; font-size: 12px; }
-.retention-card > .button { flex: 0 0 auto; }
-.retention-timer, .claimed-label { display: inline-flex; align-items: center; gap: 6px; color: #d9c17b; font-size: 12px; font-weight: 700; }
-.retention-timer svg, .claimed-label svg, .reward-copy svg, .next-copy svg { width: 15px; height: 15px; }
-.challenge-requirements { display: grid; gap: 8px; margin: 12px 0; }
-.challenge-requirements > div > span { display: block; margin-bottom: 4px; color: #c7cbd3; font-size: 11px; }
-.challenge-requirements .progress { height: 5px; }
-.reward-copy, .next-copy { display: flex; align-items: center; gap: 6px; }
-.progression-page { max-width: 1400px; }
-.progression-page > .daily-challenge-card { min-height: 260px; align-items: flex-start; padding: clamp(22px, 4vw, 42px); }
-.progression-page > .daily-challenge-card h2 { font-size: clamp(25px, 4vw, 42px); }
-.season-hero { padding: clamp(22px, 4vw, 42px); background: radial-gradient(circle at 80% 20%, rgba(242, 193, 78, .14), transparent 45%), #11141b; border: 1px solid rgba(242, 193, 78, .25); border-radius: 14px; }
-.season-hero h1 { margin: 8px 0 20px; font-size: clamp(30px, 5vw, 54px); }
-.season-hero-stats { display: flex; flex-wrap: wrap; gap: 30px; margin-bottom: 18px; }
-.season-hero-stats span { display: grid; gap: 3px; }
-.season-hero-stats b { font-size: 18px; }
-.season-hero-stats small { color: #8f96a3; }
-.season-track { display: grid; grid-auto-flow: column; grid-auto-columns: 204px; gap: 14px; margin-top: 22px; padding: 6px 4px 20px; overflow-x: auto; scroll-snap-type: x proximity; }
-.season-tier { position: relative; aspect-ratio: 2 / 3; min-height: 0; overflow: hidden; color: #fff; background: #090a0e; border: 2px solid #30343d; border-radius: 12px; box-shadow: 0 12px 28px #0008; scroll-snap-align: start; isolation: isolate; }
-.season-reward-art { position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: filter .2s ease, transform .2s ease; }
-.season-tier-vignette { position: absolute; z-index: -1; inset: 0; background: linear-gradient(180deg, #05060a99 0%, transparent 22%, transparent 60%, #05060af2 88%); pointer-events: none; }
-.season-tier.locked .season-reward-art { filter: grayscale(.8) brightness(.42); }
-.season-tier.unlocked { border-color: rgba(242, 193, 78, .72); }
-.season-tier.unlocked:hover .season-reward-art { transform: scale(1.018); }
-.season-tier.claimed { border-color: #6ed49a; box-shadow: 0 0 0 1px #6ed49a55, 0 12px 28px #0008; }
-.season-tier.claimed::after { content: ""; position: absolute; inset: 0; background: rgba(31, 96, 62, .16); pointer-events: none; }
-.season-tier.milestone { box-shadow: 0 0 24px rgba(242, 193, 78, .18), 0 12px 28px #0008; }
-.season-tier.finale { border-color: #f2c14e; box-shadow: 0 0 34px rgba(242, 193, 78, .32), 0 16px 34px #000a; }
-.tier-number { position: absolute; z-index: 2; top: 10px; left: 10px; padding: 5px 8px; color: #fff4ce; background: #08090dcc; border: 1px solid #d9b85688; border-radius: 999px; font-size: 10px; font-weight: 900; letter-spacing: .13em; }
-.season-reward-amount { position: absolute; z-index: 2; top: 28%; left: 50%; min-width: 72%; padding: 6px 8px; transform: translateX(-50%); color: #fff7da; text-align: center; text-shadow: 0 2px 4px #000, 0 0 18px #000; font-family: Georgia, serif; font-size: 24px; line-height: 1; letter-spacing: .04em; }
-.season-tier-copy { position: absolute; z-index: 2; right: 10px; bottom: 48px; left: 10px; padding: 8px; text-align: center; background: #090b11d9; border: 1px solid #c6a34b66; border-radius: 7px; backdrop-filter: blur(3px); }
-.season-tier-copy h3 { margin: 0; font-size: 12px; line-height: 1.25; }
-.season-tier-copy small { display: block; margin-top: 3px; color: #d9cda9; font-size: 10px; }
-.season-claim-button, .season-claimed-stamp, .season-locked-stamp { position: absolute; z-index: 3; right: 10px; bottom: 10px; left: 10px; min-height: 31px; }
-.season-claim-button { width: calc(100% - 20px); padding: 5px 10px; }
-.season-claimed-stamp, .season-locked-stamp { display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 6px; font-size: 10px; font-weight: 900; letter-spacing: .12em; }
-.season-claimed-stamp { color: #d9ffe8; background: #174a31e8; border: 1px solid #6ed49a; }
-.season-locked-stamp { color: #d4d7df; background: #11141be8; border: 1px solid #555c68; }
-.season-claimed-stamp svg, .season-locked-stamp svg { width: 14px; height: 14px; }
-.inventory-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-.inventory-summary { display: flex; align-items: center; gap: 12px; padding: 15px; color: #e5e1d6; background: #11141b; border: 1px solid #282d36; border-radius: 9px; }
-.inventory-summary > svg:last-child { margin-left: auto; }
-.inventory-summary span { display: grid; }
-.inventory-summary small { color: #9d8548; font-size: 9px; letter-spacing: .12em; }
-.essence-panel { margin: 16px 0 24px; }
-.essence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 18px; margin-top: 14px; }
-.essence-grid > div { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 9px; padding: 8px; border-left: 2px solid var(--order-color); background: rgba(255,255,255,.025); }
-.essence-grid img, .essence-grid svg { width: 24px; height: 24px; object-fit: contain; }
-.inventory-section-title { margin: 24px 0 12px; font-size: 18px; }
-.daily-pack-modal { display: grid; justify-items: center; text-align: center; }
-.daily-pack-modal > svg { width: 58px; height: 58px; color: var(--gold); }
-.notification-center { position: relative; }
-.notification-center .notifications { position: relative; }
-.notification-center .notifications i { position: absolute; top: -5px; right: -5px; display: grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; color: #160f05; background: var(--gold); border-radius: 10px; font-size: 9px; font-style: normal; font-weight: 900; }
-.notification-panel { position: absolute; z-index: 80; top: 46px; right: 0; width: min(330px, 85vw); padding: 14px; background: #11141b; border: 1px solid #393327; border-radius: 10px; box-shadow: 0 18px 45px #000a; }
-.notification-panel h3 { margin: 0 0 10px; }
-.notification-panel button { display: grid; width: 100%; padding: 10px; text-align: left; color: #e5e1d6; background: rgba(255,255,255,.025); border: 0; border-bottom: 1px solid #272b32; cursor: pointer; }
-.notification-panel button small { color: #9d8548; }
-.notification-panel p { color: #8f96a3; }
-@media (max-width: 1050px) { .retention-grid { grid-template-columns: 1fr; } }
-@media (max-width: 650px) { .retention-card { align-items: flex-start; flex-wrap: wrap; } .retention-card > .button { width: 100%; } .essence-grid, .inventory-sections { grid-template-columns: 1fr; } }
+.nav-entry {
+  display: contents;
+}
+.nav-group-label {
+  padding: 13px 12px 3px;
+  color: #726d63;
+  font-size: 8px;
+  letter-spacing: 0.18em;
+}
+.nav-collapsed .nav-group-label {
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  color: transparent;
+  border-top: 1px solid rgba(230, 203, 122, 0.1);
+}
+.retention-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+.retention-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+  overflow: hidden;
+  background: linear-gradient(
+    145deg,
+    rgba(24, 27, 35, 0.96),
+    rgba(12, 14, 19, 0.96)
+  );
+  border: 1px solid rgba(230, 203, 122, 0.14);
+  border-radius: 12px;
+}
+.retention-card.ready,
+.retention-card.complete {
+  border-color: rgba(242, 193, 78, 0.45);
+  box-shadow: inset 0 0 28px rgba(242, 193, 78, 0.05);
+}
+.retention-icon {
+  display: grid;
+  flex: 0 0 42px;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  color: var(--gold);
+  background: rgba(242, 193, 78, 0.08);
+  border: 1px solid rgba(242, 193, 78, 0.18);
+  border-radius: 50%;
+}
+.retention-icon svg {
+  width: 20px;
+}
+.retention-main,
+.retention-card > div {
+  flex: 1;
+  min-width: 0;
+}
+.retention-card small {
+  color: #b89546;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+.retention-card h2 {
+  margin: 4px 0;
+  font-size: 18px;
+}
+.retention-card p {
+  margin: 3px 0;
+  color: #aeb4bf;
+  font-size: 12px;
+}
+.retention-card > .button {
+  flex: 0 0 auto;
+}
+.retention-timer,
+.claimed-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #d9c17b;
+  font-size: 12px;
+  font-weight: 700;
+}
+.retention-timer svg,
+.claimed-label svg,
+.reward-copy svg,
+.next-copy svg {
+  width: 15px;
+  height: 15px;
+}
+.challenge-requirements {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+.challenge-requirements > div > span {
+  display: block;
+  margin-bottom: 4px;
+  color: #c7cbd3;
+  font-size: 11px;
+}
+.challenge-requirements .progress {
+  height: 5px;
+}
+.reward-copy,
+.next-copy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.progression-page {
+  max-width: 1400px;
+}
+.progression-page > .daily-challenge-card {
+  min-height: 260px;
+  align-items: flex-start;
+  padding: clamp(22px, 4vw, 42px);
+}
+.progression-page > .daily-challenge-card h2 {
+  font-size: clamp(25px, 4vw, 42px);
+}
+.season-hero {
+  padding: clamp(22px, 4vw, 42px);
+  background:
+    radial-gradient(
+      circle at 80% 20%,
+      rgba(242, 193, 78, 0.14),
+      transparent 45%
+    ),
+    #11141b;
+  border: 1px solid rgba(242, 193, 78, 0.25);
+  border-radius: 14px;
+}
+.season-hero h1 {
+  margin: 8px 0 20px;
+  font-size: clamp(30px, 5vw, 54px);
+}
+.season-hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  margin-bottom: 18px;
+}
+.season-hero-stats span {
+  display: grid;
+  gap: 3px;
+}
+.season-hero-stats b {
+  font-size: 18px;
+}
+.season-hero-stats small {
+  color: #8f96a3;
+}
+.season-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 204px;
+  gap: 14px;
+  margin-top: 22px;
+  padding: 6px 4px 20px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+}
+.season-tier {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  min-height: 0;
+  overflow: hidden;
+  color: #fff;
+  background: #090a0e;
+  border: 2px solid #30343d;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px #0008;
+  scroll-snap-align: start;
+  isolation: isolate;
+}
+.season-reward-art {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition:
+    filter 0.2s ease,
+    transform 0.2s ease;
+}
+.season-tier-vignette {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    #05060a99 0%,
+    transparent 22%,
+    transparent 60%,
+    #05060af2 88%
+  );
+  pointer-events: none;
+}
+.season-tier.locked .season-reward-art {
+  filter: grayscale(0.8) brightness(0.42);
+}
+.season-tier.unlocked {
+  border-color: rgba(242, 193, 78, 0.72);
+}
+.season-tier.unlocked:hover .season-reward-art {
+  transform: scale(1.018);
+}
+.season-tier.claimed {
+  border-color: #6ed49a;
+  box-shadow:
+    0 0 0 1px #6ed49a55,
+    0 12px 28px #0008;
+}
+.season-tier.claimed::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(31, 96, 62, 0.16);
+  pointer-events: none;
+}
+.season-tier.milestone {
+  box-shadow:
+    0 0 24px rgba(242, 193, 78, 0.18),
+    0 12px 28px #0008;
+}
+.season-tier.finale {
+  border-color: #f2c14e;
+  box-shadow:
+    0 0 34px rgba(242, 193, 78, 0.32),
+    0 16px 34px #000a;
+}
+.tier-number {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  left: 10px;
+  padding: 5px 8px;
+  color: #fff4ce;
+  background: #08090dcc;
+  border: 1px solid #d9b85688;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+}
+.season-reward-amount {
+  position: absolute;
+  z-index: 2;
+  top: 28%;
+  left: 50%;
+  min-width: 72%;
+  padding: 6px 8px;
+  transform: translateX(-50%);
+  color: #fff7da;
+  text-align: center;
+  text-shadow:
+    0 2px 4px #000,
+    0 0 18px #000;
+  font-family: Georgia, serif;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+.season-tier-copy {
+  position: absolute;
+  z-index: 2;
+  right: 10px;
+  bottom: 48px;
+  left: 10px;
+  padding: 8px;
+  text-align: center;
+  background: #090b11d9;
+  border: 1px solid #c6a34b66;
+  border-radius: 7px;
+  backdrop-filter: blur(3px);
+}
+.season-tier-copy h3 {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.25;
+}
+.season-tier-copy small {
+  display: block;
+  margin-top: 3px;
+  color: #d9cda9;
+  font-size: 10px;
+}
+.season-claim-button,
+.season-claimed-stamp,
+.season-locked-stamp {
+  position: absolute;
+  z-index: 3;
+  right: 10px;
+  bottom: 10px;
+  left: 10px;
+  min-height: 31px;
+}
+.season-claim-button {
+  width: calc(100% - 20px);
+  padding: 5px 10px;
+}
+.season-claimed-stamp,
+.season-locked-stamp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+.season-claimed-stamp {
+  color: #d9ffe8;
+  background: #174a31e8;
+  border: 1px solid #6ed49a;
+}
+.season-locked-stamp {
+  color: #d4d7df;
+  background: #11141be8;
+  border: 1px solid #555c68;
+}
+.season-claimed-stamp svg,
+.season-locked-stamp svg {
+  width: 14px;
+  height: 14px;
+}
+.inventory-sections {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.inventory-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  color: #e5e1d6;
+  background: #11141b;
+  border: 1px solid #282d36;
+  border-radius: 9px;
+}
+.inventory-summary > svg:last-child {
+  margin-left: auto;
+}
+.inventory-summary span {
+  display: grid;
+}
+.inventory-summary small {
+  color: #9d8548;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+.essence-panel {
+  margin: 16px 0 24px;
+}
+.essence-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 18px;
+  margin-top: 14px;
+}
+.essence-grid > div {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 9px;
+  padding: 8px;
+  border-left: 2px solid var(--order-color);
+  background: rgba(255, 255, 255, 0.025);
+}
+.essence-grid img,
+.essence-grid svg {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 50%;
+}
+.inventory-section-title {
+  margin: 24px 0 12px;
+  font-size: 18px;
+}
+.daily-pack-modal {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+.daily-pack-modal > svg {
+  width: 58px;
+  height: 58px;
+  color: var(--gold);
+}
+.notification-center {
+  position: relative;
+}
+.notification-center .notifications {
+  position: relative;
+}
+.notification-center .notifications i {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  color: #160f05;
+  background: var(--gold);
+  border-radius: 10px;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 900;
+}
+.notification-panel {
+  position: absolute;
+  z-index: 80;
+  top: 46px;
+  right: 0;
+  width: min(330px, 85vw);
+  padding: 14px;
+  background: #11141b;
+  border: 1px solid #393327;
+  border-radius: 10px;
+  box-shadow: 0 18px 45px #000a;
+}
+.notification-panel h3 {
+  margin: 0 0 10px;
+}
+.notification-panel button {
+  display: grid;
+  width: 100%;
+  padding: 10px;
+  text-align: left;
+  color: #e5e1d6;
+  background: rgba(255, 255, 255, 0.025);
+  border: 0;
+  border-bottom: 1px solid #272b32;
+  cursor: pointer;
+}
+.notification-panel button small {
+  color: #9d8548;
+}
+.notification-panel p {
+  color: #8f96a3;
+}
+@media (max-width: 1050px) {
+  .retention-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 650px) {
+  .retention-card {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .retention-card > .button {
+    width: 100%;
+  }
+  .essence-grid,
+  .inventory-sections {
+    grid-template-columns: 1fr;
+  }
+}
