@@ -1,4 +1,5 @@
 import type { PlayerState } from "./client-state";
+import { reconcileAdminBalance } from "./admin-balance";
 
 export type HydrationSelection = {
   state: PlayerState;
@@ -86,6 +87,7 @@ export function selectHydratedGameState(local: PlayerState, cloud: PlayerState |
   }
 
   const state = structuredClone(selected);
+  if (cloud.adminBalanceTotals) reconcileAdminBalance(state, cloud.adminBalanceTotals);
   state.campaignWins = [...new Set([...cloud.campaignWins, ...local.campaignWins])];
   mergeAuthoritativeProgression(state, cloud);
   const cloudNeedsUpdate = selected === local

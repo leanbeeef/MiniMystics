@@ -27,6 +27,7 @@ export type BattleSelection = { loadoutId?: string; mysticIds?: string[]; handle
 export type Binder = { id: string; name: string; cardIds: string[] };
 export type ComicProgress = { pageIndex: number; completed: boolean; updatedAt: string };
 export type PlayerState = {
+  adminBalanceTotals?: { coins: number; premium: number };
   saveRevision: number;
   account: { email: string; username: string } | null;
   profile: PlayerProfile | null;

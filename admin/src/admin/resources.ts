@@ -117,6 +117,7 @@ const adjustBalance = {
     const profileId = context.record.id().toString();
     const adminUserId = String(context.currentAdmin?.id);
     await prisma.$transaction(async (transaction) => {
+      await transaction.$queryRaw`SELECT id FROM "PlayerProfile" WHERE id = ${profileId} FOR UPDATE`;
       const profile = await transaction.playerProfile.findUniqueOrThrow({ where: { id: profileId } });
       const balanceBefore = currency === 'COINS' ? profile.coins : profile.premiumCurrency;
       const balanceAfter = balanceBefore + amount;

@@ -5,6 +5,7 @@ import { requireSupabaseUser } from "@/lib/server/supabase-auth";
 import { getPrisma } from "@/lib/server/prisma";
 import { emptyProgression } from "@/lib/progression/state";
 import { getRuntimeProgressionConfig } from "@/lib/server/progression-config";
+import { reconcileAdminBalance } from "@/lib/admin-balance";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -131,6 +132,8 @@ async function synchronizeState(identity: Awaited<ReturnType<typeof requireSupab
   state.saveRevision = saveRevision(state);
 
   return prisma.$transaction(async (tx) => {
+    // Serialize saves with admin balance adjustments for this profile.
+    await tx.$queryRaw`SELECT id FROM "PlayerProfile" WHERE "userId" = ${user.id} FOR UPDATE`;
     // Multiple tabs or a slow request can deliver an older snapshot after a newer one. Never let
     // that stale write replace the canonical blob or its normalized profile/pack records.
     const currentSave = await tx.playerGameState.findFirst({
@@ -140,6 +143,14 @@ async function synchronizeState(identity: Awaited<ReturnType<typeof requireSupab
     if (currentSave && saveRevision(currentSave.state) > state.saveRevision) {
       return { version: currentSave.version, updatedAt: currentSave.updatedAt };
     }
+
+    const adjustments = await tx.adminAdjustmentTransaction.groupBy({
+      by: ["currency"], where: { profile: { userId: user.id } }, _sum: { amount: true },
+    });
+    reconcileAdminBalance(state, {
+      coins: adjustments.find(item => item.currency === "COINS")?._sum.amount ?? 0,
+      premium: adjustments.find(item => item.currency === "PREMIUM")?._sum.amount ?? 0,
+    });
 
     const profile = await tx.playerProfile.upsert({
       where: { userId: user.id },
@@ -406,6 +417,7 @@ export async function GET(request: Request) {
     const save = await prisma.playerGameState.findFirst({
       where: { profile: { user: { OR: [{ supabaseAuthId: identity.uid }, { email: identity.email }] } } },
       include: { profile: { select: {
+        adminAdjustments: { select: { currency: true, amount: true } },
         lastDailyPackClaimAt: true,
         campaign: { select: { opponentId: true } },
         seasonProgress: { select: { seasonId: true, seasonXp: true, currentTier: true, claimedFree: true } },
@@ -415,6 +427,10 @@ export async function GET(request: Request) {
     });
     if (!save) return NextResponse.json({ error: "No cloud save yet." }, { status: 404 });
     const state = structuredClone(save.state) as unknown as PlayerState;
+    reconcileAdminBalance(state, {
+      coins: save.profile.adminAdjustments.reduce((sum, item) => sum + (item.currency === "COINS" ? item.amount : 0), 0),
+      premium: save.profile.adminAdjustments.reduce((sum, item) => sum + (item.currency === "PREMIUM" ? item.amount : 0), 0),
+    });
     state.progression ??= emptyProgression();
     state.progression.configuration = await getRuntimeProgressionConfig(prisma);
     reconcileProgression(state, save.profile);
