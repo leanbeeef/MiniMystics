@@ -35,7 +35,10 @@ function AuthButton({ busy }: { busy: boolean }) {
 
 function validate(mode: AuthMode, email: string, username: string, password: string) {
   const errors: FieldErrors = {};
-  if (mode === "signup") errors.username = validateHandlerName(username) ?? undefined;
+  if (mode === "signup") {
+    const usernameError = validateHandlerName(username);
+    if (usernameError) errors.username = usernameError;
+  }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errors.email = "Enter a valid email address.";
   if (password.length < 8) errors.password = "Password must contain at least 8 characters.";
   return errors;
